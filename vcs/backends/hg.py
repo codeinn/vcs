@@ -10,8 +10,9 @@ Created on Apr 8, 2010
 """
 import os
 
-from vcs.base import BaseRepository
+from vcs.backends.base import BaseRepository
 from vcs.exceptions import RepositoryError
+
 from mercurial import ui
 from mercurial.localrepo import localrepository
 from mercurial.util import matchdate, Abort, makedate
