@@ -11,16 +11,103 @@ Created on Apr 8, 2010
 from base import BaseRepository
 from mercurial import ui
 from mercurial.localrepo import localrepository
-from mercurial.util import matchdate, Abort
+from mercurial.util import matchdate, Abort, makedate
+import os
+from mercurial import hg
+from mercurial.error import RepoError
+from mercurial.hgweb.hgwebdir_mod import findrepos 
 
-
-def list_repositories(repos_path):
+def list_repositories(repos_prefix, repos_path):
     """
     Listing of repositories in given path. This path should not be a repository
     itself. Return a list of repository objects
-    @param repos_path: path to directory
+    @param repos_path: path to directory it could take syntax with * or ** for
+    deep recursive displaying repositories
     """
-    raise NotImplementedError
+    if not repos_path.endswith('*') and not repos_path.endswith('*'):
+        raise Exception('You need to specify * or ** for recursive scanning')
+        
+    check_repo_dir(repos_path)
+    if is_mercurial_repo(repos_path):
+        pass
+    from pprint import pprint
+    repos = findrepos([(repos_prefix, repos_path)])
+    
+    my_ui = ui.ui()
+    my_ui.setconfig('ui', 'report_untrusted', 'off')
+    my_ui.setconfig('ui', 'interactive', 'off')
+            
+    for name, path in repos:
+        u = my_ui.copy()
+
+        try:
+            u.readconfig(os.path.join(path, '.hg', 'hgrc'))
+        except Exception, e:
+            u.warn('error reading %s/.hg/hgrc: %s\n') % (path, e)
+            continue
+                
+        def get(section, name, default=None):
+            return u.config(section, name, default, untrusted=True)
+#
+        if u.configbool("web", "hidden", untrusted=True):
+            continue
+#
+        
+        r = localrepository(my_ui, path)
+        def get_mtime(spath):
+            cl_path = os.path.join(spath, "00changelog.i")
+            if os.path.exists(cl_path):
+                return os.stat(cl_path).st_mtime
+            else:
+                return os.stat(spath).st_mtime        
+        print name 
+        #print get('web', 'description', 'mercurial repo'), 'time', get_mtime(r.spath), makedate()[1]
+        #print r.filectx(path, changeid, fileid)
+
+#                if not self.read_allowed(u, req):
+#                    continue
+#
+#                parts = [name]
+#                if 'PATH_INFO' in req.env:
+#                    parts.insert(0, req.env['PATH_INFO'].rstrip('/'))
+#                if req.env['SCRIPT_NAME']:
+#                    parts.insert(0, req.env['SCRIPT_NAME'])
+#                url = re.sub(r'/+', '/', '/'.join(parts) + '/')
+#
+#                # update time with local timezone
+#                try:
+#                    r = hg.repository(self.ui, path)
+#                    d = (get_mtime(r.spath), util.makedate()[1])
+#                except OSError:
+#                    continue    
+    
+    
+    
+    
+    
+    
+    
+
+def check_repo_dir(path):
+    """
+    Checks the repository
+    @param path:
+    """
+    repos_path = path.split('/')
+    if repos_path[-1] in ['*', '**']:
+        repos_path = repos_path[:-1]
+    if repos_path[0] != '/':
+        repos_path[0] = '/'
+    if not os.path.isdir(os.path.join(*repos_path)):
+        raise Exception('Not a valid repository in %s' % path[0][1])
+
+def is_mercurial_repo(path):
+    path = path.replace('*', '')
+    try:
+        hg.repository(ui.ui(), path)
+        return True
+    except (RepoError):
+        return False
 
 class MercurialRepository(BaseRepository):
     """
@@ -39,7 +126,5 @@ class MercurialRepository(BaseRepository):
 
 #TEST
 if __name__ == "__main__":
-    mr = MercurialRepository('/home/marcink/python_workspace/lotto/')
-    print mr.repo.changectx('tip')
-    print mr.get_name()        
-        
+    
+    list_repositories('/', '/home/marcink/python_workspace/**')        
