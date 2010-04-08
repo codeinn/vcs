@@ -11,7 +11,7 @@ Created on Apr 8, 2010
 import os
 
 from vcs.backends.base import BaseRepository
-from vcs.exceptions import RepositoryError
+from vcs.exceptions import RepositoryError, VCSError
 
 from mercurial import ui
 from mercurial.localrepo import localrepository
@@ -96,27 +96,14 @@ class MercurialRepository(BaseRepository):
         """
         baseui = ui.ui()
         self.repo = localrepository(baseui, path=repo_path)
+        self.revisions = list(self.repo)
 
     def get_name(self):
         return self.repo.path.split('/')[-2]
 
 #TEST
 if __name__ == "__main__":
-
-    def get_mtime(spath):
-        cl_path = os.path.join(spath, "00changelog.i")
-        if os.path.exists(cl_path):
-            return os.stat(cl_path).st_mtime
-        else:
-            return os.stat(spath).st_mtime
-
-    for name, r in get_repositories('/', '/home/marcink/python_workspace/*').items():
-        last_change = (get_mtime(r.spath), makedate()[1])
-        print 'name', name ,
-        print 'desc', r.ui.config('web', 'description', 'def', untrusted=True)
-        print 'time', last_change,
-        tip = r.changectx('tip')
-        print 'tip', tip,
-        print '@rev', tip.rev()
-        print 'by', tip.user()
-        print
+    mr = MercurialRepository('/home/marcink/python_workspace/lotto')
+    print mr.repo
+    print mr.revisions
+    
