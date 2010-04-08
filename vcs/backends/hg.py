@@ -31,5 +31,6 @@ class MercurialRepository(BaseRepository):
 #TEST
 if __name__ == "__main__":
     mr = MercurialRepository('/home/marcink/python_workspace/lotto/')
+    print mr.repo.changectx('tip')
     print mr.get_name()        
         
