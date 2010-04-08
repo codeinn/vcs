@@ -3,16 +3,16 @@
 #
 # Copyright (c) 2010 Marcin Kuzminski,Lukasz Balcerzak.  All rights reserved.
 #
-'''
+"""
 Created on Apr 8, 2010
 
 @author: marcink,lukaszb
-'''
+"""
 
 class BaseRepository(object):
-    '''
+    """
     Base Repository for final backends
-    '''
+    """
         
     def get_owner(self):
         raise NotImplementedError
@@ -28,16 +28,23 @@ class BaseRepository(object):
     
             
     def get_commits(self, since=None, limit=None):     
-        '''
+        """ 
         Returns all commits since since. If since is None it returns all commits
         limited by limit, or all commits if limit is None
         @param since: datetime
         @param limit:Integer value for limit
-        '''
+        """
+        
         raise NotImplementedError
     
     def get_changesets(self, since, limit):
         raise NotImplementedError
 
+    def get_tags(self, since, limit):
+        raise NotImplementedError
 
+    def get_branches(self, since, limit):
+        raise NotImplementedError
 
+    def get_files(self, limit):
+        raise NotImplementedError
