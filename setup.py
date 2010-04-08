@@ -23,7 +23,7 @@ setup(
     test_suite = 'nose.collector',
     test_requires = ['nose'],
     install_requires = [
-        'nose',
+        'nose', 'restkit', 'simplejson', 'mercurial',
     ],
     include_package_data = True,
     classifiers = [

@@ -13,3 +13,6 @@ class VCSError(Exception):
 class RepositoryError(VCSError):
     pass
 
+class ChangesetError(VCSError):
+    pass
+
