@@ -13,15 +13,31 @@ class BaseRepository(object):
     '''
     Base Repository for final backends
     '''
-
-
-    def __init__(self):
-        '''
-        Constructor
-        '''
         
-    def get_commits(self, since, limit):
+    def get_owner(self):
+        raise NotImplementedError
+    
+    def get_last_change(self):
+        raise NotImplementedError
+    
+    def get_description(self):
+        raise NotImplementedError
+    
+    def get_name(self):
+        raise NotImplementedError
+    
+            
+    def get_commits(self, since=None, limit=None):     
+        '''
+        Returns all commits since since. If since is None it returns all commits
+        limited by limit, or all commits if limit is None
+        @param since: datetime
+        @param limit:Integer value for limit
+        '''
         raise NotImplementedError
     
     def get_changesets(self, since, limit):
         raise NotImplementedError
+
+
+
