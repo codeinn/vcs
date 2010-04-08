@@ -8,14 +8,16 @@ Created on Apr 8, 2010
 
 @author: marcink,lukaszb
 """
-from base import BaseRepository
+import os
+
+from vcs.base import BaseRepository
+from vcs.exceptions import RepositoryError
 from mercurial import ui
 from mercurial.localrepo import localrepository
 from mercurial.util import matchdate, Abort, makedate
-import os
 from mercurial import hg
 from mercurial.error import RepoError
-from mercurial.hgweb.hgwebdir_mod import findrepos 
+from mercurial.hgweb.hgwebdir_mod import findrepos
 
 def get_repositories(repos_prefix, repos_path):
     """
@@ -25,13 +27,13 @@ def get_repositories(repos_prefix, repos_path):
     deep recursive displaying repositories
     """
     if not repos_path.endswith('*') and not repos_path.endswith('*'):
-        raise Exception('You need to specify * or ** for recursive scanning')
-        
+        raise VCSError('You need to specify * or ** for recursive scanning')
+
     check_repo_dir(repos_path)
     if is_mercurial_repo(repos_path):
         pass
     repos = findrepos([(repos_prefix, repos_path)])
-    
+
     my_ui = ui.ui()
     my_ui.setconfig('ui', 'report_untrusted', 'off')
     my_ui.setconfig('ui', 'interactive', 'off')
@@ -45,15 +47,15 @@ def get_repositories(repos_prefix, repos_path):
         except Exception, e:
             u.warn('error reading %s/.hg/hgrc: %s\n') % (path, e)
             continue
-                
-        #skip hidden repo    
+
+        #skip hidden repo
         if u.configbool("web", "hidden", untrusted=True):
             continue
-        
+
         #skip not allowed
 #       if not self.read_allowed(u, req):
-#           continue        
-        
+#           continue
+
         try:
             r = localrepository(my_ui, path)
             repos_dict[name] = r
@@ -72,7 +74,7 @@ def check_repo_dir(path):
     if repos_path[0] != '/':
         repos_path[0] = '/'
     if not os.path.isdir(os.path.join(*repos_path)):
-        raise Exception('Not a valid repository in %s' % path[0][1])
+        raise RepositoryError('Not a valid repository in %s' % path[0][1])
 
 def is_mercurial_repo(path):
     path = path.replace('*', '')
@@ -88,25 +90,25 @@ class MercurialRepository(BaseRepository):
     """
 
     def __init__(self, repo_path, **kwargs):
-        baseui = ui.ui()
-        self.repo = localrepository(baseui, path=repo_path)
         """
         Constructor
         """
-        
+        baseui = ui.ui()
+        self.repo = localrepository(baseui, path=repo_path)
+
     def get_name(self):
         return self.repo.path.split('/')[-2]
 
 #TEST
 if __name__ == "__main__":
-    
+
     def get_mtime(spath):
         cl_path = os.path.join(spath, "00changelog.i")
         if os.path.exists(cl_path):
             return os.stat(cl_path).st_mtime
         else:
-            return os.stat(spath).st_mtime   
-                
+            return os.stat(spath).st_mtime
+
     for name, r in get_repositories('/', '/home/marcink/python_workspace/*').items():
         last_change = (get_mtime(r.spath), makedate()[1])
         print 'name', name ,
@@ -116,4 +118,4 @@ if __name__ == "__main__":
         print 'tip', tip,
         print '@rev', tip.rev()
         print 'by', tip.user()
-        print                
+        print
