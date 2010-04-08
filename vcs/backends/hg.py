@@ -17,7 +17,7 @@ from mercurial import hg
 from mercurial.error import RepoError
 from mercurial.hgweb.hgwebdir_mod import findrepos 
 
-def list_repositories(repos_prefix, repos_path):
+def get_repositories(repos_prefix, repos_path):
     """
     Listing of repositories in given path. This path should not be a repository
     itself. Return a list of repository objects
@@ -30,7 +30,6 @@ def list_repositories(repos_prefix, repos_path):
     check_repo_dir(repos_path)
     if is_mercurial_repo(repos_path):
         pass
-    from pprint import pprint
     repos = findrepos([(repos_prefix, repos_path)])
     
     my_ui = ui.ui()
@@ -48,44 +47,36 @@ def list_repositories(repos_prefix, repos_path):
                 
         def get(section, name, default=None):
             return u.config(section, name, default, untrusted=True)
-#
-        if u.configbool("web", "hidden", untrusted=True):
-            continue
-#
         
-        r = localrepository(my_ui, path)
         def get_mtime(spath):
             cl_path = os.path.join(spath, "00changelog.i")
             if os.path.exists(cl_path):
                 return os.stat(cl_path).st_mtime
             else:
-                return os.stat(spath).st_mtime        
-        print name 
-        #print get('web', 'description', 'mercurial repo'), 'time', get_mtime(r.spath), makedate()[1]
-        #print r.filectx(path, changeid, fileid)
-
-#                if not self.read_allowed(u, req):
-#                    continue
-#
-#                parts = [name]
-#                if 'PATH_INFO' in req.env:
-#                    parts.insert(0, req.env['PATH_INFO'].rstrip('/'))
-#                if req.env['SCRIPT_NAME']:
-#                    parts.insert(0, req.env['SCRIPT_NAME'])
-#                url = re.sub(r'/+', '/', '/'.join(parts) + '/')
-#
-#                # update time with local timezone
-#                try:
-#                    r = hg.repository(self.ui, path)
-#                    d = (get_mtime(r.spath), util.makedate()[1])
-#                except OSError:
-#                    continue    
-    
-    
-    
-    
-    
-    
+                return os.stat(spath).st_mtime   
+        
+        #skip hidden repo    
+        if u.configbool("web", "hidden", untrusted=True):
+            continue
+        
+        #skip not allowed
+#       if not self.read_allowed(u, req):
+#           continue        
+        
+        try:
+            r = localrepository(my_ui, path)
+            last_change = (get_mtime(r.spath), makedate()[1])
+        except OSError:
+            continue            
+     
+        print 'name', name ,
+        print 'desc', get('web', 'description', 'mercurial repo'),
+        print 'time', last_change,
+        tip = r.changectx('tip')
+        print 'tip', tip,
+        print '@rev', tip.rev()
+        print 'last commit by', tip.user()
+        print
     
 
 def check_repo_dir(path):
@@ -127,4 +118,4 @@ class MercurialRepository(BaseRepository):
 #TEST
 if __name__ == "__main__":
     
-    list_repositories('/', '/home/marcink/python_workspace/**')        
+    get_repositories('/', '/home/marcink/python_workspace/*')        
