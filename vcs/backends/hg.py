@@ -13,6 +13,15 @@ from mercurial import ui
 from mercurial.localrepo import localrepository
 from mercurial.util import matchdate, Abort
 
+
+def list_repositories(repos_path):
+    """
+    Listing of repositories in given path. This path should not be a repository
+    itself. Return a list of repository objects
+    @param repos_path: path to directory
+    """
+    raise NotImplementedError
+
 class MercurialRepository(BaseRepository):
     """
     Mercurial repository backend
