@@ -78,4 +78,22 @@ class BaseRepository(object):
         
     def get_files(self, limit):
         raise NotImplementedError
+ 
+    def create_repository(self, repo_path, repo_name):
+        """
+        Create a repository on filesystem or throws an exception on fail
+        """
+        raise NotImplementedError 
     
+    def is_valid_repository(self, repo_path):
+        """
+        Check if there is a valid repository in given location
+        """
+        raise NotImplementedError
+    
+    def can_create_repository(self): 
+        """
+        Checks if is possible to create repository by checking the permissions and path
+        """
+        raise NotImplementedError
+   
