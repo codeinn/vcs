@@ -47,7 +47,7 @@ class BaseRepository(object):
         """
         raise NotImplementedError
 
-    def get_commit_by_id(self, commit_id):
+    def get_commit(self, commit_id):
         raise NotImplementedError
 
     #===========================================================================
@@ -59,7 +59,7 @@ class BaseRepository(object):
     def get_tag_by_name(self, tag_name):
         raise NotImplementedError
 
-    def get_tag_by_id(self, tag_id):
+    def get_tag(self, tag_id):
         raise NotImplementedError
 
     #===========================================================================
@@ -71,7 +71,7 @@ class BaseRepository(object):
     def get_branch_by_name(self, branch_name):
         raise NotImplementedError
 
-    def get_branch_by_id(self, branch_id):
+    def get_branch(self, branch_id):
         raise NotImplementedError
 
     def get_files(self, limit):
