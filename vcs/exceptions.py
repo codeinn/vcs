@@ -10,6 +10,6 @@ Created on Apr 8, 2010
 class VCSError(Exception):
     pass
 
-class RepositoryError(VCSException):
+class RepositoryError(VCSError):
     pass
 
