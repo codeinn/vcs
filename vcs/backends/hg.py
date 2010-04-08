@@ -35,7 +35,8 @@ def get_repositories(repos_prefix, repos_path):
     my_ui = ui.ui()
     my_ui.setconfig('ui', 'report_untrusted', 'off')
     my_ui.setconfig('ui', 'interactive', 'off')
-            
+
+    repos_dict = {}
     for name, path in repos:
         u = my_ui.copy()
 
@@ -45,16 +46,6 @@ def get_repositories(repos_prefix, repos_path):
             u.warn('error reading %s/.hg/hgrc: %s\n') % (path, e)
             continue
                 
-        def get(section, name, default=None):
-            return u.config(section, name, default, untrusted=True)
-        
-        def get_mtime(spath):
-            cl_path = os.path.join(spath, "00changelog.i")
-            if os.path.exists(cl_path):
-                return os.stat(cl_path).st_mtime
-            else:
-                return os.stat(spath).st_mtime   
-        
         #skip hidden repo    
         if u.configbool("web", "hidden", untrusted=True):
             continue
@@ -65,19 +56,10 @@ def get_repositories(repos_prefix, repos_path):
         
         try:
             r = localrepository(my_ui, path)
-            last_change = (get_mtime(r.spath), makedate()[1])
+            repos_dict[name] = r
         except OSError:
-            continue            
-     
-        print 'name', name ,
-        print 'desc', get('web', 'description', 'mercurial repo'),
-        print 'time', last_change,
-        tip = r.changectx('tip')
-        print 'tip', tip,
-        print '@rev', tip.rev()
-        print 'last commit by', tip.user()
-        print
-    
+            continue
+    return repos_dict
 
 def check_repo_dir(path):
     """
@@ -118,4 +100,20 @@ class MercurialRepository(BaseRepository):
 #TEST
 if __name__ == "__main__":
     
-    get_repositories('/', '/home/marcink/python_workspace/*')        
+    def get_mtime(spath):
+        cl_path = os.path.join(spath, "00changelog.i")
+        if os.path.exists(cl_path):
+            return os.stat(cl_path).st_mtime
+        else:
+            return os.stat(spath).st_mtime   
+                
+    for name, r in get_repositories('/', '/home/marcink/python_workspace/*').items():
+        last_change = (get_mtime(r.spath), makedate()[1])
+        print 'name', name ,
+        print 'desc', r.ui.config('web', 'description', 'def', untrusted=True)
+        print 'time', last_change,
+        tip = r.changectx('tip')
+        print 'tip', tip,
+        print '@rev', tip.rev()
+        print 'by', tip.user()
+        print                
