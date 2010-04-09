@@ -12,30 +12,32 @@ class NodeKind:
 class Node(object):
     """
     Simplest class representing file or directory on repository.
+    SCM backends should use ``FileNode`` and ``DirNode`` subclasses rather than
+    ``Node`` directly.
 
-    We assert that if node's kind is DIR then it's url **MUST** have trailing
-    slash (with one exception: root nodes have kind DIR but root node's url is
-    always empty string) and FILE node's url **CANNOT** end with slash.
-    Moreover, node's url cannot start with slash, too, as we oparete on
+    We assert that if node's kind is DIR then it's path **MUST** have trailing
+    slash (with one exception: root nodes have kind DIR but root node's path is
+    always empty string) and FILE node's path **CANNOT** end with slash.
+    Moreover, node's path cannot start with slash, too, as we oparete on
     *relative* paths only (this class is out of any context).
     """
 
-    def __init__(self, url, kind):
-        if url.startswith('/'):
+    def __init__(self, path, kind):
+        if path.startswith('/'):
             raise NodeError("Cannot initialize Node objects with slash at "
                 "the beginning as only relative paths are supported")
-        self.url = url
+        self.path = path
         self.kind = kind
-        self.name = url.rstrip('/').split('/')[-1]
+        self.name = path.rstrip('/').split('/')[-1]
         self.dirs, self.files = [], []
         if self.is_root() and not self.is_dir():
             raise NodeError, "Root node cannot be FILE kind"
 
     @LazyProperty
     def parent(self):
-        parent_url = self.get_parent_url()
-        if parent_url:
-            return Node(parent_url, NodeKind.DIR)
+        parent_path = self.get_parent_path()
+        if parent_path:
+            return Node(parent_path, NodeKind.DIR)
         return None
 
     def _get_kind(self):
@@ -46,12 +48,12 @@ class Node(object):
             raise NodeError, "Cannot change node's kind"
         else:
             self._kind = kind
-            # Post setter check (url's trailing slash)
-            if self.is_file() and self.url.endswith('/'):
-                raise NodeError, "File nodes' urls cannot end with slash"
-            elif not self.url=='' and self.is_dir() and \
-                    not self.url.endswith('/'):
-                raise NodeError, "Dir nodes' urls must end with slash"
+            # Post setter check (path's trailing slash)
+            if self.is_file() and self.path.endswith('/'):
+                raise NodeError, "File nodes' paths cannot end with slash"
+            elif not self.path=='' and self.is_dir() and \
+                    not self.path.endswith('/'):
+                raise NodeError, "Dir nodes' paths must end with slash"
 
     kind = property(_get_kind, _set_kind)
 
@@ -71,26 +73,26 @@ class Node(object):
         return not self == other
 
     def __repr__(self):
-        return '<Node %r>' % self.url
+        return '<Node %r>' % self.path
 
     def __unicode__(self):
         return unicode(self.name)
 
     @staticmethod
-    def get_name(url):
+    def get_name(path):
         """
-        Returns name of the node so if its url
+        Returns name of the node so if its path
         then only last part is returned.
         """
-        return url.split('/')[-1]
+        return path.split('/')[-1]
 
-    def get_parent_url(self):
+    def get_parent_path(self):
         """
-        Returns node's parent url or empty string if node is root.
+        Returns node's parent path or empty string if node is root.
         """
         if self.is_root():
             return ''
-        return posixpath.dirname(self.url.rstrip('/')) + '/'
+        return posixpath.dirname(self.path.rstrip('/')) + '/'
 
     def is_file(self):
         """
@@ -110,10 +112,18 @@ class Node(object):
         """
         Returns ``True`` if node is a root node and ``False`` otherwise.
         """
-        return self.url == ''
+        return self.path == ''
 
     def get_mimetype(self, content):
         # Use chardet/python-magic/mimetypes?
         raise NotImplementedError
 
+
+class FileNode(Node):
+    """
+    Class representing file nodes.
+    """
+
+    def __init__(self, path):
+        super(FileNode, self).__init__(path, kind=NodeKind.FILE)
 

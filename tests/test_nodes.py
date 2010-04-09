@@ -6,21 +6,21 @@ class NodeBasicTest(unittest.TestCase):
 
     def test_init(self):
         """
-        Cannot innitialize Node objects with url with slash at the beginning.
+        Cannot innitialize Node objects with path with slash at the beginning.
         """
-        wrong_urls = (
+        wrong_paths = (
             '/foo',
             '/foo/bar'
         )
-        for url in wrong_urls:
-            self.assertRaises(NodeError, Node, url, NodeKind.FILE)
+        for path in wrong_paths:
+            self.assertRaises(NodeError, Node, path, NodeKind.FILE)
 
-        wrong_urls = (
+        wrong_paths = (
             '/foo/',
             '/foo/bar/'
         )
-        for url in wrong_urls:
-            self.assertRaises(NodeError, Node, url, NodeKind.DIR)
+        for path in wrong_paths:
+            self.assertRaises(NodeError, Node, path, NodeKind.DIR)
 
     def test_name(self):
         node = Node('', NodeKind.DIR)
@@ -45,25 +45,25 @@ class NodeBasicTest(unittest.TestCase):
         node = Node('', NodeKind.DIR)
         self.assertRaises(NodeError, setattr, node, 'kind', NodeKind.FILE)
 
-    def _test_parent_url(self, node_url, expected_parent_url):
+    def _test_parent_path(self, node_path, expected_parent_path):
         """
-        Tests if node's parent url are properly computed.
+        Tests if node's parent path are properly computed.
         """
-        node = Node(node_url, NodeKind.DIR)
-        parent_url = node.get_parent_url()
-        self.assertTrue(parent_url.endswith('/') or \
-            node.is_root() and parent_url == '')
-        self.assertEqual(parent_url, expected_parent_url,
-            "Node's url is %r and parent url is %r but should be %r"
-            % (node.url, parent_url, expected_parent_url))
+        node = Node(node_path, NodeKind.DIR)
+        parent_path = node.get_parent_path()
+        self.assertTrue(parent_path.endswith('/') or \
+            node.is_root() and parent_path == '')
+        self.assertEqual(parent_path, expected_parent_path,
+            "Node's path is %r and parent path is %r but should be %r"
+            % (node.path, parent_path, expected_parent_path))
 
-    def test_parent_url(self):
-        test_urls = (
-            # (node_url, expected_parent_url)
+    def test_parent_path(self):
+        test_paths = (
+            # (node_path, expected_parent_path)
             ('', ''),
             ('some/path/', 'some/'),
             ('some/longer/path/', 'some/longer/'),
         )
-        for node_url, expected_parent_url in test_urls:
-            self._test_parent_url(node_url, expected_parent_url)
+        for node_path, expected_parent_path in test_paths:
+            self._test_parent_path(node_path, expected_parent_path)
 
