@@ -9,8 +9,9 @@ Created on Apr 8, 2010
 @author: marcink,lukaszb
 """
 import os
+import datetime
 
-from vcs.backends.base import BaseRepository
+from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, VCSError
 
 from mercurial import ui
@@ -97,13 +98,40 @@ class MercurialRepository(BaseRepository):
         baseui = ui.ui()
         self.repo = localrepository(baseui, path=repo_path)
         self.revisions = list(self.repo)
+        self.changesets = {}
+
+    def get_changeset(self, revision=None):
+        """
+        Returns ``MercurialChangeset`` object representing repository's
+        changeset at the given ``revision``.
+        """
+        if not self.changesets.has_key(revision):
+            changeset = MercurialChangeset(repository=self, revision=revision)
+            self.changesets[revision] = changeset
+        return self.changesets[revision]
 
     def get_name(self):
         return self.repo.path.split('/')[-2]
+
+class MercurialChangeset(BaseChangeset):
+    """
+    Represents state of the repository at the single revision.
+    """
+    def __init__(self, repository, revision):
+        self.repository = repository
+        self.revision = revision
+        ctx = repository.repo[revision]
+        self._ctx = ctx
+        self.author = ctx.user()
+        self.message = ctx.description()
+        self.date = datetime.datetime.fromtimestamp(sum(ctx.date()))
+        self.files = list(ctx)
+        self.dirs = list(set(map(os.path.dirname, self.files)))
+
 
 #TEST
 if __name__ == "__main__":
     mr = MercurialRepository('/home/marcink/python_workspace/lotto')
     print mr.repo
     print mr.revisions
-    
+

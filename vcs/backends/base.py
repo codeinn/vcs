@@ -12,6 +12,11 @@ Created on Apr 8, 2010
 class BaseRepository(object):
     """
     Base Repository for final backends
+
+    @attr repo: object from external api
+    @attr revisions: list of all available revisions' ids
+    @attr changesets: storage dict caching returned changesets
+    @attr path: absolute local path to the repository
     """
 
     def get_owner(self):
@@ -36,6 +41,13 @@ class BaseRepository(object):
     #===========================================================================
     # CHANGESETS
     #===========================================================================
+    def get_changeset(self, revision=None):
+        """
+        Returns instance of ``Changeset`` class. If ``revision`` is None, most
+        recenent changeset is returned.
+        """
+        raise NotImplementedError
+
     def get_changesets(self, since=None, limit=None):
         """
         Returns all commits since given ``since`` parameter. If ``since`` is
@@ -45,9 +57,6 @@ class BaseRepository(object):
         @param since: datetime
         @param limit: integer value for limit
         """
-        raise NotImplementedError
-
-    def get_commit(self, commit_id):
         raise NotImplementedError
 
     #===========================================================================
