@@ -144,3 +144,9 @@ class BaseChangeset(object):
         """
         raise NotImplementedError
 
+    def get_file_content(self, path):
+        """
+        Returns content of the file located at ``path`` within this changeset.
+        """
+        raise NotImplementedError
+

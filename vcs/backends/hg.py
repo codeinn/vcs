@@ -117,6 +117,7 @@ class MercurialChangeset(BaseChangeset):
     """
     Represents state of the repository at the single revision.
     """
+
     def __init__(self, repository, revision):
         self.repository = repository
         self.revision = revision
@@ -128,6 +129,9 @@ class MercurialChangeset(BaseChangeset):
         self.files = list(ctx)
         self.dirs = list(set(map(os.path.dirname, self.files)))
 
+    def get_file_content(self, path):
+        fctx = self._ctx[path]
+        return fctx.data()
 
 #TEST
 if __name__ == "__main__":
