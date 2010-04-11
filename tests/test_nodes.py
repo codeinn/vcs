@@ -67,3 +67,10 @@ class NodeBasicTest(unittest.TestCase):
         for node_path, expected_parent_path in test_paths:
             self._test_parent_path(node_path, expected_parent_path)
 
+    def test_is_file(self):
+        node = Node('any', NodeKind.FILE)
+        self.assertTrue(node.is_file())
+
+    def test_is_dir(self):
+        node = Node('any_dir/', NodeKind.DIR)
+        self.assertTrue(node.is_dir())
