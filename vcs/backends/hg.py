@@ -72,7 +72,7 @@ class MercurialRepository(BaseRepository):
     Mercurial repository backend
     """
 
-    def __init__(self, repo_path, baseui, **kwargs):
+    def __init__(self, repo_path, baseui=None):
         """
         Constructor
         """
