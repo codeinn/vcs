@@ -118,6 +118,12 @@ class BaseChangeset(object):
     @attr size: integer size in bytes
     """
 
+    def get_node(self, path):
+        """
+        Returns ``Node`` object from the given path.
+        """
+        raise NotImplementedError
+
     def get_nodes(self):
         """
         Returns combined list of files and directories ``Node`` objects.

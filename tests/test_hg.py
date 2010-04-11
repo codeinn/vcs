@@ -1,6 +1,8 @@
 import unittest
 
 from vcs.backends.hg import MercurialRepository
+from vcs.exceptions import ChangesetError
+from vcs.nodes import NodeKind
 
 TEST_HG_REPO = '/tmp/vcs'
 
@@ -29,13 +31,27 @@ class MercurialRepositoryTest(unittest.TestCase):
         self.assertEqual(init_chset.message, 'initial import')
         self.assertEqual(init_chset.author,
             'Marcin Kuzminski <marcin@python-blog.com>')
-        self.assertEqual(sorted(init_chset.files),
+        self.assertEqual(sorted(init_chset._file_paths),
             sorted([
                 'vcs/__init__.py',
                 'vcs/backends/BaseRepository.py',
                 'vcs/backends/__init__.py',
             ])
         )
-        self.assertEqual(sorted(init_chset.dirs),
+        self.assertEqual(sorted(init_chset._dir_paths),
             sorted(['vcs/backends', 'vcs']))
+
+        self.assertRaises(ChangesetError, init_chset.get_node, path='foobar')
+
+        node = init_chset.get_node('vcs/')
+        self.assertTrue(hasattr(node, 'kind'))
+        self.assertEqual(node.kind, NodeKind.DIR)
+
+        node = init_chset.get_node('vcs')
+        self.assertTrue(hasattr(node, 'kind'))
+        self.assertEqual(node.kind, NodeKind.DIR)
+
+        node = init_chset.get_node('vcs/__init__.py')
+        self.assertTrue(hasattr(node, 'kind'))
+        self.assertEqual(node.kind, NodeKind.FILE)
 
