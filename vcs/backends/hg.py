@@ -30,7 +30,8 @@ def get_repositories(repos_prefix, repos_path):
     deep recursive displaying repositories
     """
     if not repos_path.endswith('*') and not repos_path.endswith('*'):
-        raise VCSError('You need to specify * or ** for recursive scanning')
+        raise VCSError('You need to specify * or ** at the end of path \
+        for recursive scanning')
 
     check_repo_dir(repos_path)
     if is_mercurial_repo(repos_path):
