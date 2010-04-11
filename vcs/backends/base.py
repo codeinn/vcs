@@ -23,7 +23,7 @@ class BaseRepository(object):
         raise NotImplementedError
 
     def get_last_change(self):
-        self.get_commits(limit=1)
+        self.get_changesets(limit=1)
 
     def get_description(self):
         raise NotImplementedError
