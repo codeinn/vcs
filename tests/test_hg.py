@@ -1,7 +1,7 @@
 import unittest
 
 from vcs.backends.hg import MercurialRepository
-from vcs.exceptions import ChangesetError
+from vcs.exceptions import ChangesetError, RepositoryError
 from vcs.nodes import NodeKind
 
 TEST_HG_REPO = '/tmp/vcs'
@@ -11,6 +11,11 @@ class MercurialRepositoryTest(unittest.TestCase):
     def setUp(self):
         self.repo = MercurialRepository(TEST_HG_REPO)
 
+    def test_repo_create(self):
+        wrong_repo_path = '/tmp/errorrepo'
+        self.assertRaises(RepositoryError, MercurialRepository, repo_path=wrong_repo_path)
+        
+        
     def test_revisions(self):
         # there are 21 revisions at bitbucket now
         subset = set(range(0, 22))
