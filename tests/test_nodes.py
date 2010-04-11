@@ -1,6 +1,6 @@
 import unittest
 
-from vcs.nodes import Node, NodeKind, NodeError
+from vcs.nodes import Node, NodeKind, NodeError, FileNode, DirNode
 
 class NodeBasicTest(unittest.TestCase):
 
@@ -71,6 +71,16 @@ class NodeBasicTest(unittest.TestCase):
         node = Node('any', NodeKind.FILE)
         self.assertTrue(node.is_file())
 
+        node = FileNode('any')
+        self.assertTrue(node.is_file())
+        self.assertRaises(NodeError, getattr, node, 'nodes')
+
     def test_is_dir(self):
         node = Node('any_dir/', NodeKind.DIR)
         self.assertTrue(node.is_dir())
+
+        node = DirNode('any_dir/')
+
+        self.assertTrue(node.is_dir())
+        self.assertRaises(NodeError, getattr, node, 'content')
+

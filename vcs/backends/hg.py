@@ -12,11 +12,12 @@ import os
 import datetime
 
 from vcs.backends.base import BaseRepository, BaseChangeset
-from vcs.exceptions import RepositoryError, VCSError
+from vcs.exceptions import RepositoryError, VCSError, ChangesetError
+from vcs.nodes import Node, FileNode, DirNode, NodeKind
+from vcs.utils.lazy import LazyProperty
 
 from mercurial import ui
 from mercurial.localrepo import localrepository
-from mercurial.util import matchdate, Abort, makedate
 from mercurial import hg
 from mercurial.error import RepoError
 from mercurial.hgweb.hgwebdir_mod import findrepos
@@ -100,6 +101,11 @@ class MercurialRepository(BaseRepository):
         self.revisions = list(self.repo)
         self.changesets = {}
 
+    def _get_revision(self, revision):
+        if revision in (None, 'tip'):
+            revision = self.revisions[-1]
+        return revision
+
     def get_changeset(self, revision=None):
         """
         Returns ``MercurialChangeset`` object representing repository's
@@ -120,22 +126,35 @@ class MercurialChangeset(BaseChangeset):
 
     def __init__(self, repository, revision):
         self.repository = repository
-        self.revision = revision
+        self.revision = repository._get_revision(revision)
         ctx = repository.repo[revision]
         self._ctx = ctx
         self.author = ctx.user()
         self.message = ctx.description()
         self.date = datetime.datetime.fromtimestamp(sum(ctx.date()))
-        self.files = list(ctx)
-        self.dirs = list(set(map(os.path.dirname, self.files)))
+        self._file_paths = list(ctx)
+        self._dir_paths = list(set(map(os.path.dirname, self._file_paths)))
+        self.nodes = {}
+
+    def get_node(self, path):
+        if not path in self.nodes:
+            if path in self._file_paths:
+                content = self.get_file_content(path)
+                node = FileNode(path, content=content)
+            else:
+                # paths are stored without trailing slash so we need to get
+                # rid off it if needed
+                if path.endswith('/'):
+                    path = path.rstrip('/')
+                if path in self._dir_paths or path in self._dir_paths:
+                    node = DirNode(path)
+                else:
+                    raise ChangesetError("There is no file nor directory "
+                        "at the given path: %r" % path)
+            self.nodes[path] = node
+        return self.nodes[path]
 
     def get_file_content(self, path):
         fctx = self._ctx[path]
         return fctx.data()
-
-#TEST
-if __name__ == "__main__":
-    mr = MercurialRepository('/home/marcink/python_workspace/lotto')
-    print mr.repo
-    print mr.revisions
 

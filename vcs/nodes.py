@@ -1,8 +1,9 @@
 import posixpath
 
 from vcs.utils.lazy import LazyProperty
+from vcs.exceptions import VCSError
 
-class NodeError(Exception):
+class NodeError(VCSError):
     pass
 
 class NodeKind:
@@ -51,9 +52,9 @@ class Node(object):
             # Post setter check (path's trailing slash)
             if self.is_file() and self.path.endswith('/'):
                 raise NodeError, "File nodes' paths cannot end with slash"
-            elif not self.path=='' and self.is_dir() and \
-                    not self.path.endswith('/'):
-                raise NodeError, "Dir nodes' paths must end with slash"
+            #elif not self.path=='' and self.is_dir() and \
+            #        not self.path.endswith('/'):
+            #    raise NodeError, "Dir nodes' paths must end with slash"
 
     kind = property(_get_kind, _set_kind)
 
@@ -124,6 +125,53 @@ class FileNode(Node):
     Class representing file nodes.
     """
 
-    def __init__(self, path):
+    def __init__(self, path, content=None):
         super(FileNode, self).__init__(path, kind=NodeKind.FILE)
+        self.content = content
+
+    @LazyProperty
+    def nodes(self):
+        raise NodeError("%s represents a file and has no ``nodes`` attribute"
+            % self)
+
+    def __repr__(self):
+        return '<FileNode %r>' % self.path
+
+class DirNode(Node):
+    """
+    DirNode stores list of files and directories within this node.
+    """
+
+    def __init__(self, path, nodes=()):
+        super(DirNode, self).__init__(path, NodeKind.DIR)
+        self.nodes = nodes
+
+    @LazyProperty
+    def content(self):
+        raise NodeError("%s represents a dir and has no ``content`` attribute"
+            % self)
+
+    def __repr__(self):
+        return '<DirNode %r>' % self.path
+
+    def get_nodes(self):
+        """
+        Returns combined files and dirs nodes within this dirnode.
+        """
+        return self._nodes
+
+    def set_nodes(self, nodes):
+        """
+        Sets combined files and dirs for this dirnode. Backends should set this
+        attribute.
+        """
+        if not self.is_dir():
+            raise NodeError("Is not a dir!")
+
+        self.files = [node for node in nodes if node.is_file()]
+        self.dirs = [node for node in nodes if node.is_dir()]
+
+        self._nodes = nodes
+
+    nodes = property(get_nodes, set_nodes)
 
