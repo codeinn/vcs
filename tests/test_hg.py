@@ -55,3 +55,22 @@ class MercurialRepositoryTest(unittest.TestCase):
         self.assertTrue(hasattr(node, 'kind'))
         self.assertEqual(node.kind, NodeKind.FILE)
 
+    def test_changeset10(self):
+
+        chset10 = self.repo.get_changeset(10)
+        README = """===
+VCS
+===
+
+Various Version Control System management abstraction layer for Python.
+
+Introduction
+------------
+
+TODO: To be written...
+
+"""
+        node = chset10.get_node('README.rst')
+        self.assertEqual(node.kind, NodeKind.FILE)
+        self.assertEqual(node.content, README)
+

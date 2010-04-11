@@ -124,35 +124,9 @@ class BaseChangeset(object):
         """
         raise NotImplementedError
 
-    def get_nodes(self):
+    def get_root(self):
         """
-        Returns combined list of files and directories ``Node`` objects.
+        Returns ``RootNode`` object for this changeset.
         """
-        raise NotImplementedError
-
-    def get_files(self):
-        """
-        Returns list of ``Node`` objects with NodeKind.FILE.
-        """
-        raise NotImplementedError
-
-    def get_dirs(self):
-        """
-        Returns list of ``Node`` objects with NodeKind.DIR.
-        """
-        raise NotImplementedError
-
-    def get_kind(self, path):
-        """
-        Returns ``NodeKind.FILE`` if node at given path is a file,
-        ``NodeKind.DIR`` if is a dir or raises ``ChangesetError`` if there is
-        no node at the given ``path``.
-        """
-        raise NotImplementedError
-
-    def get_file_content(self, path):
-        """
-        Returns content of the file located at ``path`` within this changeset.
-        """
-        raise NotImplementedError
+        return self.get_node('')
 

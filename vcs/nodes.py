@@ -27,7 +27,10 @@ class Node(object):
         if path.startswith('/'):
             raise NodeError("Cannot initialize Node objects with slash at "
                 "the beginning as only relative paths are supported")
-        self.path = path
+        self.path = path.rstrip('/')
+        if path == '' and kind != NodeKind.DIR:
+            raise NodeError("Only DirNode and its subclasses may be initialized"
+                " with empty path")
         self.kind = kind
         self.name = path.rstrip('/').split('/')[-1]
         self.dirs, self.files = [], []
@@ -62,6 +65,9 @@ class Node(object):
         """
         Comparator using name of the node, needed for quick list sorting.
         """
+        kind_cmp = cmp(self.kind, other.kind)
+        if kind_cmp:
+            return kind_cmp
         return cmp(self.name, other.name)
 
     def __eq__(self, other):
@@ -113,7 +119,7 @@ class Node(object):
         """
         Returns ``True`` if node is a root node and ``False`` otherwise.
         """
-        return self.path == ''
+        return self.kind == NodeKind.DIR and self.path == ''
 
     def get_mimetype(self, content):
         # Use chardet/python-magic/mimetypes?
@@ -174,4 +180,12 @@ class DirNode(Node):
         self._nodes = nodes
 
     nodes = property(get_nodes, set_nodes)
+
+class RootNode(Node):
+    """
+    DirNode being the root node of the repository.
+    """
+
+    def __init__(self, nodes=()):
+        super(DirNode, self).__init__(path='', kind=NodeKind.DIR)
 
