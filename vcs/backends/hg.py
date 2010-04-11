@@ -18,11 +18,10 @@ from vcs.utils.lazy import LazyProperty
 
 from mercurial import ui
 from mercurial.localrepo import localrepository
-from mercurial import hg
 from mercurial.error import RepoError
 from mercurial.hgweb.hgwebdir_mod import findrepos
 
-def get_repositories(repos_prefix, repos_path):
+def get_repositories(repos_prefix, repos_path, baseui):
     """
     Listing of repositories in given path. This path should not be a repository
     itself. Return a list of repository objects
@@ -34,38 +33,24 @@ def get_repositories(repos_prefix, repos_path):
         for recursive scanning')
 
     check_repo_dir(repos_path)
-    if is_mercurial_repo(repos_path):
-        pass
     repos = findrepos([(repos_prefix, repos_path)])
 
+    if not isinstance(baseui, ui.ui):
+        baseui = ui.ui()
+    
     my_ui = ui.ui()
     my_ui.setconfig('ui', 'report_untrusted', 'off')
     my_ui.setconfig('ui', 'interactive', 'off')
 
-    repos_dict = {}
+    repos_list = []
     for name, path in repos:
-        u = my_ui.copy()
-
         try:
-            u.readconfig(os.path.join(path, '.hg', 'hgrc'))
-        except Exception, e:
-            u.warn('error reading %s/.hg/hgrc: %s\n') % (path, e)
-            continue
-
-        #skip hidden repo
-        if u.configbool("web", "hidden", untrusted=True):
-            continue
-
-        #skip not allowed
-#       if not self.read_allowed(u, req):
-#           continue
-
-        try:
-            r = localrepository(my_ui, path)
-            repos_dict[name] = r
+            r = MercurialRepository(path, baseui)
+            repos_list.append(r)
         except OSError:
             continue
-    return repos_dict
+    return repos_list
+
 
 def check_repo_dir(path):
     """
@@ -80,33 +65,75 @@ def check_repo_dir(path):
     if not os.path.isdir(os.path.join(*repos_path)):
         raise RepositoryError('Not a valid repository in %s' % path[0][1])
 
-def is_mercurial_repo(path):
-    path = path.replace('*', '')
-    try:
-        hg.repository(ui.ui(), path)
-        return True
-    except (RepoError):
-        return False
+
 
 class MercurialRepository(BaseRepository):
     """
     Mercurial repository backend
     """
 
-    def __init__(self, repo_path, **kwargs):
+    def __init__(self, repo_path, baseui, **kwargs):
         """
         Constructor
         """
-        baseui = ui.ui()
-        self.repo = localrepository(baseui, path=repo_path)
+        self.repo = self._is_mercurial_repo(repo_path)
+        self.baseui = baseui
+        self.name = self.get_name()
+        self.description = self.get_description()
+        self.contact = self.get_contact()
+        self.last_change = self.get_last_change()
         self.revisions = list(self.repo)
         self.changesets = {}
 
+    def _is_mercurial_repo(self, path):
+        """
+        Function will check for mercurial repository in given path and return
+        a localrepo object. If there is no repository in that path it will raise
+        an exception
+        @param path:
+        """
+        path = path.replace('*', '')
+        try:
+            return  localrepository(ui.ui(), path)
+        except (RepoError):
+            raise RepositoryError('Not a valid repository in %s' % path)
+    
+    def get_description(self):
+        undefined_description = 'unknown'
+        return self.repo.ui.config('web', 'description',
+                                   undefined_description, untrusted=True)
+    
+    def get_contact(self):
+        from mercurial.hgweb.common import get_contact
+        undefined_contact = 'Unknown'
+        return get_contact(self.repo.ui.config) or undefined_contact
+    
+    def get_last_change(self):
+        from mercurial.util import makedate        
+        return (self._get_mtime(self.repo.spath), makedate()[1])
+    
+    def _get_mtime(self, spath):
+        cl_path = os.path.join(spath, "00changelog.i")
+        if os.path.exists(cl_path):
+            return os.stat(cl_path).st_mtime
+        else:
+            return os.stat(spath).st_mtime   
+        
+    def _get_hidden(self):
+        return self.repo.ui.configbool("web", "hidden", untrusted=True)
+        
     def _get_revision(self, revision):
         if revision in (None, 'tip'):
             revision = self.revisions[-1]
         return revision
-
+    
+    def _get_archive_list(self):
+        allowed = self.baseui.configlist("web", "allow_archive", untrusted=True)
+        for i in [('zip', '.zip'), ('gz', '.tar.gz'), ('bz2', '.tar.bz2')]:
+            if i[0] in allowed or self.repo.ui.configbool("web", "allow" + i[0],
+                                                untrusted=True):
+                yield {"type" : i[0], "extension": i[1], "node": 'tip'}        
+        
     def get_changeset(self, revision=None):
         """
         Returns ``MercurialChangeset`` object representing repository's
