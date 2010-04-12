@@ -13,11 +13,13 @@ class MercurialRepositoryTest(unittest.TestCase):
 
     def test_repo_create(self):
         wrong_repo_path = '/tmp/errorrepo'
-        self.assertRaises(RepositoryError, MercurialRepository, repo_path=wrong_repo_path)
-        
-        
+        self.assertRaises(RepositoryError, MercurialRepository,
+            repo_path=wrong_repo_path)
+
+
     def test_revisions(self):
         # there are 21 revisions at bitbucket now
+        # so we can assume they would be available from now on
         subset = set(range(0, 22))
         self.assertTrue(subset.issubset(set(self.repo.revisions)))
 

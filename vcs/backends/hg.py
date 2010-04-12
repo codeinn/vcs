@@ -37,7 +37,7 @@ def get_repositories(repos_prefix, repos_path, baseui):
 
     if not isinstance(baseui, ui.ui):
         baseui = ui.ui()
-    
+
     my_ui = ui.ui()
     my_ui.setconfig('ui', 'report_untrusted', 'off')
     my_ui.setconfig('ui', 'interactive', 'off')
@@ -84,6 +84,7 @@ class MercurialRepository(BaseRepository):
         self.last_change = self.get_last_change()
         self.revisions = list(self.repo)
         self.changesets = {}
+        self.path = repo_path
 
     def _is_mercurial_repo(self, path):
         """
@@ -97,43 +98,43 @@ class MercurialRepository(BaseRepository):
             return  localrepository(ui.ui(), path)
         except (RepoError):
             raise RepositoryError('Not a valid repository in %s' % path)
-    
+
     def get_description(self):
         undefined_description = 'unknown'
         return self.repo.ui.config('web', 'description',
                                    undefined_description, untrusted=True)
-    
+
     def get_contact(self):
         from mercurial.hgweb.common import get_contact
         undefined_contact = 'Unknown'
         return get_contact(self.repo.ui.config) or undefined_contact
-    
+
     def get_last_change(self):
-        from mercurial.util import makedate        
+        from mercurial.util import makedate
         return (self._get_mtime(self.repo.spath), makedate()[1])
-    
+
     def _get_mtime(self, spath):
         cl_path = os.path.join(spath, "00changelog.i")
         if os.path.exists(cl_path):
             return os.stat(cl_path).st_mtime
         else:
-            return os.stat(spath).st_mtime   
-        
+            return os.stat(spath).st_mtime
+
     def _get_hidden(self):
         return self.repo.ui.configbool("web", "hidden", untrusted=True)
-        
+
     def _get_revision(self, revision):
         if revision in (None, 'tip'):
             revision = self.revisions[-1]
         return revision
-    
+
     def _get_archive_list(self):
         allowed = self.baseui.configlist("web", "allow_archive", untrusted=True)
         for i in [('zip', '.zip'), ('gz', '.tar.gz'), ('bz2', '.tar.bz2')]:
             if i[0] in allowed or self.repo.ui.configbool("web", "allow" + i[0],
                                                 untrusted=True):
-                yield {"type" : i[0], "extension": i[1], "node": 'tip'}        
-        
+                yield {"type" : i[0], "extension": i[1], "node": 'tip'}
+
     def get_changeset(self, revision=None):
         """
         Returns ``MercurialChangeset`` object representing repository's
