@@ -144,6 +144,15 @@ class MercurialRepository(BaseRepository):
             self.changesets[revision] = changeset
         return self.changesets[revision]
 
+    def get_changesets(self, limit=10):
+        """
+        Return last n number of ``MercurialChangeset`` specified by limit 
+        attribute
+        @param limit:
+        """
+        for i in reversed(self.revisions[-limit:]): 
+            yield self.get_changeset(i)
+                    
     def get_name(self):
         return self.repo.path.split('/')[-2]
 
