@@ -62,6 +62,14 @@ class MercurialRepositoryTest(unittest.TestCase):
         self.assertTrue(hasattr(node, 'kind'))
         self.assertEqual(node.kind, NodeKind.FILE)
 
+    def test_not_existing_changeset(self):
+        self.assertRaises(RepositoryError, self.repo.get_changeset,
+            self.repo.revisions[-1] + 1)
+
+        # Small chance we ever get to this one
+        revision = pow(2, 100)
+        self.assertRaises(RepositoryError, self.repo.get_changeset, revision)
+
     def test_changeset10(self):
 
         chset10 = self.repo.get_changeset(10)

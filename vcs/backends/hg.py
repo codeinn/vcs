@@ -126,6 +126,9 @@ class MercurialRepository(BaseRepository):
     def _get_revision(self, revision):
         if revision in (None, 'tip'):
             revision = self.revisions[-1]
+        elif revision not in self.revisions:
+            raise RepositoryError("Revision %r does not exist for this "
+                "repository %s" % (revision, self))
         return revision
 
     def _get_archive_list(self):
@@ -140,6 +143,7 @@ class MercurialRepository(BaseRepository):
         Returns ``MercurialChangeset`` object representing repository's
         changeset at the given ``revision``.
         """
+        revision = self._get_revision(revision)
         if not self.changesets.has_key(revision):
             changeset = MercurialChangeset(repository=self, revision=revision)
             self.changesets[revision] = changeset
