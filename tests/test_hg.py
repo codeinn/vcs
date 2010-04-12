@@ -13,11 +13,13 @@ class MercurialRepositoryTest(unittest.TestCase):
 
     def test_repo_create(self):
         wrong_repo_path = '/tmp/errorrepo'
-        self.assertRaises(RepositoryError, MercurialRepository, repo_path=wrong_repo_path)
-        
-        
+        self.assertRaises(RepositoryError, MercurialRepository,
+            repo_path=wrong_repo_path)
+
+
     def test_revisions(self):
         # there are 21 revisions at bitbucket now
+        # so we can assume they would be available from now on
         subset = set(range(0, 22))
         self.assertTrue(subset.issubset(set(self.repo.revisions)))
 
@@ -59,6 +61,14 @@ class MercurialRepositoryTest(unittest.TestCase):
         node = init_chset.get_node('vcs/__init__.py')
         self.assertTrue(hasattr(node, 'kind'))
         self.assertEqual(node.kind, NodeKind.FILE)
+
+    def test_not_existing_changeset(self):
+        self.assertRaises(RepositoryError, self.repo.get_changeset,
+            self.repo.revisions[-1] + 1)
+
+        # Small chance we ever get to this one
+        revision = pow(2, 100)
+        self.assertRaises(RepositoryError, self.repo.get_changeset, revision)
 
     def test_changeset10(self):
 
