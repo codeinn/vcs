@@ -1,0 +1,24 @@
+{% extends "richtemplates/layout/menu_top.html" %}
+
+{% block menu_top_left %}
+<li><a href="{% url index %}">Home</a></li>
+<li><a href="{% url hgwiki_home %}">Wiki</a></li>
+{% endblock %}
+
+{% block menu_top_right %}
+    <li>User: {{ user }}</li>
+    {# Uncomment list item below in order to show login/logout links #}
+    {% comment %}
+    <li>
+        {% if user.is_authenticated %}
+        <a href="{% url auth_logout %}">Log out</a>
+        {% else %}
+        <a href="{% url auth_login %}">Log in</a>
+        {% endif %}
+    </li>
+    {% endcomment %}
+    {% if user.is_staff %}
+        <li><a href="/admin/">Admin</a> |</li>
+    {% endif %}
+{% endblock %}
+

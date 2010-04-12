@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Wiki{% endblock %}
+
+{% block menu_top %}{{ block.super }}
+<div class="menu-top-submenu">
+    <ul class="menu-top-left">
+        <li><a href="{% url hgwiki_home %}">Wiki home</a></li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block col_left_title %}Left column title{% endblock %}
+{% block col_left_content %}
+    <ul class="nav-vertical">
+        <li><a href="{% url hgwiki_home %}">Home</a></li>
+    </ul>
+{% endblock %}
+
+{% block col_main_title %}Main column title{% endblock %}
+{% block col_main_content %}
+<h1>Wiki List</h1>
+
+    <table class="datatable">
+        <thead class="datatable-thead">
+            <tr class="datatable-thead-subheader">
+                <th>#Id</th>
+                <th>Name</th>
+            </tr>
+        </thead>
+        <tbody class="datatable-tbody">
+            {% for wiki in wiki_list %}
+            <tr class="{% cycle "odd" "even" %} hoberable">
+                <td>{{ wiki.id }}</td>
+                <td>{{ wiki.name }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}
+

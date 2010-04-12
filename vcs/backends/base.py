@@ -19,6 +19,12 @@ class BaseRepository(object):
     @attr path: absolute local path to the repository
     """
 
+    def init(self):
+        """
+        Creates repository at the self.path location.
+        """
+        raise NotImplementedError()
+
     def get_owner(self):
         raise NotImplementedError
 

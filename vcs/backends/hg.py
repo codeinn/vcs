@@ -13,8 +13,7 @@ import datetime
 
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, VCSError, ChangesetError
-from vcs.nodes import Node, FileNode, DirNode, NodeKind
-from vcs.utils.lazy import LazyProperty
+from vcs.nodes import FileNode, DirNode, NodeKind
 
 from mercurial import ui
 from mercurial.localrepo import localrepository
@@ -76,15 +75,16 @@ class MercurialRepository(BaseRepository):
         """
         Constructor
         """
-        self.repo = self._is_mercurial_repo(repo_path)
+        #self.repo = self._is_mercurial_repo(repo_path)
+        self.path = repo_path
         self.baseui = baseui
+        self.repo = self.init()
         self.name = self.get_name()
         self.description = self.get_description()
         self.contact = self.get_contact()
         self.last_change = self.get_last_change()
         self.revisions = list(self.repo)
         self.changesets = {}
-        self.path = repo_path
 
     def _is_mercurial_repo(self, path):
         """
@@ -98,6 +98,16 @@ class MercurialRepository(BaseRepository):
             return  localrepository(ui.ui(), path)
         except (RepoError):
             raise RepositoryError('Not a valid repository in %s' % path)
+
+    def init(self):
+        """
+        Initializes repository.
+        """
+        try:
+            repo = localrepository(ui.ui(), self.path, create=True)
+        except RepoError:
+            repo = localrepository(ui.ui(), self.path)
+        return repo
 
     def get_description(self):
         undefined_description = 'unknown'
@@ -151,13 +161,13 @@ class MercurialRepository(BaseRepository):
 
     def get_changesets(self, limit=10):
         """
-        Return last n number of ``MercurialChangeset`` specified by limit 
+        Return last n number of ``MercurialChangeset`` specified by limit
         attribute
         @param limit:
         """
-        for i in reversed(self.revisions[-limit:]): 
+        for i in reversed(self.revisions[-limit:]):
             yield self.get_changeset(i)
-                    
+
     def get_name(self):
         return self.repo.path.split('/')[-2]
 
