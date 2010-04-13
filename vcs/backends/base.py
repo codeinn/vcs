@@ -62,7 +62,7 @@ class BaseRepository(object):
     #===========================================================================
     # TAGS
     #===========================================================================
-    def get_tags(self, since, limit):
+    def get_tags(self, since='', limit=10):
         raise NotImplementedError
 
     def get_tag_by_name(self, tag_name):
@@ -74,7 +74,7 @@ class BaseRepository(object):
     #===========================================================================
     # BRANCHES
     #===========================================================================
-    def get_branches(self, since, limit):
+    def get_branches(self, since='', limit=10):
         raise NotImplementedError
 
     def get_branch_by_name(self, branch_name):
