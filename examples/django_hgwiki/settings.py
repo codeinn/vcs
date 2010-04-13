@@ -91,6 +91,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.messages',
+    'django.contrib.markup',
 
     'vcs.web.simplevcs',
     'django_hgwiki',
@@ -110,6 +111,9 @@ TEMPLATE_CONTEXT_PROCESSORS = global_settings.TEMPLATE_CONTEXT_PROCESSORS + (
     'django.contrib.messages.context_processors.messages',
     'richtemplates.context_processors.media',
 )
+
+DJALOG_USE_COLORS = True
+DJALOG_LEVEL = 5
 
 # ============ #
 # VCS SETTINGS #

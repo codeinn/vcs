@@ -6,6 +6,7 @@
 <div class="menu-top-submenu">
     <ul class="menu-top-left">
         <li><a href="{% url hgwiki_home %}">Wiki home</a></li>
+        <li><a href="{% url hgwiki_wiki_list %}">Wiki list</a></li>
     </ul>
 </div>
 {% endblock %}
@@ -17,26 +18,10 @@
     </ul>
 {% endblock %}
 
-{% block col_main_title %}Main column title{% endblock %}
+{% block col_main_title %}Mercurial wiki{% endblock %}
 {% block col_main_content %}
-<h1>Wiki List</h1>
+<h1>HGWiki</h1>
 
-    <table class="datatable">
-        <thead class="datatable-thead">
-            <tr class="datatable-thead-subheader">
-                <th>#Id</th>
-                <th>Name</th>
-            </tr>
-        </thead>
-        <tbody class="datatable-tbody">
-            {% for wiki in wiki_list %}
-            <tr class="{% cycle "odd" "even" %} hoberable">
-                <td>{{ wiki.id }}</td>
-                <td>{{ wiki.name }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
 
 {% endblock %}
 

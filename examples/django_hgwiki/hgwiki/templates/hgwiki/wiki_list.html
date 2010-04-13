@@ -1,0 +1,35 @@
+{% extends "hgwiki/home.html" %}
+
+{% block title %}Wiki{% endblock %}
+
+{% block col_left_title %}Left column title{% endblock %}
+{% block col_left_content %}
+    <ul class="nav-vertical">
+        <li><a href="{% url hgwiki_home %}">Home</a></li>
+    </ul>
+{% endblock %}
+
+{% block col_main_title %}Main column title{% endblock %}
+{% block col_main_content %}
+<h1>Wiki List</h1>
+
+    <table class="datatable">
+        <thead class="datatable-thead">
+            <tr class="datatable-thead-subheader">
+                <th class="width-10">#Id</th>
+                <th>Name</th>
+            </tr>
+        </thead>
+        <tbody class="datatable-tbody">
+            {% for wiki in wiki_list %}
+            <tr class="{% cycle "odd" "even" %} hoberable">
+                <td>{{ wiki.id }}</td>
+                <td><a href="{% url hgwiki_wiki_detail wiki.slug %}">{{ wiki.title }}</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}
+
+

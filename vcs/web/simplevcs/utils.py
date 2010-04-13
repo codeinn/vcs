@@ -205,6 +205,7 @@ def hgrepo_detail(request, project_slug):
             % (err, f.getvalue())
         logging.error(msg)
         raise err
+    print "returning resposnse: \n%s" % response.__dict__
     return response
 
 def is_mercurial(request):

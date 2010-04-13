@@ -1,0 +1,23 @@
+{% extends "hgwiki/home.html" %}
+
+{% load markup %}
+{% block title %}Wiki{% endblock %}
+
+{% block col_left_title %}Left column title{% endblock %}
+{% block col_left_content %}
+    <ul class="nav-vertical">
+        <li><a href="{% url hgwiki_home %}">Home</a></li>
+    </ul>
+{% endblock %}
+
+{% block col_main_title %}Main column title{% endblock %}
+{% block col_main_content %}
+<h1>Wiki List</h1>
+
+<div id="main" class="richblock">
+    {{ wiki.content|restructuredtext }}
+</div>
+
+{% endblock %}
+
+
