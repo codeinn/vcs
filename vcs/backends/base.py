@@ -19,11 +19,22 @@ class BaseRepository(object):
     @attr path: absolute local path to the repository
     """
 
-    def init(self):
+    def __init__(self, repo_path, create=False, **kwargs):
         """
-        Creates repository at the self.path location.
+        Initializes repository. Raises RepositoryError if repository could
+        not be find at the given ``repo_path``.
+
+        @param repo_path: local path of the repository
+        @param create=False: if set to True, would try to craete repository if
+           it does not exist rather than raising exception
         """
-        raise NotImplementedError()
+        raise NotImplementedError
+
+    def is_valid(self):
+        """
+        Validates repository.
+        """
+        raise NotImplementedError
 
     def get_owner(self):
         raise NotImplementedError
@@ -35,13 +46,6 @@ class BaseRepository(object):
         raise NotImplementedError
 
     def get_name(self):
-        raise NotImplementedError
-
-    def list_directory(self, path, revision=None):
-        """
-        Returns a list of files in a directory at a given
-        revision, or HEAD if revision is None.
-        """
         raise NotImplementedError
 
     #===========================================================================
@@ -90,25 +94,6 @@ class BaseRepository(object):
         raise NotImplementedError
 
     def get_files(self, limit):
-        raise NotImplementedError
-
-    def create_repository(self, repo_path, repo_name):
-        """
-        Create a repository on filesystem or throws an exception on fail
-        """
-        raise NotImplementedError
-
-    def is_valid_repository(self, repo_path):
-        """
-        Check if there is a valid repository in given location
-        """
-        raise NotImplementedError
-
-    def can_create_repository(self):
-        """
-        Checks if is possible to create repository by checking the permissions
-        and path
-        """
         raise NotImplementedError
 
 class BaseChangeset(object):

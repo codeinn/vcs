@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-from vcs import get_repo
+from vcs import get_repo, RepositoryError
 from vcs.utils.lazy import LazyProperty
 from vcs.web.simplevcs.settings import AVAILABLE_BACKENDS
 
@@ -14,6 +14,9 @@ class Repository(models.Model):
 
     @LazyProperty
     def _repo(self):
+        if not self.id:
+            raise ValidationError("Cannot access backend repository "
+                "object until model is saved")
         repo = get_repo(self.type, path=self.path)
         return repo
 
@@ -24,13 +27,13 @@ class Repository(models.Model):
     def __unicode__(self):
         return self.path
 
-    def init(self):
-        self._repo.init()
-
     def get_changeset(self, revision=None):
         return self._repo.get_changeset(revision)
 
     def save(self, *args, **kwargs):
-        self._repo.init()
+        try:
+            self.repo = get_repo(self.type, path=self.path, create=True)
+        except RepositoryError:
+            self.repo = get_repo(self.type, path=self.path)
         super(Repository, self).save(*args, **kwargs)
 

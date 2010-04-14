@@ -1,5 +1,3 @@
-import logging
-
 from django.views.generic.simple import direct_to_template
 from django.views.generic.list_detail import object_list, object_detail
 from django.shortcuts import get_object_or_404

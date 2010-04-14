@@ -26,6 +26,10 @@ DATABASES = {
     }
 }
 
+if DATABASES['default']['ENGINE'] == 'sqlite3' and \
+    not DATABASES['default']['NAME'].startswith(':'):
+    DATABASES['default']['NAME'] = os.path.abspath(
+        os.path.join(PROJECT_ROOT, DATABASES['default']['NAME']))
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
@@ -75,7 +79,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
 )
 
-ROOT_URLCONF = 'django_hgwiki.urls'
+ROOT_URLCONF = 'django_simplehgwiki.urls'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -94,7 +98,7 @@ INSTALLED_APPS = (
     'django.contrib.markup',
 
     'vcs.web.simplevcs',
-    'django_hgwiki',
+    'django_simplehgwiki',
     'hgwiki',
 
     # some community standard apps

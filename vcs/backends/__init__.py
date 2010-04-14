@@ -6,13 +6,13 @@ BACKENDS = {
     'hg': 'vcs.backends.hg.MercurialRepository',
 }
 
-def get_repo(alias, path):
+def get_repo(alias, path, create=False):
     """
     Returns ``Repository`` object of type linked with given ``alias`` at
     the specified ``path``.
     """
     backend = get_backend(alias)
-    repo = backend(path)
+    repo = backend(path, create=create)
     return repo
 
 def get_backend(alias):

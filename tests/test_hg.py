@@ -13,9 +13,7 @@ class MercurialRepositoryTest(unittest.TestCase):
 
     def test_repo_create(self):
         wrong_repo_path = '/tmp/errorrepo'
-        self.assertRaises(RepositoryError, MercurialRepository,
-            repo_path=wrong_repo_path)
-
+        self.assertRaises(RepositoryError, MercurialRepository, wrong_repo_path)
 
     def test_revisions(self):
         # there are 21 revisions at bitbucket now

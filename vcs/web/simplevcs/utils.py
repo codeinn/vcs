@@ -152,7 +152,6 @@ def ask_basic_auth(request):
     """
     response = HttpResponse()
     response.status_code = 401
-    response['www-authenticate'] = 'Basic realm="%s"'\
-        % BASIC_AUTH_REALM
+    response['www-authenticate'] = 'Basic realm="%s"' % BASIC_AUTH_REALM
     return response
 

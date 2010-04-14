@@ -71,14 +71,21 @@ class MercurialRepository(BaseRepository):
     Mercurial repository backend
     """
 
-    def __init__(self, repo_path, baseui=None):
+    def __init__(self, repo_path, create=False, baseui=ui.ui()):
         """
-        Constructor
+        Initializes repository. Raises RepositoryError if repository could
+        not be find at the given ``repo_path``.
+
+        @param repo_path: local path of the repository
+        @param create=False: if set to True, would try to craete repository if
+           it does not exist rather than raising exception
+        @param baseui=mercurial.ui.ui(): user data
         """
-        #self.repo = self._is_mercurial_repo(repo_path)
+
         self.path = repo_path
         self.baseui = baseui
-        self.repo = self.init()
+        # We've set path and ui, now we can set repo itself
+        self._set_repo(create)
         self.name = self.get_name()
         self.description = self.get_description()
         self.contact = self.get_contact()
@@ -86,28 +93,23 @@ class MercurialRepository(BaseRepository):
         self.revisions = list(self.repo)
         self.changesets = {}
 
-    def _is_mercurial_repo(self, path):
+    def _set_repo(self, create):
         """
         Function will check for mercurial repository in given path and return
         a localrepo object. If there is no repository in that path it will raise
-        an exception
-        @param path:
-        """
-        path = path.replace('*', '')
-        try:
-            return  localrepository(ui.ui(), path)
-        except (RepoError):
-            raise RepositoryError('Not a valid repository in %s' % path)
-
-    def init(self):
-        """
-        Initializes repository.
+        an exception unless ``create`` parameter is set to True - in that case
+        repository would be created and returned.
         """
         try:
-            repo = localrepository(ui.ui(), self.path, create=True)
-        except RepoError:
-            repo = localrepository(ui.ui(), self.path)
-        return repo
+            self.repo = localrepository(self.baseui, self.path, create=create)
+        except RepoError, err:
+            if create:
+                msg = "Cannot create repository at %s. Original error was %s"\
+                    % (self.path, err)
+            else:
+                msg = "Not valid repository at %s. Original error was %s"\
+                    % (self.path, err)
+            raise RepositoryError(msg)
 
     def get_description(self):
         undefined_description = 'unknown'
