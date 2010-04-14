@@ -37,7 +37,7 @@ There is no need to import everything from ``vcs`` - in fact, all you'd need is
 to import ``get_repo``, at least for now. Then, simply initialize repository
 object by providing it's type and path.
 
-.. code-block:: python
+.. code-block:: pycon
 
    >>> from vcs import get_repo
    >>>

@@ -11,6 +11,7 @@ class Wiki(models.Model):
     slug = models.SlugField(unique=True)
     repository = models.ForeignKey(Repository)
     content = models.TextField(default='')
+    #private = models.BooleanField(default=True)
 
     class Meta:
         ordering = ('title',)

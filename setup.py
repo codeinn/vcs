@@ -16,7 +16,7 @@ setup(
     version = VERSION,
     url = 'http://bitbucket.org/marcinkuzminski/vcs/',
     author = 'Marcin Kuzminski, Lukasz Balcerzak',
-    author_email = 'marcinkuzminski@gmail.com',
+    author_email = 'marcin@python-blog.com',
     description = vcs.__doc__,
     long_description = long_description,
     zip_safe = False,
