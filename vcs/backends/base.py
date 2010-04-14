@@ -8,6 +8,7 @@ Created on Apr 8, 2010
 
 @author: marcink,lukaszb
 """
+from vcs.utils.lazy import LazyProperty
 
 class BaseRepository(object):
     """
@@ -17,6 +18,8 @@ class BaseRepository(object):
     @attr revisions: list of all available revisions' ids
     @attr changesets: storage dict caching returned changesets
     @attr path: absolute local path to the repository
+    @attr branches: branches as list of strings
+    @attr tags: tags as list of strings
     """
 
     def __init__(self, repo_path, create=False, **kwargs):
@@ -30,23 +33,32 @@ class BaseRepository(object):
         """
         raise NotImplementedError
 
+    def __str__(self):
+        return '<%s at %s>' % (self.__class__.__name__, self.path)
+
+    def __repr__(self):
+        return self.__str__()
+
+    @LazyProperty
+    def name(self):
+        raise NotImplementedError
+
+    @LazyProperty
+    def owner(self):
+        raise NotImplementedError
+
+    @LazyProperty
+    def description(self):
+        raise NotImplementedError
+
     def is_valid(self):
         """
         Validates repository.
         """
         raise NotImplementedError
 
-    def get_owner(self):
-        raise NotImplementedError
-
     def get_last_change(self):
         self.get_changesets(limit=1)
-
-    def get_description(self):
-        raise NotImplementedError
-
-    def get_name(self):
-        raise NotImplementedError
 
     #===========================================================================
     # CHANGESETS
@@ -58,6 +70,24 @@ class BaseRepository(object):
         """
         raise NotImplementedError
 
+    def __getitem__(self, revision):
+        """
+        Allows Repository objects to act as dict-like object to get Changeset
+        at given ``revision``.
+
+        *Requires* implementation of ``get_changeset(self, revision)`` method.
+        """
+        return self.get_changeset(revision)
+
+    def __iter__(self):
+        """
+        Allows Repository objects to be iterated.
+
+        *Requires* implementation of ``__getitem__`` method.
+        """
+        for revision in self.revisions:
+            yield self[revision]
+
     def get_changesets(self, since=None, limit=None):
         """
         Returns all commits since given ``since`` parameter. If ``since`` is
@@ -68,6 +98,11 @@ class BaseRepository(object):
         @param limit: integer value for limit
         """
         raise NotImplementedError
+
+    def request(self, path, revision=None):
+        chset = self.get_changeset(revision)
+        node = chset.get_node(path)
+        return node
 
     #===========================================================================
     # TAGS
@@ -107,7 +142,24 @@ class BaseChangeset(object):
     @attr author: author of the changeset
     @attr message: message of the changeset
     @attr size: integer size in bytes
+    @attr branch: title of the branch, as string
+    @attr tags: list of tags, as list of strings
     """
+
+    def __str__(self):
+        return '<%s at %s>' % (self.__class__.__name__, self.revision)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __getitem__(self, path):
+        return self.get_node(path)
+
+    def _get_file_content(self, path):
+        """
+        Returns content of the file at the given ``path``.
+        """
+        raise NotImplementedError
 
     def get_node(self, path):
         """

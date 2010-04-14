@@ -32,7 +32,6 @@ class Node(object):
             raise NodeError("Only DirNode and its subclasses may be initialized"
                 " with empty path")
         self.kind = kind
-        self.name = path.rstrip('/').split('/')[-1]
         self.dirs, self.files = [], []
         if self.is_root() and not self.is_dir():
             raise NodeError, "Root node cannot be FILE kind"
@@ -44,6 +43,14 @@ class Node(object):
             return Node(parent_path, NodeKind.DIR)
         return None
 
+    @LazyProperty
+    def name(self):
+        """
+        Returns name of the node so if its path
+        then only last part is returned.
+        """
+        return self.path.rstrip('/').split('/')[-1]
+
     def _get_kind(self):
         return self._kind
 
@@ -53,8 +60,8 @@ class Node(object):
         else:
             self._kind = kind
             # Post setter check (path's trailing slash)
-            if self.is_file() and self.path.endswith('/'):
-                raise NodeError, "File nodes' paths cannot end with slash"
+            if self.path.endswith('/'):
+                raise NodeError, "Node's path cannot end with slash"
             #elif not self.path=='' and self.is_dir() and \
             #        not self.path.endswith('/'):
             #    raise NodeError, "Dir nodes' paths must end with slash"
@@ -80,18 +87,13 @@ class Node(object):
         return not self == other
 
     def __repr__(self):
-        return '<Node %r>' % self.path
+        return '<%s %r>' % (self.__class__.__name__, self.path)
+
+    def __str__(self):
+        return self.__repr__()
 
     def __unicode__(self):
         return unicode(self.name)
-
-    @staticmethod
-    def get_name(path):
-        """
-        Returns name of the node so if its path
-        then only last part is returned.
-        """
-        return path.split('/')[-1]
 
     def get_parent_path(self):
         """
@@ -131,21 +133,39 @@ class FileNode(Node):
     Class representing file nodes.
     """
 
-    def __init__(self, path, content=None):
+    def __init__(self, path, content=None, changeset=None):
+        """
+        Constructor. Only one of ``content`` and ``changeset`` may be given.
+
+        @attr path: path to the node, relative to repostiory's root
+        @attr content: if given arbitrary sets content of the file
+        @attr changeset: if given, first time content is accessed, callback
+              function fetching content using changeset would be used
+        """
+
+        if content and changeset:
+            raise NodeError("Cannot set both content and changeset")
         super(FileNode, self).__init__(path, kind=NodeKind.FILE)
-        self.content = content
+        self.changeset = changeset
+        self._content = content
+
+    @LazyProperty
+    def content(self):
+        if self.changeset:
+            return self.changeset._get_file_content(self.path)
+        else:
+            return self._content
 
     @LazyProperty
     def nodes(self):
         raise NodeError("%s represents a file and has no ``nodes`` attribute"
             % self)
 
-    def __repr__(self):
-        return '<FileNode %r>' % self.path
-
 class DirNode(Node):
     """
     DirNode stores list of files and directories within this node.
+    Nodes may be used standalone but within repository context they
+    lazily fetch data within same repositorie's changeset.
     """
 
     def __init__(self, path, nodes=()):
@@ -157,16 +177,23 @@ class DirNode(Node):
         raise NodeError("%s represents a dir and has no ``content`` attribute"
             % self)
 
-    def __repr__(self):
-        return '<DirNode %r>' % self.path
+    def __iter__(self):
+        for node in self.nodes:
+            yield node
 
-    def get_nodes(self):
+    def __getitem__(self, path):
+        try:
+            return self._nodes[path]
+        except KeyError:
+            raise NodeError("Node does not exist at %s" % path)
+
+    def _get_nodes(self):
         """
         Returns combined files and dirs nodes within this dirnode.
         """
-        return self._nodes
+        return sorted(self._nodes.values())
 
-    def set_nodes(self, nodes):
+    def _set_nodes(self, nodes):
         """
         Sets combined files and dirs for this dirnode. Backends should set this
         attribute.
@@ -174,18 +201,21 @@ class DirNode(Node):
         if not self.is_dir():
             raise NodeError("Is not a dir!")
 
-        self.files = [node for node in nodes if node.is_file()]
-        self.dirs = [node for node in nodes if node.is_dir()]
+        self.files = sorted([node for node in nodes if node.is_file()])
+        self.dirs = sorted([node for node in nodes if node.is_dir()])
 
-        self._nodes = nodes
+        self._nodes = dict((node.path, node) for node in nodes)
 
-    nodes = property(get_nodes, set_nodes)
+    nodes = property(_get_nodes, _set_nodes)
 
-class RootNode(Node):
+class RootNode(DirNode):
     """
     DirNode being the root node of the repository.
     """
 
     def __init__(self, nodes=()):
-        super(DirNode, self).__init__(path='', kind=NodeKind.DIR)
+        super(RootNode, self).__init__(path='', nodes=nodes)
+
+    def __repr__(self):
+        return '<%s>' % self.__class__.__name__
 

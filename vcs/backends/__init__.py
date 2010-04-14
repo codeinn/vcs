@@ -1,5 +1,6 @@
 from pprint import pformat
 from vcs.exceptions import VCSError
+from vcs.utils import abspath
 from vcs.utils.imports import import_class
 
 BACKENDS = {
@@ -11,6 +12,7 @@ def get_repo(alias, path, create=False):
     Returns ``Repository`` object of type linked with given ``alias`` at
     the specified ``path``.
     """
+    path = abspath(path)
     backend = get_backend(alias)
     repo = backend(path, create=create)
     return repo

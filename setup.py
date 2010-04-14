@@ -1,3 +1,4 @@
+import sys
 from setuptools import setup, find_packages
 
 vcs = __import__('vcs')
@@ -23,7 +24,7 @@ setup(
     test_suite = 'nose.collector',
     test_requires = ['nose'],
     install_requires = [
-        'nose', 'restkit', 'simplejson', 'mercurial',
+        'nose', 'mercurial',
     ],
     include_package_data = True,
     classifiers = [

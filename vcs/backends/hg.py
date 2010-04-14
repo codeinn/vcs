@@ -13,7 +13,9 @@ import datetime
 
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, VCSError, ChangesetError
-from vcs.nodes import FileNode, DirNode, NodeKind
+from vcs.nodes import FileNode, DirNode, NodeKind, RootNode
+from vcs.utils import abspath
+from vcs.utils.lazy import LazyProperty
 
 from mercurial import ui
 from mercurial.localrepo import localrepository
@@ -82,16 +84,27 @@ class MercurialRepository(BaseRepository):
         @param baseui=mercurial.ui.ui(): user data
         """
 
-        self.path = repo_path
+        self.path = abspath(repo_path)
         self.baseui = baseui
         # We've set path and ui, now we can set repo itself
         self._set_repo(create)
-        self.name = self.get_name()
         self.description = self.get_description()
         self.contact = self.get_contact()
         self.last_change = self.get_last_change()
         self.revisions = list(self.repo)
         self.changesets = {}
+
+    @LazyProperty
+    def name(self):
+        return os.path.basename(self.path)
+
+    @LazyProperty
+    def branches(self):
+        return self.repo.branchmap().keys()
+
+    @LazyProperty
+    def tags(self):
+        return self.repo.tags().keys()
 
     def _set_repo(self, create):
         """
@@ -170,9 +183,6 @@ class MercurialRepository(BaseRepository):
         for i in reversed(self.revisions[-limit:]):
             yield self.get_changeset(i)
 
-    def get_name(self):
-        return self.repo.path.split('/')[-2]
-
 class MercurialChangeset(BaseChangeset):
     """
     Represents state of the repository at the single revision.
@@ -185,10 +195,17 @@ class MercurialChangeset(BaseChangeset):
         self._ctx = ctx
         self.author = ctx.user()
         self.message = ctx.description()
+        self.branch = ctx.branch()
+        self.tags = ctx.tags()
         self.date = datetime.datetime.fromtimestamp(sum(ctx.date()))
         self._file_paths = list(ctx)
         self._dir_paths = list(set(map(os.path.dirname, self._file_paths)))
+        self._paths = self._dir_paths + self._file_paths
         self.nodes = {}
+
+    @LazyProperty
+    def _paths(self):
+        return self._dir_paths + self._file_paths
 
     def _fix_path(self, path):
         """
@@ -219,7 +236,7 @@ class MercurialChangeset(BaseChangeset):
         fctx = self._ctx[path]
         return fctx.data()
 
-    def _get_dir_nodes(self, path):
+    def _get_nodes(self, path):
         """
         Returns combined file and dir nodes for a DirNode at the given ``path``.
         """
@@ -227,9 +244,11 @@ class MercurialChangeset(BaseChangeset):
             raise ChangesetError("Directory does not exist for revision %r at "
                 " %r" % (self.revision, path))
         path = self._fix_path(path)
-        filenodes = [FileNode(f, content=None) for f in self._file_paths
+        filenodes = [FileNode(f, changeset=self) for f in self._file_paths
             if os.path.dirname(f) == path]
-        dirs = set(map(os.path.dirname, self._file_paths))
+        #dirs = set(map(os.path.dirname, self._file_paths))
+        dirs = set((path for path in map(os.path.dirname, self._file_paths)
+            if path))
         dirnodes = [DirNode(d, nodes=[]) for d in dirs
             if os.path.dirname(d) == path]
         nodes = dirnodes + filenodes
@@ -240,11 +259,15 @@ class MercurialChangeset(BaseChangeset):
         path = self._fix_path(path)
         if not path in self.nodes:
             if path in self._file_paths:
-                content = self._get_file_content(path)
-                node = FileNode(path, content=content)
+                #content = self._get_file_content(path)
+                #node = FileNode(path, content=content)
+                node = FileNode(path, changeset=self)
             elif path in self._dir_paths or path in self._dir_paths:
-                nodes = self._get_dir_nodes(path)
-                node = DirNode(path, nodes=nodes)
+                nodes = self._get_nodes(path)
+                if path == '':
+                    node = RootNode(nodes=nodes)
+                else:
+                    node = DirNode(path, nodes=nodes)
             else:
                 raise ChangesetError("There is no file nor directory "
                     "at the given path: %r" % path)
