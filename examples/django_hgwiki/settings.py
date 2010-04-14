@@ -122,5 +122,5 @@ DJALOG_LEVEL = 5
 VCS_AVAILABLE_BACKENDS = (
     'hg',
 )
-
+VCS_BASIC_AUTH_REALM = 'HGWiki Basic Auth'
 

@@ -24,7 +24,8 @@
             {% for wiki in wiki_list %}
             <tr class="{% cycle "odd" "even" %} hoberable">
                 <td>{{ wiki.id }}</td>
-                <td><a href="{% url hgwiki_wiki_detail wiki.slug %}">{{ wiki.title }}</a></td>
+                <td><a href="{% url hgwiki_wiki_detail wiki.slug %}"
+                       class="block-link">{{ wiki.title }}</a></td>
             </tr>
             {% endfor %}
         </tbody>

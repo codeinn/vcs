@@ -1,4 +1,3 @@
-""" backends module"""
 from pprint import pformat
 from vcs.exceptions import VCSError
 from vcs.utils.imports import import_class

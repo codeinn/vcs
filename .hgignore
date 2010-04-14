@@ -11,6 +11,7 @@ syntax: glob
 *.egg-info
 *.swp
 *.bak
+*.db
 dist
 .DS_Store
 build

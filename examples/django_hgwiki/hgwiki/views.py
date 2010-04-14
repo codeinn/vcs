@@ -1,14 +1,12 @@
 import logging
-import cStringIO
-import traceback
 
 from django.views.generic.simple import direct_to_template
 from django.views.generic.list_detail import object_list, object_detail
-from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 
 from hgwiki.models import Wiki
-from vcs.web.simplevcs.utils import basic_auth, get_mercurial_response,\
-    is_mercurial
+from vcs.web.simplevcs.utils import is_mercurial
+from vcs.web.simplevcs.views import hgserve
 
 def home(request, template_name='hgwiki/home.html'):
     """
@@ -32,7 +30,8 @@ def wiki_detail(request, slug, template_name='hgwiki/wiki_detail.html'):
     Returns wiki detail page.
     """
     if is_mercurial(request):
-        return _wiki_hg(request, Wiki.objects.get(slug=slug))
+        wiki = get_object_or_404(Wiki, slug=slug)
+        return hgserve(request, wiki.repository, login_required=False)
     wiki_info = {
         'queryset': Wiki.objects.all(),
         'slug': slug,
@@ -40,37 +39,5 @@ def wiki_detail(request, slug, template_name='hgwiki/wiki_detail.html'):
         'template_object_name': 'wiki',
     }
     return object_detail(request, **wiki_info)
-wiki_detail.csrf_exempt = True
+wiki_detail.csrf_exempt = True # Needed for hgserve to work properly
 
-def _wiki_hg(request, wiki):
-    user = request.user
-    logging.debug("Calling basic_auth")
-    user = basic_auth(request)
-    request.user = user
-
-    if user:
-        pass
-    else:
-        response = HttpResponse()
-        response.status_code = 401
-        response['www-authenticate'] = 'Basic realm="%s"' % "MY REALM"
-        return response
-
-    try:
-        response = get_mercurial_response(request,
-            repo_path = wiki.repository.path,
-            name = wiki.slug,
-            baseurl = wiki.get_absolute_url(),
-            allow_push = user.username,
-            push_ssl = 'false',
-        )
-    except Exception, err:
-        f = cStringIO.StringIO()
-        traceback.print_exc(file=f)
-        msg = "Got exception: %s\n\n%s"\
-            % (err, f.getvalue())
-        logging.error(msg)
-        raise err
-    logging.info("Returning response\n%s" % response)
-    print "returning resposnse: \n%s" % response.__dict__
-    return response
