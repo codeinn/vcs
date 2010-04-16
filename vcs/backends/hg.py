@@ -197,7 +197,7 @@ class MercurialChangeset(BaseChangeset):
         self.message = ctx.description()
         self.branch = ctx.branch()
         self.tags = ctx.tags()
-        self.date = datetime.datetime.fromtimestamp(sum(ctx.date()))
+        self.date = datetime.datetime.fromtimestamp(ctx.date()[0])
         self._file_paths = list(ctx)
         self._dir_paths = list(set(map(os.path.dirname, self._file_paths)))
         self._paths = self._dir_paths + self._file_paths
