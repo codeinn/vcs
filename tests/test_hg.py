@@ -157,6 +157,45 @@ class MercurialChangesetTest(unittest.TestCase):
         for path in paths:
             self._test_getitem(path)
 
+    def test_lazy_fetch(self):
+        """
+        Test if changeset's nodes expands and are cached as we walk thorugh
+        the revision. This test is somewhat hard to write as order of tests
+        is a key here. Written by running command after command in a shell.
+        """
+        self.setUp()
+        chset = self.repo[45]
+        self.assertTrue( len(chset.nodes) == 0 )
+        root = chset.get_root()
+        self.assertTrue( len(chset.nodes) == 1 )
+        self.assertTrue( len(root.nodes) == 7 )
+        # accessing root.nodes updates chset.nodes
+        self.assertTrue( len(chset.nodes) == 8 )
+
+        docs = root['docs']
+        # we haven't yet accessed anything new as docs dir was already cached
+        self.assertTrue( len(chset.nodes) == 8 )
+        self.assertTrue( len(docs.nodes) == 7 )
+        # accessing docs.nodes updates chset.nodes
+        self.assertTrue( len(chset.nodes) == 15 )
+
+        self.assertTrue( docs is chset['docs'] )
+        self.assertTrue( docs is root.nodes[0] )
+        self.assertTrue( docs is root.dirs[0] )
+        self.assertTrue( docs is chset.get_node('docs') )
+
+    def test_nodes_with_changeset(self):
+        self.setUp()
+        chset = self.repo[45]
+        root = chset.get_root()
+        docs = root['docs']
+        self.assertTrue(docs is chset['docs'])
+        api = docs['api']
+        self.assertTrue(api is chset['docs/api'])
+        index = api['index.rst']
+        self.assertTrue(index is chset['docs/api/index.rst'])
+        self.assertTrue(index is chset['docs']['api']['index.rst'])
+
     def test_branch_and_tags(self):
         chset0 = self.repo[0]
         self.assertEqual(chset0.branch, 'default')

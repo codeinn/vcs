@@ -156,15 +156,24 @@ class BaseChangeset(object):
     def __getitem__(self, path):
         return self.get_node(path)
 
-    def _get_file_content(self, path):
+    def get_file_content(self, path):
         """
         Returns content of the file at the given ``path``.
         """
         raise NotImplementedError
 
+    def get_nodes(self, path):
+        """
+        Returns combined ``DirNode`` and ``FileNode`` objects list representing
+        state of changeset at the given ``path``. If node at the given ``path``
+        is not instance of ``DirNode``, ChangesetError would be raised.
+        """
+        raise NotImplementedError
+
     def get_node(self, path):
         """
-        Returns ``Node`` object from the given path.
+        Returns ``Node`` object from the given ``path``. If there is no node at
+        the given ``path``, ``ChangesetError`` would be raised.
         """
         raise NotImplementedError
 
