@@ -23,9 +23,7 @@ setup(
     packages = find_packages(exclude='tests'),
     test_suite = 'nose.collector',
     test_requires = ['nose'],
-    install_requires = [
-        'nose', 'mercurial',
-    ],
+    install_requires = ['nose', 'mercurial'],
     include_package_data = True,
     classifiers = [
         'Development Status :: 3 - Alpha',

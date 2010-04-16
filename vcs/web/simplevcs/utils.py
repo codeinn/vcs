@@ -1,4 +1,7 @@
 import cgi
+import logging
+import traceback
+import cStringIO
 
 from mercurial.hgweb.request import wsgirequest, normalize
 from mercurial.hgweb import hgweb
@@ -139,19 +142,30 @@ def basic_auth(request):
     http_authorization = request.META.get('HTTP_AUTHORIZATION')
     user = None
     if http_authorization and http_authorization.startswith('Basic '):
-        base64_hash = http_authorization.lstrip('Basic ')
+        base64_hash = http_authorization[len('Basic '):]
         credentials = base64_hash.decode('base64')
         username, password = credentials.split(':', 1)
         user = authenticate(username=username, password=password)
     return user
 
-def ask_basic_auth(request):
+def ask_basic_auth(request, realm=BASIC_AUTH_REALM):
     """
     Returns HttpResponse with status code 401 (HTTP_AUTHORIZATION) to ask user
     to authorize.
     """
     response = HttpResponse()
     response.status_code = 401
-    response['www-authenticate'] = 'Basic realm="%s"' % BASIC_AUTH_REALM
+    response['www-authenticate'] = 'Basic realm="%s"' % 'qwe'
     return response
+
+def log_error(error):
+    """
+    Logs traceback and error itself.
+    """
+    assert(isinstance(error, Exception))
+    f = cStringIO.StringIO()
+    traceback.print_exc(file=f)
+    msg = "Got exception: %s\n\n%s"\
+        % (error, f.getvalue())
+    logging.error(msg)
 

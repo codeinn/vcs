@@ -14,3 +14,5 @@ PUSH_SSL = getattr(settings, 'DEBUG', False) and 'false' or 'true'
 
 BASIC_AUTH_REALM = getattr(settings, 'VCS_BASIC_AUTH_REALM', 'Basic Auth Realm')
 
+ALWAYS_REQUIRE_LOGIN = getattr(settings, 'VCS_ALWAYS_REQUIRE_LOGIN', True)
+

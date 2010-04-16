@@ -18,6 +18,7 @@ not use it? Simply run following commands in your shell
 
    cd /tmp
    hg clone http://bitbucket.org/marcinkuzminski/vcs/
+   hg update web # temporary, new parts haven't yet landed into default branch
    cd vcs
 
 Now run your python interpreter of choice::
@@ -76,7 +77,7 @@ Let's ask repo about the content...
 Walking
 -------
 
-Now let's aks for nodes at revision 44
+Now let's ask for nodes at revision 44
 (http://bitbucket.org/marcinkuzminski/vcs/src/a0eada0b9e4e/)
 
 .. code-block:: python
@@ -84,6 +85,13 @@ Now let's aks for nodes at revision 44
    >>> root = repo.request('', 44)
    >>> print root.dirs
    [<DirNode 'docs'>, <DirNode 'tests'>, <DirNode 'vcs'>]
+
+.. note::
+   :ref:`api-nodes` are objects representing files and directories within the
+   repository revision.
+
+.. code-block:: python
+
    >>> # Fetch vcs directory
    >>> vcs = repo.request('vcs', 44)
    >>> print vcs.dirs

@@ -14,12 +14,12 @@ class BaseRepository(object):
     """
     Base Repository for final backends
 
-    @attr repo: object from external api
-    @attr revisions: list of all available revisions' ids
-    @attr changesets: storage dict caching returned changesets
-    @attr path: absolute local path to the repository
-    @attr branches: branches as list of strings
-    @attr tags: tags as list of strings
+    :attribute: ``repo`` object from external api
+    :attribute: revisions: list of all available revisions' ids
+    :attribute: changesets: storage dict caching returned changesets
+    :attribute: path: absolute local path to the repository
+    :attribute: branches: branches as list of strings
+    :attribute: tags: tags as list of strings
     """
 
     def __init__(self, repo_path, create=False, **kwargs):
@@ -27,8 +27,8 @@ class BaseRepository(object):
         Initializes repository. Raises RepositoryError if repository could
         not be find at the given ``repo_path``.
 
-        @param repo_path: local path of the repository
-        @param create=False: if set to True, would try to craete repository if
+        :param repo_path: local path of the repository
+        :param create=False: if set to True, would try to craete repository if
            it does not exist rather than raising exception
         """
         raise NotImplementedError
@@ -41,6 +41,7 @@ class BaseRepository(object):
 
     @LazyProperty
     def name(self):
+        """ This is name attribute """
         raise NotImplementedError
 
     @LazyProperty
@@ -135,15 +136,15 @@ class BaseChangeset(object):
     """
     Each backend should implement it's changeset representation.
 
-    @attr revision: revision number as integer
-    @attr files: list of ``Node`` objects with NodeKind.FILE
-    @attr dirs: list of ``Node`` objects with NodeKind.DIR
-    @attr nodes: combined list of ``Node`` objects
-    @attr author: author of the changeset
-    @attr message: message of the changeset
-    @attr size: integer size in bytes
-    @attr branch: title of the branch, as string
-    @attr tags: list of tags, as list of strings
+    :attribute: revision: revision number as integer
+    :attribute: files: list of ``Node`` objects with NodeKind.FILE
+    :attribute: dirs: list of ``Node`` objects with NodeKind.DIR
+    :attribute: nodes: combined list of ``Node`` objects
+    :attribute: author: author of the changeset
+    :attribute: message: message of the changeset
+    :attribute: size: integer size in bytes
+    :attribute: branch: title of the branch, as string
+    :attribute: tags: list of tags, as list of strings
     """
 
     def __str__(self):

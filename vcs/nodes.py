@@ -1,3 +1,6 @@
+"""
+
+"""
 import posixpath
 
 from vcs.utils.lazy import LazyProperty
@@ -12,15 +15,13 @@ class NodeKind:
 
 class Node(object):
     """
-    Simplest class representing file or directory on repository.
-    SCM backends should use ``FileNode`` and ``DirNode`` subclasses rather than
-    ``Node`` directly.
+    Simplest class representing file or directory on repository.  SCM backends
+    should use ``FileNode`` and ``DirNode`` subclasses rather than ``Node``
+    directly.
 
-    We assert that if node's kind is DIR then it's path **MUST** have trailing
-    slash (with one exception: root nodes have kind DIR but root node's path is
-    always empty string) and FILE node's path **CANNOT** end with slash.
-    Moreover, node's path cannot start with slash, too, as we oparete on
-    *relative* paths only (this class is out of any context).
+    Node's ``path`` cannot start with slash as we oparete on *relative* paths
+    only. Moreover, every single node is identified by the ``path`` attribute,
+    so it cannot end with slash, too. Otherwise, path could lead to mistakes.
     """
 
     def __init__(self, path, kind):
@@ -131,16 +132,20 @@ class Node(object):
 class FileNode(Node):
     """
     Class representing file nodes.
+
+    :attribute: path: path to the node, relative to repostiory's root
+    :attribute: content: if given arbitrary sets content of the file
+    :attribute: changeset: if given, first time content is accessed, callback
     """
 
     def __init__(self, path, content=None, changeset=None):
         """
-        Constructor. Only one of ``content`` and ``changeset`` may be given.
+        Only one of ``content`` and ``changeset`` may be given.
+        function fetching content using changeset would be used
 
-        @attr path: path to the node, relative to repostiory's root
-        @attr content: if given arbitrary sets content of the file
-        @attr changeset: if given, first time content is accessed, callback
-              function fetching content using changeset would be used
+        :param path: relative path to the node
+        :param content: content may be passed to constructor
+        :param changeset: if given, will use it to lazily fetch content
         """
 
         if content and changeset:
@@ -165,7 +170,7 @@ class DirNode(Node):
     """
     DirNode stores list of files and directories within this node.
     Nodes may be used standalone but within repository context they
-    lazily fetch data within same repositorie's changeset.
+    lazily fetch data within same repositorty's changeset.
     """
 
     def __init__(self, path, nodes=()):

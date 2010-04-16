@@ -6,7 +6,7 @@
 """
 Created on Apr 8, 2010
 
-@author: marcink,lukaszb
+:author: marcink,lukaszb
 """
 import os
 import datetime
@@ -26,7 +26,7 @@ def get_repositories(repos_prefix, repos_path, baseui):
     """
     Listing of repositories in given path. This path should not be a repository
     itself. Return a list of repository objects
-    @param repos_path: path to directory it could take syntax with * or ** for
+    :param repos_path: path to directory it could take syntax with * or ** for
     deep recursive displaying repositories
     """
     if not repos_path.endswith('*') and not repos_path.endswith('*'):
@@ -56,7 +56,7 @@ def get_repositories(repos_prefix, repos_path, baseui):
 def check_repo_dir(path):
     """
     Checks the repository
-    @param path:
+    :param path:
     """
     repos_path = path.split('/')
     if repos_path[-1] in ['*', '**']:
@@ -75,13 +75,13 @@ class MercurialRepository(BaseRepository):
 
     def __init__(self, repo_path, create=False, baseui=ui.ui()):
         """
-        Initializes repository. Raises RepositoryError if repository could
-        not be find at the given ``repo_path``.
+        Raises RepositoryError if repository could not be find at the given
+        ``repo_path``.
 
-        @param repo_path: local path of the repository
-        @param create=False: if set to True, would try to craete repository if
+        :param repo_path: local path of the repository
+        :param create=False: if set to True, would try to craete repository if
            it does not exist rather than raising exception
-        @param baseui=mercurial.ui.ui(): user data
+        :param baseui=mercurial.ui.ui(): user data
         """
 
         self.path = abspath(repo_path)

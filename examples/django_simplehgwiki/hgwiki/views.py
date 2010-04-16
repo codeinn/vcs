@@ -29,7 +29,7 @@ def wiki_detail(request, slug, template_name='hgwiki/wiki_detail.html'):
     """
     if is_mercurial(request):
         wiki = get_object_or_404(Wiki, slug=slug)
-        return hgserve(request, wiki.repository, login_required=False)
+        return hgserve(request, wiki.repository.path, login_required=False)
     wiki_info = {
         'queryset': Wiki.objects.all(),
         'slug': slug,
