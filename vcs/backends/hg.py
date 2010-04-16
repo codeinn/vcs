@@ -197,7 +197,7 @@ class MercurialChangeset(BaseChangeset):
         self.message = ctx.description()
         self.branch = ctx.branch()
         self.tags = ctx.tags()
-        self.date = datetime.datetime.fromtimestamp(sum(ctx.date()))
+        self.date = datetime.datetime.fromtimestamp(ctx.date()[0])
         self._file_paths = list(ctx)
         self._dir_paths = list(set(map(os.path.dirname, self._file_paths)))
         self._paths = self._dir_paths + self._file_paths
@@ -226,7 +226,7 @@ class MercurialChangeset(BaseChangeset):
             raise ChangesetError("Node does not exist at the given path %r"
                 % (path))
 
-    def _get_file_content(self, path):
+    def get_file_content(self, path):
         """
         Returns content of the file at given ``path``.
         """
@@ -236,41 +236,49 @@ class MercurialChangeset(BaseChangeset):
         fctx = self._ctx[path]
         return fctx.data()
 
-    def _get_nodes(self, path):
+    def get_nodes(self, path):
         """
-        Returns combined file and dir nodes for a DirNode at the given ``path``.
+        Returns combined ``DirNode`` and ``FileNode`` objects list representing
+        state of changeset at the given ``path``. If node at the given ``path``
+        is not instance of ``DirNode``, ChangesetError would be raised.
         """
+
         if self._get_kind(path) != NodeKind.DIR:
             raise ChangesetError("Directory does not exist for revision %r at "
                 " %r" % (self.revision, path))
         path = self._fix_path(path)
         filenodes = [FileNode(f, changeset=self) for f in self._file_paths
             if os.path.dirname(f) == path]
-        #dirs = set(map(os.path.dirname, self._file_paths))
         dirs = set((path for path in map(os.path.dirname, self._file_paths)
             if path))
-        dirnodes = [DirNode(d, nodes=[]) for d in dirs
+        dirnodes = [DirNode(d, changeset=self) for d in dirs
             if os.path.dirname(d) == path]
         nodes = dirnodes + filenodes
+        # cache nodes
+        for node in nodes:
+            self.nodes[node.path] = node
         nodes.sort()
         return nodes
 
     def get_node(self, path):
+        """
+        Returns ``Node`` object from the given ``path``. If there is no node at
+        the given ``path``, ``ChangesetError`` would be raised.
+        """
+
         path = self._fix_path(path)
         if not path in self.nodes:
             if path in self._file_paths:
-                #content = self._get_file_content(path)
-                #node = FileNode(path, content=content)
                 node = FileNode(path, changeset=self)
             elif path in self._dir_paths or path in self._dir_paths:
-                nodes = self._get_nodes(path)
                 if path == '':
-                    node = RootNode(nodes=nodes)
+                    node = RootNode(changeset=self)
                 else:
-                    node = DirNode(path, nodes=nodes)
+                    node = DirNode(path, changeset=self)
             else:
                 raise ChangesetError("There is no file nor directory "
                     "at the given path: %r" % path)
+            # cache node
             self.nodes[path] = node
         return self.nodes[path]
 

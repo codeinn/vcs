@@ -33,7 +33,7 @@ class Node(object):
             raise NodeError("Only DirNode and its subclasses may be initialized"
                 " with empty path")
         self.kind = kind
-        self.dirs, self.files = [], []
+        #self.dirs, self.files = [], []
         if self.is_root() and not self.is_dir():
             raise NodeError, "Root node cannot be FILE kind"
 
@@ -63,9 +63,6 @@ class Node(object):
             # Post setter check (path's trailing slash)
             if self.path.endswith('/'):
                 raise NodeError, "Node's path cannot end with slash"
-            #elif not self.path=='' and self.is_dir() and \
-            #        not self.path.endswith('/'):
-            #    raise NodeError, "Dir nodes' paths must end with slash"
 
     kind = property(_get_kind, _set_kind)
 
@@ -140,8 +137,8 @@ class FileNode(Node):
 
     def __init__(self, path, content=None, changeset=None):
         """
-        Only one of ``content`` and ``changeset`` may be given.
-        function fetching content using changeset would be used
+        Only one of ``content`` and ``changeset`` may be given. Passing both
+        would raise ``NodeError`` exception.
 
         :param path: relative path to the node
         :param content: content may be passed to constructor
@@ -149,7 +146,7 @@ class FileNode(Node):
         """
 
         if content and changeset:
-            raise NodeError("Cannot set both content and changeset")
+            raise NodeError("Cannot use both content and changeset")
         super(FileNode, self).__init__(path, kind=NodeKind.FILE)
         self.changeset = changeset
         self._content = content
@@ -157,7 +154,7 @@ class FileNode(Node):
     @LazyProperty
     def content(self):
         if self.changeset:
-            return self.changeset._get_file_content(self.path)
+            return self.changeset.get_file_content(self.path)
         else:
             return self._content
 
@@ -173,53 +170,97 @@ class DirNode(Node):
     lazily fetch data within same repositorty's changeset.
     """
 
-    def __init__(self, path, nodes=()):
+    def __init__(self, path, nodes=(), changeset=None):
+        """
+        Only one of ``nodes`` and ``changeset`` may be given. Passing both
+        would raise ``NodeError`` exception.
+
+        :param path: relative path to the node
+        :param nodes: content may be passed to constructor
+        :param changeset: if given, will use it to lazily fetch content
+        """
+        if nodes and changeset:
+            raise NodeError("Cannot use both nodes and changeset")
         super(DirNode, self).__init__(path, NodeKind.DIR)
-        self.nodes = nodes
+        self.changeset = changeset
+        self._nodes = nodes
 
     @LazyProperty
     def content(self):
         raise NodeError("%s represents a dir and has no ``content`` attribute"
             % self)
 
+    @LazyProperty
+    def nodes(self):
+        if self.changeset:
+            nodes = self.changeset.get_nodes(self.path)
+        else:
+            nodes = self._nodes
+        self._nodes_dict = dict((node.path, node) for node in nodes)
+        return sorted(nodes)
+
+    def _get_files(self):
+        return sorted((node for node in self.nodes if node.is_file()))
+    files = property(_get_files)
+
+    def _get_dirs(self):
+        return sorted((node for node in self.nodes if node.is_dir()))
+    dirs = property(_get_dirs)
+
     def __iter__(self):
         for node in self.nodes:
             yield node
 
     def __getitem__(self, path):
+        """
+        Returns node from within this particular ``DirNode``, so it is now
+        allowed to fetch, i.e. node located at 'docs/api/index.rst' from node
+        'docs'. In order to access deeper nodes one must fetch nodes between
+        them first - this would work::
+
+           docs = root['docs'];
+           docs['api']['index.rst'].
+
+        :param: path - relative to the current node
+
+        .. note::
+           To access lazily (as in example above) node have to be initialized
+           with related changeset object - without it node is out of context and
+           may know nothing about anything else than nearest (located at same
+           level) nodes.
+        """
         try:
-            return self._nodes[path]
+            path = path.rstrip('/')
+            if path == '':
+                raise NodeError("Cannot retrieve node without path")
+            self.nodes # access nodes first in order to set _nodes_dict
+            paths = path.split('/')
+            if len(paths) == 1:
+                if not self.is_root():
+                    path = '/'.join((self.path, paths[0]))
+                else:
+                    path = paths[0]
+                return self._nodes_dict[path]
+            elif len(paths) > 1:
+                print paths
+                if self.changeset is None:
+                    raise NodeError("Cannot access deeper nodes without changeset")
+                else:
+                    path1, path2 = paths[0], '/'.join(paths[1:])
+                    return self[path1][path2]
+            else:
+                raise KeyError
         except KeyError:
             raise NodeError("Node does not exist at %s" % path)
-
-    def _get_nodes(self):
-        """
-        Returns combined files and dirs nodes within this dirnode.
-        """
-        return sorted(self._nodes.values())
-
-    def _set_nodes(self, nodes):
-        """
-        Sets combined files and dirs for this dirnode. Backends should set this
-        attribute.
-        """
-        if not self.is_dir():
-            raise NodeError("Is not a dir!")
-
-        self.files = sorted([node for node in nodes if node.is_file()])
-        self.dirs = sorted([node for node in nodes if node.is_dir()])
-
-        self._nodes = dict((node.path, node) for node in nodes)
-
-    nodes = property(_get_nodes, _set_nodes)
 
 class RootNode(DirNode):
     """
     DirNode being the root node of the repository.
     """
 
-    def __init__(self, nodes=()):
-        super(RootNode, self).__init__(path='', nodes=nodes)
+    def __init__(self, nodes=(), changeset=None):
+        super(RootNode, self).__init__(path='', nodes=nodes,
+            changeset=changeset)
 
     def __repr__(self):
         return '<%s>' % self.__class__.__name__
