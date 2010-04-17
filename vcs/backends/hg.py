@@ -177,10 +177,11 @@ class MercurialRepository(BaseRepository):
     def get_changesets(self, limit=10):
         """
         Return last n number of ``MercurialChangeset`` specified by limit
-        attribute
-        @param limit:
+        attribute if None is given whole list of revisions is returned
+        @param limit: int limit or None
         """
-        for i in reversed(self.revisions[-limit:]):
+        limit = -limit if limit else None
+        for i in reversed(self.revisions[limit:]):
             yield self.get_changeset(i)
 
 class MercurialChangeset(BaseChangeset):
