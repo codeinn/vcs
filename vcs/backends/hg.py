@@ -46,7 +46,7 @@ def get_repositories(repos_prefix, repos_path, baseui):
     repos_list = []
     for name, path in repos:
         try:
-            r = MercurialRepository(path, baseui)
+            r = MercurialRepository(path, baseui=baseui)
             repos_list.append(r)
         except OSError:
             continue
