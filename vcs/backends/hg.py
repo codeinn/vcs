@@ -156,7 +156,7 @@ class MercurialRepository(BaseRepository):
                 "repository %s" % (revision, self))
         return revision
 
-    def _get_archive_list(self):
+    def _get_archives(self):
         allowed = self.baseui.configlist("web", "allow_archive", untrusted=True)
         for i in [('zip', '.zip'), ('gz', '.tar.gz'), ('bz2', '.tar.bz2')]:
             if i[0] in allowed or self.repo.ui.configbool("web", "allow" + i[0],
