@@ -42,7 +42,7 @@ class Node(object):
         parent_path = self.get_parent_path()
         if parent_path:
             if self.changeset:
-                return self.changeset[parent_path]
+                return self.changeset.get_node(parent_path)
             return DirNode(parent_path)
         return None
 
@@ -164,6 +164,11 @@ class FileNode(Node):
     def nodes(self):
         raise NodeError("%s represents a file and has no ``nodes`` attribute"
             % self)
+
+    @LazyProperty
+    def size(self):
+        pass
+
 
 class DirNode(Node):
     """
