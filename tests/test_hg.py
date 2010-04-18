@@ -123,18 +123,17 @@ class MercurialChangesetTest(unittest.TestCase):
 
     def _test_equality(self, changeset):
         revision = changeset.revision
-        self.assertEqual(changeset, self.repo[revision])
         self.assertEqual(changeset, self.repo.changesets[revision])
-        self.assertEqual(changeset, self.repo.get_changeset(revision))
 
     def test_equality(self):
-        changesets = [self.repo[0], self.repo[10], self.repo[20]]
+        self.setUp()
+        revs = [0, 10, 20]
+        changesets = [self.repo.get_changeset(rev) for rev in revs]
         for changeset in changesets:
             self._test_equality(changeset)
 
     def test_default_changeset(self):
-        tip = self.repo['tip']
-        self.assertEqual(tip, self.repo[None])
+        tip = self.repo.get_changeset('tip')
         self.assertEqual(tip, self.repo.get_changeset())
         # Mercurial backend converts all given revision parameters
         # so it cannot pass following two (commented) test
@@ -144,70 +143,94 @@ class MercurialChangesetTest(unittest.TestCase):
         self.assertEqual(tip, list(self.repo.get_changesets(limit=1))[0])
 
     def test_root_node(self):
-        tip = self.repo['tip']
-        tip.get_root() is tip.get_node('')
-
-    def _test_getitem(self, path):
-        tip = self.repo['tip']
-        tip[path] is tip.get_node(path)
-
-    def test_getitem(self):
-        paths = ['vcs', 'vcs/__init__.py', 'README.rst', 'MANIFEST.in',
-            'setup.py', 'vcs/backends', 'vcs/backends/base.py']
-        for path in paths:
-            self._test_getitem(path)
+        tip = self.repo.get_changeset('tip')
+        tip.root is tip.get_node('')
 
     def test_lazy_fetch(self):
         """
-        Test if changeset's nodes expands and are cached as we walk thorugh
+        Test if changeset's nodes expands and are cached as we walk through
         the revision. This test is somewhat hard to write as order of tests
         is a key here. Written by running command after command in a shell.
         """
         self.setUp()
-        chset = self.repo[45]
+        chset = self.repo.get_changeset(45)
         self.assertTrue( len(chset.nodes) == 0 )
-        root = chset.get_root()
+        root = chset.root
         self.assertTrue( len(chset.nodes) == 1 )
         self.assertTrue( len(root.nodes) == 7 )
         # accessing root.nodes updates chset.nodes
         self.assertTrue( len(chset.nodes) == 8 )
 
-        docs = root['docs']
+        docs = root.get_node('docs')
         # we haven't yet accessed anything new as docs dir was already cached
         self.assertTrue( len(chset.nodes) == 8 )
         self.assertTrue( len(docs.nodes) == 7 )
         # accessing docs.nodes updates chset.nodes
         self.assertTrue( len(chset.nodes) == 15 )
 
-        self.assertTrue( docs is chset['docs'] )
+        self.assertTrue( docs is chset.get_node('docs') )
         self.assertTrue( docs is root.nodes[0] )
         self.assertTrue( docs is root.dirs[0] )
         self.assertTrue( docs is chset.get_node('docs') )
 
     def test_nodes_with_changeset(self):
         self.setUp()
-        chset = self.repo[45]
-        root = chset.get_root()
-        docs = root['docs']
-        self.assertTrue(docs is chset['docs'])
-        api = docs['api']
-        self.assertTrue(api is chset['docs/api'])
-        index = api['index.rst']
-        self.assertTrue(index is chset['docs/api/index.rst'])
-        self.assertTrue(index is chset['docs']['api']['index.rst'])
+        chset = self.repo.get_changeset(45)
+        root = chset.root
+        docs = root.get_node('docs')
+        self.assertTrue(docs is chset.get_node('docs'))
+        api = docs.get_node('api')
+        self.assertTrue(api is chset.get_node('docs/api'))
+        index = api.get_node('index.rst')
+        self.assertTrue(index is chset.get_node('docs/api/index.rst'))
+        self.assertTrue(index is chset.get_node('docs')\
+            .get_node('api')\
+            .get_node('index.rst'))
 
     def test_branch_and_tags(self):
-        chset0 = self.repo[0]
+        chset0 = self.repo.get_changeset(0)
         self.assertEqual(chset0.branch, 'default')
         self.assertEqual(chset0.tags, [])
 
-        chset10 = self.repo[10]
+        chset10 = self.repo.get_changeset(10)
         self.assertEqual(chset10.branch, 'default')
         self.assertEqual(chset10.tags, [])
 
-        chset44 = self.repo[44]
+        chset44 = self.repo.get_changeset(44)
         self.assertEqual(chset44.branch, 'web')
 
-        tip = self.repo['tip']
+        tip = self.repo.get_changeset('tip')
         self.assertTrue('tip' in tip.tags)
+
+    def _test_slices(self, limit, offset):
+        self.setUp()
+        count = self.repo.count()
+        changesets = self.repo.get_changesets(limit=limit, offset=offset)
+        idx = 0
+        for changeset in changesets:
+            idx += 1
+            rev = count - offset - idx
+            if idx > limit:
+                self.fail("Exceeded limit already (getting revision %s, "
+                    "there are %s total revisions, offset=%s, limit=%s)"
+                    % (rev, count, offset, limit))
+            self.assertEqual(changeset,
+                self.repo.get_changeset(rev))
+        result = list(self.repo.get_changesets(limit=limit, offset=offset))
+        start = offset
+        end = limit and offset+limit or None
+        sliced = list(self.repo[start:end])
+        self.failUnlessEqual(result, sliced,
+            msg="Comparison failed for limit=%s, offset=%s"
+            "(get_changeset returned: %s and sliced: %s"
+            % (limit, offset, result, sliced))
+
+    def test_slices(self):
+        slices = (
+            # (limit, offset)
+            (2, 0), # should get 2 most recent changesets
+            (5, 2), # should get 5 most recent changesets after first 2
+        )
+        for limit, offset in slices:
+            self._test_slices(limit, offset)
 

@@ -107,5 +107,5 @@ class NodeBasicTest(unittest.TestCase):
         ]
         dirnode = DirNode('', nodes=nodes)
         for node in dirnode:
-            node == dirnode[node.path]
+            node == dirnode.get_node(node.path)
 

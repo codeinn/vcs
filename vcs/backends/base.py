@@ -39,6 +39,9 @@ class BaseRepository(object):
     def __repr__(self):
         return self.__str__()
 
+    def __len__(self):
+        return self.count()
+
     @LazyProperty
     def name(self):
         """ This is name attribute """
@@ -71,15 +74,6 @@ class BaseRepository(object):
         """
         raise NotImplementedError
 
-    def __getitem__(self, revision):
-        """
-        Allows Repository objects to act as dict-like object to get Changeset
-        at given ``revision``.
-
-        *Requires* implementation of ``get_changeset(self, revision)`` method.
-        """
-        return self.get_changeset(revision)
-
     def __iter__(self):
         """
         Allows Repository objects to be iterated.
@@ -87,7 +81,7 @@ class BaseRepository(object):
         *Requires* implementation of ``__getitem__`` method.
         """
         for revision in self.revisions:
-            yield self[revision]
+            yield self.get_changeset(revision)
 
     def get_changesets(self, since=None, limit=None):
         """
@@ -99,6 +93,17 @@ class BaseRepository(object):
         @param limit: integer value for limit
         """
         raise NotImplementedError
+
+    def __getslice__(self, i, j):
+        """
+        Convenient wrapper for ``get_changesets`` method. Those two are same:
+
+        self[2:5] == self.get_changesets(offset=2, limit=3)
+        """
+        return self.get_changesets(offset=i, limit=j-i)
+
+    def count(self):
+        return len(self.revisions)
 
     def request(self, path, revision=None):
         chset = self.get_changeset(revision)
@@ -153,9 +158,6 @@ class BaseChangeset(object):
     def __repr__(self):
         return self.__str__()
 
-    def __getitem__(self, path):
-        return self.get_node(path)
-
     def get_file_content(self, path):
         """
         Returns content of the file at the given ``path``.
@@ -177,7 +179,8 @@ class BaseChangeset(object):
         """
         raise NotImplementedError
 
-    def get_root(self):
+    @LazyProperty
+    def root(self):
         """
         Returns ``RootNode`` object for this changeset.
         """

@@ -174,15 +174,24 @@ class MercurialRepository(BaseRepository):
             self.changesets[revision] = changeset
         return self.changesets[revision]
 
-    def get_changesets(self, limit=10):
+    def get_changesets(self, limit=10, offset=None):
         """
         Return last n number of ``MercurialChangeset`` specified by limit
         attribute if None is given whole list of revisions is returned
         @param limit: int limit or None
         """
-        limit = -limit if limit else None
-        for i in reversed(self.revisions[limit:]):
-            yield self.get_changeset(i)
+        count = self.count()
+        offset = offset or 0
+        limit = limit or None
+        i = 0
+        while True:
+            if limit and i == limit:
+                break
+            i += 1
+            rev = count - offset - i
+            if rev < 0:
+                break
+            yield self.get_changeset(rev)
 
 class MercurialChangeset(BaseChangeset):
     """

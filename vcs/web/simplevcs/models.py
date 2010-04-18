@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+
 from vcs import get_repo, RepositoryError
 from vcs.utils.lazy import LazyProperty
 from vcs.web.simplevcs.settings import AVAILABLE_BACKENDS
@@ -24,6 +25,9 @@ class Repository(models.Model):
     def revisions(self):
         return self._repo.revisions
 
+    def __getitem__(self, key):
+        return self._repo[key]
+
     def __unicode__(self):
         return self.path
 
@@ -32,8 +36,8 @@ class Repository(models.Model):
 
     def save(self, *args, **kwargs):
         try:
-            self.repo = get_repo(self.type, path=self.path, create=True)
+            get_repo(self.type, path=self.path, create=True)
         except RepositoryError:
-            self.repo = get_repo(self.type, path=self.path)
+            get_repo(self.type, path=self.path)
         super(Repository, self).save(*args, **kwargs)
 

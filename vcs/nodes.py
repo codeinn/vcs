@@ -221,15 +221,15 @@ class DirNode(Node):
         for node in self.nodes:
             yield node
 
-    def __getitem__(self, path):
+    def get_node(self, path):
         """
         Returns node from within this particular ``DirNode``, so it is now
         allowed to fetch, i.e. node located at 'docs/api/index.rst' from node
         'docs'. In order to access deeper nodes one must fetch nodes between
         them first - this would work::
 
-           docs = root['docs'];
-           docs['api']['index.rst'].
+           docs = root.get_node('docs')
+           docs.get_node('api').get_node('index.rst')
 
         :param: path - relative to the current node
 
@@ -257,7 +257,7 @@ class DirNode(Node):
                     raise NodeError("Cannot access deeper nodes without changeset")
                 else:
                     path1, path2 = paths[0], '/'.join(paths[1:])
-                    return self[path1][path2]
+                    return self.get_node(path1).get_node(path2)
             else:
                 raise KeyError
         except KeyError:
