@@ -41,7 +41,9 @@ class Node(object):
     def parent(self):
         parent_path = self.get_parent_path()
         if parent_path:
-            return Node(parent_path, NodeKind.DIR)
+            if self.changeset:
+                return self.changeset[parent_path]
+            return DirNode(parent_path)
         return None
 
     @LazyProperty
