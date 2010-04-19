@@ -1,8 +1,8 @@
 from mercurial import ui, config
 
-def make_ui(path='hgwebdir.config'):        
+def make_ui(self, path='hgwebdir.config'):        
     """
-    A funciotn that will read python rc files and make an ui from read options
+    A funcion that will read python rc files and make an ui from read options
     
     @param path: path to mercurial config file
     """
@@ -34,7 +34,10 @@ def make_ui(path='hgwebdir.config'):
     baseui = ui.ui()
     cfg = config.config()
     cfg.read(repos)
-    paths = cfg.items('paths')
+    self.paths = cfg.items('paths')
+    self.base_path = self.paths[0][1].replace('*', '')
+    self.check_repo_dir(self.paths)
+    self.set_statics(cfg)
 
     for section in sections:
         for k, v in cfg.items(section):
