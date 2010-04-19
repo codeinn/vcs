@@ -164,6 +164,25 @@ class BaseChangeset(object):
         """
         raise NotImplementedError
 
+    def get_file_size(self, path):
+        """
+        Returns size of the file at the given ``path``.
+        """
+        raise NotImplementedError
+
+    def get_file_message(self, path):
+        """
+        Returns message of the last commit related to file at the given
+        ``path``.
+        """
+        raise NotImplementedError
+
+    def get_file_changeset(self, path):
+        """
+        Returns last commit of the file at the given ``path``.
+        """
+        raise NotImplementedError
+
     def get_nodes(self, path):
         """
         Returns combined ``DirNode`` and ``FileNode`` objects list representing

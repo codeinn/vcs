@@ -167,8 +167,24 @@ class FileNode(Node):
 
     @LazyProperty
     def size(self):
-        pass
+        if self.changeset:
+            return self.changeset.get_file_size(self.path)
+        raise NodeError("Cannot retrieve size of the file without related "
+            "changeset attribute")
 
+    @LazyProperty
+    def message(self):
+        if self.changeset:
+            return self.changeset.get_file_message(self.path)
+        raise NodeError("Cannot retrieve message of the file without related "
+            "changeset attribute")
+
+    @LazyProperty
+    def last_changeset(self):
+        if self.changeset:
+            return self.changeset.get_file_changeset(self.path)
+        raise NodeError("Cannot retrieve last changeset of the file without "
+            "related changeset attribute")
 
 class DirNode(Node):
     """
@@ -185,12 +201,14 @@ class DirNode(Node):
         :param path: relative path to the node
         :param nodes: content may be passed to constructor
         :param changeset: if given, will use it to lazily fetch content
+        :param size: always 0 for ``DirNode``
         """
         if nodes and changeset:
             raise NodeError("Cannot use both nodes and changeset")
         super(DirNode, self).__init__(path, NodeKind.DIR)
         self.changeset = changeset
         self._nodes = nodes
+        self.size = 0
 
     @LazyProperty
     def content(self):
@@ -257,7 +275,6 @@ class DirNode(Node):
                     path = paths[0]
                 return self._nodes_dict[path]
             elif len(paths) > 1:
-                print paths
                 if self.changeset is None:
                     raise NodeError("Cannot access deeper nodes without changeset")
                 else:

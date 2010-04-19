@@ -234,3 +234,16 @@ class MercurialChangesetTest(unittest.TestCase):
         for limit, offset in slices:
             self._test_slices(limit, offset)
 
+    def _test_file_size(self, revision, path, size):
+        node = self.repo.request(path, revision)
+        self.assertTrue(node.is_file())
+        self.assertEqual(node.size, size)
+
+    def test_file_size(self):
+        to_check = (
+            (10, 'setup.py', 2921),
+            (59, 'setup.py', 1074),
+        )
+        for revision, path, size in to_check:
+            self._test_file_size(revision, path, size)
+

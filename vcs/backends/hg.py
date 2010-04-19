@@ -203,6 +203,7 @@ class MercurialChangeset(BaseChangeset):
         self.revision = repository._get_revision(revision)
         ctx = repository.repo[revision]
         self._ctx = ctx
+        self._fctx = {}
         self.author = ctx.user()
         self.message = ctx.description()
         self.branch = ctx.branch()
@@ -236,15 +237,51 @@ class MercurialChangeset(BaseChangeset):
             raise ChangesetError("Node does not exist at the given path %r"
                 % (path))
 
+    def _get_filectx(self, path):
+        if self._get_kind(path) != NodeKind.FILE:
+            raise ChangesetError("File does not exist for revision %r at "
+                " %r" % (self.revision, path))
+        if not path in self._fctx:
+            self._fctx[path] = self._ctx[path]
+        return self._fctx[path]
+
     def get_file_content(self, path):
         """
         Returns content of the file at given ``path``.
         """
-        if self._get_kind(path) != NodeKind.FILE:
-            raise ChangesetError("File does not exist for revision %r at "
-                " %r" % (self.revision, path))
-        fctx = self._ctx[path]
+        fctx = self._get_filectx(path)
         return fctx.data()
+
+    def get_file_size(self, path):
+        """
+        Returns size of the file at given ``path``.
+        """
+        fctx = self._get_filectx(path)
+        return fctx.size()
+
+    def get_file_message(self, path):
+        """
+        Returns message of the last commit related to file at the given
+        ``path``.
+        """
+        fctx = self._get_filectx(path)
+        return fctx.description()
+
+    def get_file_revision(self, path):
+        """
+        Returns revision of the last commit related to file at the given
+        ``path``.
+        """
+        fctx = self._get_filectx(path)
+        return fctx.linkrev()
+
+    def get_file_changeset(self, path):
+        """
+        Returns last commit of the file at the given ``path``.
+        """
+        fctx = self._get_filectx(path)
+        changeset = self.repository.get_changeset(fctx.linkrev())
+        return changeset
 
     def get_nodes(self, path):
         """
