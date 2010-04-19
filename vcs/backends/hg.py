@@ -9,12 +9,13 @@ Created on Apr 8, 2010
 :author: marcink,lukaszb
 """
 import os
+import posixpath
 import datetime
 
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, VCSError, ChangesetError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode
-from vcs.utils import abspath
+from vcs.utils.paths import abspath, get_dirs_for_path
 from vcs.utils.lazy import LazyProperty
 
 from mercurial import ui
@@ -149,6 +150,8 @@ class MercurialRepository(BaseRepository):
         return self.repo.ui.configbool("web", "hidden", untrusted=True)
 
     def _get_revision(self, revision):
+        if len(self.revisions) == 0:
+            raise RepositoryError("There are no changesets yet")
         if revision in (None, 'tip'):
             revision = self.revisions[-1]
         elif revision not in self.revisions:
@@ -210,7 +213,8 @@ class MercurialChangeset(BaseChangeset):
         self.tags = ctx.tags()
         self.date = datetime.datetime.fromtimestamp(ctx.date()[0])
         self._file_paths = list(ctx)
-        self._dir_paths = list(set(map(os.path.dirname, self._file_paths)))
+        self._dir_paths = list(set(get_dirs_for_path(*self._file_paths)))
+        self._dir_paths.insert(0, '') # Needed for root node
         self._paths = self._dir_paths + self._file_paths
         self.nodes = {}
 
@@ -296,8 +300,8 @@ class MercurialChangeset(BaseChangeset):
         path = self._fix_path(path)
         filenodes = [FileNode(f, changeset=self) for f in self._file_paths
             if os.path.dirname(f) == path]
-        dirs = set((path for path in map(os.path.dirname, self._file_paths)
-            if path))
+        dirs = path == '' and '' or [d for d in self._dir_paths
+            if d and posixpath.dirname(d) == path]
         dirnodes = [DirNode(d, changeset=self) for d in dirs
             if os.path.dirname(d) == path]
         nodes = dirnodes + filenodes

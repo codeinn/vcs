@@ -1,6 +1,6 @@
 from pprint import pformat
 from vcs.exceptions import VCSError
-from vcs.utils import abspath
+from vcs.utils.paths import abspath
 from vcs.utils.imports import import_class
 
 BACKENDS = {

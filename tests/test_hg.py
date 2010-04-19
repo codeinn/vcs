@@ -73,7 +73,7 @@ class MercurialRepositoryTest(unittest.TestCase):
             ])
         )
         self.assertEqual(sorted(init_chset._dir_paths),
-            sorted(['vcs/backends', 'vcs']))
+            sorted(['', 'vcs', 'vcs/backends']))
 
         self.assertRaises(ChangesetError, init_chset.get_node, path='foobar')
 
@@ -157,16 +157,16 @@ class MercurialChangesetTest(unittest.TestCase):
         self.assertTrue( len(chset.nodes) == 0 )
         root = chset.root
         self.assertTrue( len(chset.nodes) == 1 )
-        self.assertTrue( len(root.nodes) == 7 )
+        self.assertTrue( len(root.nodes) == 8 )
         # accessing root.nodes updates chset.nodes
-        self.assertTrue( len(chset.nodes) == 8 )
+        self.assertTrue( len(chset.nodes) == 9 )
 
         docs = root.get_node('docs')
         # we haven't yet accessed anything new as docs dir was already cached
-        self.assertTrue( len(chset.nodes) == 8 )
-        self.assertTrue( len(docs.nodes) == 7 )
+        self.assertTrue( len(chset.nodes) == 9 )
+        self.assertTrue( len(docs.nodes) == 8 )
         # accessing docs.nodes updates chset.nodes
-        self.assertTrue( len(chset.nodes) == 15 )
+        self.assertTrue( len(chset.nodes) == 17 )
 
         self.assertTrue( docs is chset.get_node('docs') )
         self.assertTrue( docs is root.nodes[0] )
@@ -241,8 +241,13 @@ class MercurialChangesetTest(unittest.TestCase):
 
     def test_file_size(self):
         to_check = (
-            (10, 'setup.py', 2921),
-            (59, 'setup.py', 1074),
+            (10, 'setup.py', 1068),
+            (20, 'setup.py', 1106),
+            (60, 'setup.py', 1074),
+
+            (10, 'vcs/backends/base.py', 2921),
+            (20, 'vcs/backends/base.py', 3936),
+            (60, 'vcs/backends/base.py', 6189),
         )
         for revision, path, size in to_check:
             self._test_file_size(revision, path, size)

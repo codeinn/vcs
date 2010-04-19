@@ -2,6 +2,7 @@
 
 """
 import posixpath
+import mimetypes
 
 from vcs.utils.lazy import LazyProperty
 from vcs.exceptions import VCSError
@@ -123,11 +124,6 @@ class Node(object):
         """
         return self.kind == NodeKind.DIR and self.path == ''
 
-    def get_mimetype(self, content):
-        # Use chardet/python-magic/mimetypes?
-        raise NotImplementedError
-
-
 class FileNode(Node):
     """
     Class representing file nodes.
@@ -185,6 +181,46 @@ class FileNode(Node):
             return self.changeset.get_file_changeset(self.path)
         raise NodeError("Cannot retrieve last changeset of the file without "
             "related changeset attribute")
+    @LazyProperty
+    def mimetype(self):
+        """
+        Mimetype is calculated based on the file's content. If ``_mimetype``
+        attribute is available, it will be returned (backends which store
+        mimetypes or can easily recognize them, should set this private
+        attribute to indicate that type should *NOT* be calculated).
+        """
+        if hasattr(self, '_mimetype'):
+            return self._mimetype
+        mtype = mimetypes.guess_type(self.name)[0]
+        if mtype is None:
+            try:
+                self.content.decode('utf-8')
+                mtype = 'text/plain'
+            except UnicodeDecodeError:
+                #logging.warning("Cannot decode %s!" % self)
+                mtype = 'application/octet-stream'
+        return mtype
+
+    @LazyProperty
+    def lexer(self):
+        """
+        Returns pygment's lexer class. Would try to guess lexer taking file's
+        content, name and mimetype.
+        """
+        from pygments import lexers
+        try:
+            lexer = lexers.guess_lexer_for_filename(self.name, self.content)
+        except lexers.ClassNotFound:
+            lexer = lexers.TextLexer
+        # returns first alias
+        return lexer
+
+    @LazyProperty
+    def lexer_alias(self):
+        """
+        Returns first alias of the lexer guessed for this file.
+        """
+        return self.lexer.aliases[0]
 
 class DirNode(Node):
     """
