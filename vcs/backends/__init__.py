@@ -1,19 +1,20 @@
-""" backends module"""
 from pprint import pformat
 from vcs.exceptions import VCSError
+from vcs.utils.paths import abspath
 from vcs.utils.imports import import_class
 
 BACKENDS = {
     'hg': 'vcs.backends.hg.MercurialRepository',
 }
 
-def get_repo(alias, path):
+def get_repo(alias, path, create=False):
     """
     Returns ``Repository`` object of type linked with given ``alias`` at
     the specified ``path``.
     """
+    path = abspath(path)
     backend = get_backend(alias)
-    repo = backend(path)
+    repo = backend(path, create=create)
     return repo
 
 def get_backend(alias):

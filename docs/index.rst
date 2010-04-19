@@ -9,22 +9,21 @@ Welcome to vcs's documentation!
 ``vcs`` is abstraction layer over various version control systems. It is
 designed as feature-rich Python_ library with clear :ref:`API`. 
 
-.. note::
-   Currently only Mercurial_ backend is being developed.
+.. warning::
+   This library is at early-development *ALPHA* stage.
 
-Features
---------
+.. note::
+   Currently only Mercurial_ backend is being developed. Git_ is going to be
+   second backend.
+
+**Features**
 
 - Clean :ref:`API` for various Version Control System backends
 - More to come
 
-Incoming
---------
+**Incoming**
 
 - Command line client
-
-.. warning::
-   This library is at early-development *ALPHA* stage.
 
 Documentation
 =============
@@ -34,7 +33,9 @@ Documentation
 .. toctree::
    :maxdepth: 1
 
-   api
+   quickstart
+   installation
+   api/index
 
 Other topics
 ============

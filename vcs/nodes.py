@@ -1,4 +1,8 @@
+"""
+
+"""
 import posixpath
+import mimetypes
 
 from vcs.utils.lazy import LazyProperty
 from vcs.exceptions import VCSError
@@ -12,15 +16,13 @@ class NodeKind:
 
 class Node(object):
     """
-    Simplest class representing file or directory on repository.
-    SCM backends should use ``FileNode`` and ``DirNode`` subclasses rather than
-    ``Node`` directly.
+    Simplest class representing file or directory on repository.  SCM backends
+    should use ``FileNode`` and ``DirNode`` subclasses rather than ``Node``
+    directly.
 
-    We assert that if node's kind is DIR then it's path **MUST** have trailing
-    slash (with one exception: root nodes have kind DIR but root node's path is
-    always empty string) and FILE node's path **CANNOT** end with slash.
-    Moreover, node's path cannot start with slash, too, as we oparete on
-    *relative* paths only (this class is out of any context).
+    Node's ``path`` cannot start with slash as we oparete on *relative* paths
+    only. Moreover, every single node is identified by the ``path`` attribute,
+    so it cannot end with slash, too. Otherwise, path could lead to mistakes.
     """
 
     def __init__(self, path, kind):
@@ -32,8 +34,7 @@ class Node(object):
             raise NodeError("Only DirNode and its subclasses may be initialized"
                 " with empty path")
         self.kind = kind
-        self.name = path.rstrip('/').split('/')[-1]
-        self.dirs, self.files = [], []
+        #self.dirs, self.files = [], []
         if self.is_root() and not self.is_dir():
             raise NodeError, "Root node cannot be FILE kind"
 
@@ -41,8 +42,18 @@ class Node(object):
     def parent(self):
         parent_path = self.get_parent_path()
         if parent_path:
-            return Node(parent_path, NodeKind.DIR)
+            if self.changeset:
+                return self.changeset.get_node(parent_path)
+            return DirNode(parent_path)
         return None
+
+    @LazyProperty
+    def name(self):
+        """
+        Returns name of the node so if its path
+        then only last part is returned.
+        """
+        return self.path.rstrip('/').split('/')[-1]
 
     def _get_kind(self):
         return self._kind
@@ -53,11 +64,8 @@ class Node(object):
         else:
             self._kind = kind
             # Post setter check (path's trailing slash)
-            if self.is_file() and self.path.endswith('/'):
-                raise NodeError, "File nodes' paths cannot end with slash"
-            #elif not self.path=='' and self.is_dir() and \
-            #        not self.path.endswith('/'):
-            #    raise NodeError, "Dir nodes' paths must end with slash"
+            if self.path.endswith('/'):
+                raise NodeError, "Node's path cannot end with slash"
 
     kind = property(_get_kind, _set_kind)
 
@@ -80,18 +88,13 @@ class Node(object):
         return not self == other
 
     def __repr__(self):
-        return '<Node %r>' % self.path
+        return '<%s %r>' % (self.__class__.__name__, self.path)
+
+    def __str__(self):
+        return self.__repr__()
 
     def __unicode__(self):
         return unicode(self.name)
-
-    @staticmethod
-    def get_name(path):
-        """
-        Returns name of the node so if its path
-        then only last part is returned.
-        """
-        return path.split('/')[-1]
 
     def get_parent_path(self):
         """
@@ -121,71 +124,212 @@ class Node(object):
         """
         return self.kind == NodeKind.DIR and self.path == ''
 
-    def get_mimetype(self, content):
-        # Use chardet/python-magic/mimetypes?
-        raise NotImplementedError
-
-
 class FileNode(Node):
     """
     Class representing file nodes.
+
+    :attribute: path: path to the node, relative to repostiory's root
+    :attribute: content: if given arbitrary sets content of the file
+    :attribute: changeset: if given, first time content is accessed, callback
     """
 
-    def __init__(self, path, content=None):
+    def __init__(self, path, content=None, changeset=None):
+        """
+        Only one of ``content`` and ``changeset`` may be given. Passing both
+        would raise ``NodeError`` exception.
+
+        :param path: relative path to the node
+        :param content: content may be passed to constructor
+        :param changeset: if given, will use it to lazily fetch content
+        """
+
+        if content and changeset:
+            raise NodeError("Cannot use both content and changeset")
         super(FileNode, self).__init__(path, kind=NodeKind.FILE)
-        self.content = content
+        self.changeset = changeset
+        self._content = content
+
+    @LazyProperty
+    def content(self):
+        if self.changeset:
+            return self.changeset.get_file_content(self.path)
+        else:
+            return self._content
 
     @LazyProperty
     def nodes(self):
         raise NodeError("%s represents a file and has no ``nodes`` attribute"
             % self)
 
-    def __repr__(self):
-        return '<FileNode %r>' % self.path
+    @LazyProperty
+    def size(self):
+        if self.changeset:
+            return self.changeset.get_file_size(self.path)
+        raise NodeError("Cannot retrieve size of the file without related "
+            "changeset attribute")
+
+    @LazyProperty
+    def message(self):
+        if self.changeset:
+            return self.changeset.get_file_message(self.path)
+        raise NodeError("Cannot retrieve message of the file without related "
+            "changeset attribute")
+
+    @LazyProperty
+    def last_changeset(self):
+        if self.changeset:
+            return self.changeset.get_file_changeset(self.path)
+        raise NodeError("Cannot retrieve last changeset of the file without "
+            "related changeset attribute")
+    @LazyProperty
+    def mimetype(self):
+        """
+        Mimetype is calculated based on the file's content. If ``_mimetype``
+        attribute is available, it will be returned (backends which store
+        mimetypes or can easily recognize them, should set this private
+        attribute to indicate that type should *NOT* be calculated).
+        """
+        if hasattr(self, '_mimetype'):
+            return self._mimetype
+        mtype = mimetypes.guess_type(self.name)[0]
+        if mtype is None:
+            try:
+                self.content.decode('utf-8')
+                mtype = 'text/plain'
+            except UnicodeDecodeError:
+                #logging.warning("Cannot decode %s!" % self)
+                mtype = 'application/octet-stream'
+        return mtype
+
+    @LazyProperty
+    def lexer(self):
+        """
+        Returns pygment's lexer class. Would try to guess lexer taking file's
+        content, name and mimetype.
+        """
+        from pygments import lexers
+        try:
+            lexer = lexers.guess_lexer_for_filename(self.name, self.content)
+        except lexers.ClassNotFound:
+            lexer = lexers.TextLexer
+        # returns first alias
+        return lexer
+
+    @LazyProperty
+    def lexer_alias(self):
+        """
+        Returns first alias of the lexer guessed for this file.
+        """
+        return self.lexer.aliases[0]
 
 class DirNode(Node):
     """
     DirNode stores list of files and directories within this node.
+    Nodes may be used standalone but within repository context they
+    lazily fetch data within same repositorty's changeset.
     """
 
-    def __init__(self, path, nodes=()):
+    def __init__(self, path, nodes=(), changeset=None):
+        """
+        Only one of ``nodes`` and ``changeset`` may be given. Passing both
+        would raise ``NodeError`` exception.
+
+        :param path: relative path to the node
+        :param nodes: content may be passed to constructor
+        :param changeset: if given, will use it to lazily fetch content
+        :param size: always 0 for ``DirNode``
+        """
+        if nodes and changeset:
+            raise NodeError("Cannot use both nodes and changeset")
         super(DirNode, self).__init__(path, NodeKind.DIR)
-        self.nodes = nodes
+        self.changeset = changeset
+        self._nodes = nodes
+        self.size = 0
 
     @LazyProperty
     def content(self):
         raise NodeError("%s represents a dir and has no ``content`` attribute"
             % self)
 
-    def __repr__(self):
-        return '<DirNode %r>' % self.path
+    @LazyProperty
+    def nodes(self):
+        if self.changeset:
+            nodes = self.changeset.get_nodes(self.path)
+        else:
+            nodes = self._nodes
+        self._nodes_dict = dict((node.path, node) for node in nodes)
+        return sorted(nodes)
 
-    def get_nodes(self):
+    def _get_files(self):
         """
-        Returns combined files and dirs nodes within this dirnode.
+        Cannot be implemented as LazyProperty, and have to stay *after* nodes
+        lazy attribute.
         """
-        return self._nodes
+        return sorted((node for node in self.nodes if node.is_file()))
+    files = property(_get_files)
 
-    def set_nodes(self, nodes):
+    def _get_dirs(self):
         """
-        Sets combined files and dirs for this dirnode. Backends should set this
-        attribute.
+        Cannot be implemented as LazyProperty, and have to stay *after* nodes
+        lazy attribute.
         """
-        if not self.is_dir():
-            raise NodeError("Is not a dir!")
+        return sorted((node for node in self.nodes if node.is_dir()))
+    dirs = property(_get_dirs)
 
-        self.files = [node for node in nodes if node.is_file()]
-        self.dirs = [node for node in nodes if node.is_dir()]
+    def __iter__(self):
+        for node in self.nodes:
+            yield node
 
-        self._nodes = nodes
+    def get_node(self, path):
+        """
+        Returns node from within this particular ``DirNode``, so it is now
+        allowed to fetch, i.e. node located at 'docs/api/index.rst' from node
+        'docs'. In order to access deeper nodes one must fetch nodes between
+        them first - this would work::
 
-    nodes = property(get_nodes, set_nodes)
+           docs = root.get_node('docs')
+           docs.get_node('api').get_node('index.rst')
 
-class RootNode(Node):
+        :param: path - relative to the current node
+
+        .. note::
+           To access lazily (as in example above) node have to be initialized
+           with related changeset object - without it node is out of context and
+           may know nothing about anything else than nearest (located at same
+           level) nodes.
+        """
+        try:
+            path = path.rstrip('/')
+            if path == '':
+                raise NodeError("Cannot retrieve node without path")
+            self.nodes # access nodes first in order to set _nodes_dict
+            paths = path.split('/')
+            if len(paths) == 1:
+                if not self.is_root():
+                    path = '/'.join((self.path, paths[0]))
+                else:
+                    path = paths[0]
+                return self._nodes_dict[path]
+            elif len(paths) > 1:
+                if self.changeset is None:
+                    raise NodeError("Cannot access deeper nodes without changeset")
+                else:
+                    path1, path2 = paths[0], '/'.join(paths[1:])
+                    return self.get_node(path1).get_node(path2)
+            else:
+                raise KeyError
+        except KeyError:
+            raise NodeError("Node does not exist at %s" % path)
+
+class RootNode(DirNode):
     """
     DirNode being the root node of the repository.
     """
 
-    def __init__(self, nodes=()):
-        super(DirNode, self).__init__(path='', kind=NodeKind.DIR)
+    def __init__(self, nodes=(), changeset=None):
+        super(RootNode, self).__init__(path='', nodes=nodes,
+            changeset=changeset)
+
+    def __repr__(self):
+        return '<%s>' % self.__class__.__name__
 

@@ -6,14 +6,16 @@
 """
 Created on Apr 8, 2010
 
-@author: marcink,lukaszb
+:author: marcink,lukaszb
 """
 import os
+import posixpath
 import datetime
 
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, VCSError, ChangesetError
-from vcs.nodes import Node, FileNode, DirNode, NodeKind
+from vcs.nodes import FileNode, DirNode, NodeKind, RootNode
+from vcs.utils.paths import abspath, get_dirs_for_path
 from vcs.utils.lazy import LazyProperty
 
 from mercurial import ui
@@ -25,7 +27,7 @@ def get_repositories(repos_prefix, repos_path, baseui):
     """
     Listing of repositories in given path. This path should not be a repository
     itself. Return a list of repository objects
-    @param repos_path: path to directory it could take syntax with * or ** for
+    :param repos_path: path to directory it could take syntax with * or ** for
     deep recursive displaying repositories
     """
     if not repos_path.endswith('*') and not repos_path.endswith('*'):
@@ -45,7 +47,7 @@ def get_repositories(repos_prefix, repos_path, baseui):
     repos_list = []
     for name, path in repos:
         try:
-            r = MercurialRepository(path, baseui)
+            r = MercurialRepository(path, baseui=baseui)
             repos_list.append(r)
         except OSError:
             continue
@@ -55,7 +57,7 @@ def get_repositories(repos_prefix, repos_path, baseui):
 def check_repo_dir(path):
     """
     Checks the repository
-    @param path:
+    :param path:
     """
     repos_path = path.split('/')
     if repos_path[-1] in ['*', '**']:
@@ -72,32 +74,56 @@ class MercurialRepository(BaseRepository):
     Mercurial repository backend
     """
 
-    def __init__(self, repo_path, baseui=None):
+    def __init__(self, repo_path, create=False, baseui=ui.ui()):
         """
-        Constructor
+        Raises RepositoryError if repository could not be find at the given
+        ``repo_path``.
+
+        :param repo_path: local path of the repository
+        :param create=False: if set to True, would try to craete repository if
+           it does not exist rather than raising exception
+        :param baseui=mercurial.ui.ui(): user data
         """
-        self.repo = self._is_mercurial_repo(repo_path)
+
+        self.path = abspath(repo_path)
         self.baseui = baseui
-        self.name = self.get_name()
+        # We've set path and ui, now we can set repo itself
+        self._set_repo(create)
         self.description = self.get_description()
         self.contact = self.get_contact()
         self.last_change = self.get_last_change()
         self.revisions = list(self.repo)
         self.changesets = {}
-        self.path = repo_path
 
-    def _is_mercurial_repo(self, path):
+    @LazyProperty
+    def name(self):
+        return os.path.basename(self.path)
+
+    @LazyProperty
+    def branches(self):
+        return self.repo.branchmap().keys()
+
+    @LazyProperty
+    def tags(self):
+        return self.repo.tags().keys()
+
+    def _set_repo(self, create):
         """
         Function will check for mercurial repository in given path and return
         a localrepo object. If there is no repository in that path it will raise
-        an exception
-        @param path:
+        an exception unless ``create`` parameter is set to True - in that case
+        repository would be created and returned.
         """
-        path = path.replace('*', '')
         try:
-            return  localrepository(ui.ui(), path)
-        except (RepoError):
-            raise RepositoryError('Not a valid repository in %s' % path)
+            self.repo = localrepository(self.baseui, self.path, create=create)
+        except RepoError, err:
+            if create:
+                msg = "Cannot create repository at %s. Original error was %s"\
+                    % (self.path, err)
+            else:
+                msg = "Not valid repository at %s. Original error was %s"\
+                    % (self.path, err)
+            raise RepositoryError(msg)
 
     def get_description(self):
         undefined_description = 'unknown'
@@ -124,6 +150,8 @@ class MercurialRepository(BaseRepository):
         return self.repo.ui.configbool("web", "hidden", untrusted=True)
 
     def _get_revision(self, revision):
+        if len(self.revisions) == 0:
+            raise RepositoryError("There are no changesets yet")
         if revision in (None, 'tip'):
             revision = self.revisions[-1]
         elif revision not in self.revisions:
@@ -131,7 +159,7 @@ class MercurialRepository(BaseRepository):
                 "repository %s" % (revision, self))
         return revision
 
-    def _get_archive_list(self):
+    def _get_archives(self):
         allowed = self.baseui.configlist("web", "allow_archive", untrusted=True)
         for i in [('zip', '.zip'), ('gz', '.tar.gz'), ('bz2', '.tar.bz2')]:
             if i[0] in allowed or self.repo.ui.configbool("web", "allow" + i[0],
@@ -149,17 +177,24 @@ class MercurialRepository(BaseRepository):
             self.changesets[revision] = changeset
         return self.changesets[revision]
 
-    def get_changesets(self, limit=10):
+    def get_changesets(self, limit=10, offset=None):
         """
-        Return last n number of ``MercurialChangeset`` specified by limit 
-        attribute
-        @param limit:
+        Return last n number of ``MercurialChangeset`` specified by limit
+        attribute if None is given whole list of revisions is returned
+        @param limit: int limit or None
         """
-        for i in reversed(self.revisions[-limit:]): 
-            yield self.get_changeset(i)
-                    
-    def get_name(self):
-        return self.repo.path.split('/')[-2]
+        count = self.count()
+        offset = offset or 0
+        limit = limit or None
+        i = 0
+        while True:
+            if limit and i == limit:
+                break
+            i += 1
+            rev = count - offset - i
+            if rev < 0:
+                break
+            yield self.get_changeset(rev)
 
 class MercurialChangeset(BaseChangeset):
     """
@@ -171,12 +206,21 @@ class MercurialChangeset(BaseChangeset):
         self.revision = repository._get_revision(revision)
         ctx = repository.repo[revision]
         self._ctx = ctx
+        self._fctx = {}
         self.author = ctx.user()
         self.message = ctx.description()
-        self.date = datetime.datetime.fromtimestamp(sum(ctx.date()))
+        self.branch = ctx.branch()
+        self.tags = ctx.tags()
+        self.date = datetime.datetime.fromtimestamp(ctx.date()[0])
         self._file_paths = list(ctx)
-        self._dir_paths = list(set(map(os.path.dirname, self._file_paths)))
+        self._dir_paths = list(set(get_dirs_for_path(*self._file_paths)))
+        self._dir_paths.insert(0, '') # Needed for root node
+        self._paths = self._dir_paths + self._file_paths
         self.nodes = {}
+
+    @LazyProperty
+    def _paths(self):
+        return self._dir_paths + self._file_paths
 
     def _fix_path(self, path):
         """
@@ -197,45 +241,95 @@ class MercurialChangeset(BaseChangeset):
             raise ChangesetError("Node does not exist at the given path %r"
                 % (path))
 
-    def _get_file_content(self, path):
-        """
-        Returns content of the file at given ``path``.
-        """
+    def _get_filectx(self, path):
         if self._get_kind(path) != NodeKind.FILE:
             raise ChangesetError("File does not exist for revision %r at "
                 " %r" % (self.revision, path))
-        fctx = self._ctx[path]
+        if not path in self._fctx:
+            self._fctx[path] = self._ctx[path]
+        return self._fctx[path]
+
+    def get_file_content(self, path):
+        """
+        Returns content of the file at given ``path``.
+        """
+        fctx = self._get_filectx(path)
         return fctx.data()
 
-    def _get_dir_nodes(self, path):
+    def get_file_size(self, path):
         """
-        Returns combined file and dir nodes for a DirNode at the given ``path``.
+        Returns size of the file at given ``path``.
         """
+        fctx = self._get_filectx(path)
+        return fctx.size()
+
+    def get_file_message(self, path):
+        """
+        Returns message of the last commit related to file at the given
+        ``path``.
+        """
+        fctx = self._get_filectx(path)
+        return fctx.description()
+
+    def get_file_revision(self, path):
+        """
+        Returns revision of the last commit related to file at the given
+        ``path``.
+        """
+        fctx = self._get_filectx(path)
+        return fctx.linkrev()
+
+    def get_file_changeset(self, path):
+        """
+        Returns last commit of the file at the given ``path``.
+        """
+        fctx = self._get_filectx(path)
+        changeset = self.repository.get_changeset(fctx.linkrev())
+        return changeset
+
+    def get_nodes(self, path):
+        """
+        Returns combined ``DirNode`` and ``FileNode`` objects list representing
+        state of changeset at the given ``path``. If node at the given ``path``
+        is not instance of ``DirNode``, ChangesetError would be raised.
+        """
+
         if self._get_kind(path) != NodeKind.DIR:
             raise ChangesetError("Directory does not exist for revision %r at "
                 " %r" % (self.revision, path))
         path = self._fix_path(path)
-        filenodes = [FileNode(f, content=None) for f in self._file_paths
+        filenodes = [FileNode(f, changeset=self) for f in self._file_paths
             if os.path.dirname(f) == path]
-        dirs = set(map(os.path.dirname, self._file_paths))
-        dirnodes = [DirNode(d, nodes=[]) for d in dirs
+        dirs = path == '' and '' or [d for d in self._dir_paths
+            if d and posixpath.dirname(d) == path]
+        dirnodes = [DirNode(d, changeset=self) for d in dirs
             if os.path.dirname(d) == path]
         nodes = dirnodes + filenodes
+        # cache nodes
+        for node in nodes:
+            self.nodes[node.path] = node
         nodes.sort()
         return nodes
 
     def get_node(self, path):
+        """
+        Returns ``Node`` object from the given ``path``. If there is no node at
+        the given ``path``, ``ChangesetError`` would be raised.
+        """
+
         path = self._fix_path(path)
         if not path in self.nodes:
             if path in self._file_paths:
-                content = self._get_file_content(path)
-                node = FileNode(path, content=content)
+                node = FileNode(path, changeset=self)
             elif path in self._dir_paths or path in self._dir_paths:
-                nodes = self._get_dir_nodes(path)
-                node = DirNode(path, nodes=nodes)
+                if path == '':
+                    node = RootNode(changeset=self)
+                else:
+                    node = DirNode(path, changeset=self)
             else:
                 raise ChangesetError("There is no file nor directory "
                     "at the given path: %r" % path)
+            # cache node
             self.nodes[path] = node
         return self.nodes[path]
 

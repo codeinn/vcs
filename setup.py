@@ -1,3 +1,4 @@
+import sys
 from setuptools import setup, find_packages
 
 vcs = __import__('vcs')
@@ -15,16 +16,14 @@ setup(
     version = VERSION,
     url = 'http://bitbucket.org/marcinkuzminski/vcs/',
     author = 'Marcin Kuzminski, Lukasz Balcerzak',
-    author_email = 'marcinkuzminski@gmail.com',
+    author_email = 'marcin@python-blog.com',
     description = vcs.__doc__,
     long_description = long_description,
     zip_safe = False,
     packages = find_packages(exclude='tests'),
     test_suite = 'nose.collector',
     test_requires = ['nose'],
-    install_requires = [
-        'nose', 'restkit', 'simplejson', 'mercurial',
-    ],
+    install_requires = ['nose', 'mercurial'],
     include_package_data = True,
     classifiers = [
         'Development Status :: 3 - Alpha',

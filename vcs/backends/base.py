@@ -8,35 +8,61 @@ Created on Apr 8, 2010
 
 @author: marcink,lukaszb
 """
+from vcs.utils.lazy import LazyProperty
 
 class BaseRepository(object):
     """
     Base Repository for final backends
 
-    @attr repo: object from external api
-    @attr revisions: list of all available revisions' ids
-    @attr changesets: storage dict caching returned changesets
-    @attr path: absolute local path to the repository
+    :attribute: ``repo`` object from external api
+    :attribute: revisions: list of all available revisions' ids
+    :attribute: changesets: storage dict caching returned changesets
+    :attribute: path: absolute local path to the repository
+    :attribute: branches: branches as list of strings
+    :attribute: tags: tags as list of strings
     """
 
-    def get_owner(self):
+    def __init__(self, repo_path, create=False, **kwargs):
+        """
+        Initializes repository. Raises RepositoryError if repository could
+        not be find at the given ``repo_path``.
+
+        :param repo_path: local path of the repository
+        :param create=False: if set to True, would try to craete repository if
+           it does not exist rather than raising exception
+        """
+        raise NotImplementedError
+
+    def __str__(self):
+        return '<%s at %s>' % (self.__class__.__name__, self.path)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __len__(self):
+        return self.count()
+
+    @LazyProperty
+    def name(self):
+        """ This is name attribute """
+        raise NotImplementedError
+
+    @LazyProperty
+    def owner(self):
+        raise NotImplementedError
+
+    @LazyProperty
+    def description(self):
+        raise NotImplementedError
+
+    def is_valid(self):
+        """
+        Validates repository.
+        """
         raise NotImplementedError
 
     def get_last_change(self):
         self.get_changesets(limit=1)
-
-    def get_description(self):
-        raise NotImplementedError
-
-    def get_name(self):
-        raise NotImplementedError
-
-    def list_directory(self, path, revision=None):
-        """
-        Returns a list of files in a directory at a given
-        revision, or HEAD if revision is None.
-        """
-        raise NotImplementedError
 
     #===========================================================================
     # CHANGESETS
@@ -48,6 +74,15 @@ class BaseRepository(object):
         """
         raise NotImplementedError
 
+    def __iter__(self):
+        """
+        Allows Repository objects to be iterated.
+
+        *Requires* implementation of ``__getitem__`` method.
+        """
+        for revision in self.revisions:
+            yield self.get_changeset(revision)
+
     def get_changesets(self, since=None, limit=None):
         """
         Returns all commits since given ``since`` parameter. If ``since`` is
@@ -58,6 +93,22 @@ class BaseRepository(object):
         @param limit: integer value for limit
         """
         raise NotImplementedError
+
+    def __getslice__(self, i, j):
+        """
+        Convenient wrapper for ``get_changesets`` method. Those two are same:
+
+        self[2:5] == self.get_changesets(offset=2, limit=3)
+        """
+        return self.get_changesets(offset=i, limit=j-i)
+
+    def count(self):
+        return len(self.revisions)
+
+    def request(self, path, revision=None):
+        chset = self.get_changeset(revision)
+        node = chset.get_node(path)
+        return node
 
     #===========================================================================
     # TAGS
@@ -86,45 +137,69 @@ class BaseRepository(object):
     def get_files(self, limit):
         raise NotImplementedError
 
-    def create_repository(self, repo_path, repo_name):
-        """
-        Create a repository on filesystem or throws an exception on fail
-        """
-        raise NotImplementedError
-
-    def is_valid_repository(self, repo_path):
-        """
-        Check if there is a valid repository in given location
-        """
-        raise NotImplementedError
-
-    def can_create_repository(self):
-        """
-        Checks if is possible to create repository by checking the permissions
-        and path
-        """
-        raise NotImplementedError
-
 class BaseChangeset(object):
     """
     Each backend should implement it's changeset representation.
 
-    @attr revision: revision number as integer
-    @attr files: list of ``Node`` objects with NodeKind.FILE
-    @attr dirs: list of ``Node`` objects with NodeKind.DIR
-    @attr nodes: combined list of ``Node`` objects
-    @attr author: author of the changeset
-    @attr message: message of the changeset
-    @attr size: integer size in bytes
+    :attribute: revision: revision number as integer
+    :attribute: files: list of ``Node`` objects with NodeKind.FILE
+    :attribute: dirs: list of ``Node`` objects with NodeKind.DIR
+    :attribute: nodes: combined list of ``Node`` objects
+    :attribute: author: author of the changeset
+    :attribute: message: message of the changeset
+    :attribute: size: integer size in bytes
+    :attribute: branch: title of the branch, as string
+    :attribute: tags: list of tags, as list of strings
     """
 
-    def get_node(self, path):
+    def __str__(self):
+        return '<%s at %s>' % (self.__class__.__name__, self.revision)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def get_file_content(self, path):
         """
-        Returns ``Node`` object from the given path.
+        Returns content of the file at the given ``path``.
         """
         raise NotImplementedError
 
-    def get_root(self):
+    def get_file_size(self, path):
+        """
+        Returns size of the file at the given ``path``.
+        """
+        raise NotImplementedError
+
+    def get_file_message(self, path):
+        """
+        Returns message of the last commit related to file at the given
+        ``path``.
+        """
+        raise NotImplementedError
+
+    def get_file_changeset(self, path):
+        """
+        Returns last commit of the file at the given ``path``.
+        """
+        raise NotImplementedError
+
+    def get_nodes(self, path):
+        """
+        Returns combined ``DirNode`` and ``FileNode`` objects list representing
+        state of changeset at the given ``path``. If node at the given ``path``
+        is not instance of ``DirNode``, ChangesetError would be raised.
+        """
+        raise NotImplementedError
+
+    def get_node(self, path):
+        """
+        Returns ``Node`` object from the given ``path``. If there is no node at
+        the given ``path``, ``ChangesetError`` would be raised.
+        """
+        raise NotImplementedError
+
+    @LazyProperty
+    def root(self):
         """
         Returns ``RootNode`` object for this changeset.
         """

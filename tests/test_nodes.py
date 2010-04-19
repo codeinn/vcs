@@ -67,6 +67,18 @@ class NodeBasicTest(unittest.TestCase):
         for node_path, expected_parent_path in test_paths:
             self._test_parent_path(node_path, expected_parent_path)
 
+    '''
+    def _test_trailing_slash(self, path):
+        if not path.endswith('/'):
+            self.fail("Trailing slash tests needs paths to end with slash")
+        for kind in NodeKind.FILE, NodeKind.DIR:
+            self.assertRaises(NodeError, Node, path=path, kind=kind)
+
+    def test_trailing_slash(self):
+        for path in ('/', 'foo/', 'foo/bar/', 'foo/bar/biz/'):
+            self._test_trailing_slash(path)
+    '''
+
     def test_is_file(self):
         node = Node('any', NodeKind.FILE)
         self.assertTrue(node.is_file())
@@ -76,11 +88,24 @@ class NodeBasicTest(unittest.TestCase):
         self.assertRaises(NodeError, getattr, node, 'nodes')
 
     def test_is_dir(self):
-        node = Node('any_dir/', NodeKind.DIR)
+        node = Node('any_dir', NodeKind.DIR)
         self.assertTrue(node.is_dir())
 
-        node = DirNode('any_dir/')
+        node = DirNode('any_dir')
 
         self.assertTrue(node.is_dir())
         self.assertRaises(NodeError, getattr, node, 'content')
+
+    def test_dir_node_iter(self):
+        nodes = [
+            DirNode('docs'),
+            DirNode('tests'),
+            FileNode('bar'),
+            FileNode('foo'),
+            FileNode('readme.txt'),
+            FileNode('setup.py'),
+        ]
+        dirnode = DirNode('', nodes=nodes)
+        for node in dirnode:
+            node == dirnode.get_node(node.path)
 
