@@ -43,7 +43,8 @@ object by providing it's type and path.
    >>> from vcs import get_repo
    >>>
    >>> # create mercurial repository representation at current dir
-   >>> repo = get_repo(type='hg', path='.')
+   >>> # alias tells which backend should be used (see vcs.BACKENDS)
+   >>> repo = get_repo(alias='hg', path='.')
 
 Basics
 ------
@@ -63,9 +64,9 @@ Let's ask repo about the content...
    >>>
    >>> # any backend would return latest changeset if revision is not given
    >>> tip = repo.get_changeset()
-   >>> tip is repo['tip'] # for mercurial backend 'tip' is allowed
+   >>> tip is repo.get_changeset('tip') # for mercurial backend 'tip' is allowed
    True
-   >>> tip is repo[None] # any backend allow revision to be None (default)
+   >>> tip is repo.get_changeset(None) # any backend allow revision to be None (default)
    True
    >>> tip.revision is repo.revisions[-1]
    True
@@ -84,7 +85,7 @@ Now let's ask for nodes at revision 44
 
    >>> root = repo.request('', 44)
    >>> print root.dirs
-   [<DirNode 'docs'>, <DirNode 'tests'>, <DirNode 'vcs'>]
+   [<DirNode 'docs'>, <DirNode 'examples'>, <DirNode 'tests'>, <DirNode 'vcs'>]
 
 .. note::
    :ref:`api-nodes` are objects representing files and directories within the
@@ -104,9 +105,28 @@ Now let's ask for nodes at revision 44
    [<FileNode 'vcs/web/__init__.py'>]
    >>> web.files[0].content
    ''
-   >>>
-   >>> chset44 = repo[44]
-   >>> chset44['vcs/web'] is web
+   >>> print vcs.files[0].content
+   """
+   Various Version Control System management abstraction layer for Python.
+   """
+   
+   VERSION = (0, 0, 1, 'alpha')
+   
+   __version__ = '.'.join((str(each) for each in VERSION[:4]))
+   
+   __all__ = [
+       'get_repo', 'get_backend', 'BACKENDS',
+       'VCSError', 'RepositoryError', 'ChangesetError']
+   
+   from vcs.backends import get_repo, get_backend, BACKENDS
+   from vcs.exceptions import VCSError, RepositoryError, ChangesetError
+   
+
+   >>> chset44 = repo.get_changeset(44)
+   >>> chset44.get_node('vcs/web') is web
+   True
+   >>> # same if we span ``get_node`` methods:
+   >>> chset44.get_node('vcs').get_node('web') is web
    True
 
 Getting meta data
@@ -119,10 +139,59 @@ Tags and branches
 
 .. code-block:: python
    
+   >>> repo.branches
+   ['default', 'web']
+   >>> repo.tags
+   ['tip']
    >>> # get changeset we know well
-   >>> chset44 = repo[44]
+   >>> chset44 = repo.get_changeset(44)
+   >>> chset44.branch
+   'web'
    >>> chset44.tags # most probably empty list after commit
    []
-   >>> chset44.branches
-   ['default', 'web']
+
+Give me a file finally!
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   >>> root = repo.request('', 44)
+   >>> backends = root.get_node('vcs/backends')
+   >>> backends.files
+   [<FileNode 'vcs/backends/__init__.py'>,
+    <FileNode 'vcs/backends/base.py'>,
+    <FileNode 'vcs/backends/hg.py'>]
+   >>> f = backends.get_node('hg.py')
+   >>> f.name
+   'hg.py'
+   >>> f.path
+   'vcs/backends/hg.py'
+   >>> f.size
+   8882
+   >>> f.last_changeset
+   <MercurialChangeset at 44>
+   >>> f.last_changeset.date
+   datetime.datetime(2010, 4, 14, 14, 8)
+   >>> f.last_changeset.message
+   'Cleaning up codes at base/mercurial backend'
+   >>> f.last_changeset.author
+   'Lukasz Balcerzak <lukasz.balcerzak@python-center.pl>'
+   >>>
+   >>> f.mimetype
+   'text/x-python'
+   >>>
+   >>> # Following would raise exception unless you have pygments installed
+   >>> f.lexer
+   <pygments.lexers.PythonLexer>
+   >>> f.lexer_alias # shortcut to get first of lexers' available aliases
+   'python'
+   >>> f.name
+   >>>
+   >>> # wanna go back? why? oh, whatever...
+   >>> f.parent
+   <DirNode 'vcs/backends'>
+   >>>
+   >>> # is it cached? hell yeah...
+   >>> f is f.parent.get_node('hg.py') is repo.request('vcs/backends/hg.py', 44)
+   True
 
