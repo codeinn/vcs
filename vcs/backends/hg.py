@@ -9,6 +9,7 @@ Created on Apr 8, 2010
 :author: marcink,lukaszb
 """
 import os
+import re
 import posixpath
 import datetime
 
@@ -19,8 +20,9 @@ from vcs.utils.paths import abspath, get_dirs_for_path
 from vcs.utils.lazy import LazyProperty
 
 from mercurial import ui
+from mercurial.context import short
 from mercurial.localrepo import localrepository
-from mercurial.error import RepoError
+from mercurial.error import RepoError, RepoLookupError
 from mercurial.hgweb.hgwebdir_mod import findrepos
 
 def get_repositories(repos_prefix, repos_path, baseui):
@@ -152,11 +154,18 @@ class MercurialRepository(BaseRepository):
     def _get_revision(self, revision):
         if len(self.revisions) == 0:
             raise RepositoryError("There are no changesets yet")
-        if revision in (None, 'tip'):
+        if revision in (None, 'tip', -1):
             revision = self.revisions[-1]
-        elif revision not in self.revisions:
+        if isinstance(revision, int) and revision not in self.revisions:
             raise RepositoryError("Revision %r does not exist for this "
                 "repository %s" % (revision, self))
+        elif isinstance(revision, (str, unicode)) and revision.isdigit():
+            revision = int(revision)
+        elif isinstance(revision, (str, unicode)):
+            pattern = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
+            if not pattern.match(revision):
+                raise RepositoryError("Revision %r does not exist for this "
+                    "repository %s" % (revision, self))
         return revision
 
     def _get_archives(self):
@@ -174,7 +183,9 @@ class MercurialRepository(BaseRepository):
         revision = self._get_revision(revision)
         if not self.changesets.has_key(revision):
             changeset = MercurialChangeset(repository=self, revision=revision)
-            self.changesets[revision] = changeset
+            self.changesets[changeset.revision] = changeset
+            self.changesets[changeset._hex] = changeset
+            self.changesets[changeset._short] = changeset
         return self.changesets[revision]
 
     def get_changesets(self, limit=10, offset=None):
@@ -203,8 +214,12 @@ class MercurialChangeset(BaseChangeset):
 
     def __init__(self, repository, revision):
         self.repository = repository
-        self.revision = repository._get_revision(revision)
-        ctx = repository.repo[revision]
+        revision = repository._get_revision(revision)
+        try:
+            ctx = repository.repo[revision]
+        except RepoLookupError:
+            raise RepositoryError("Cannot find revision %s" % revision)
+        self.revision = ctx.rev()
         self._ctx = ctx
         self._fctx = {}
         self.author = ctx.user()
@@ -221,6 +236,14 @@ class MercurialChangeset(BaseChangeset):
     @LazyProperty
     def _paths(self):
         return self._dir_paths + self._file_paths
+
+    @LazyProperty
+    def _hex(self):
+        return self._ctx.hex()
+
+    @LazyProperty
+    def _short(self):
+        return short(self._ctx.node())
 
     def _fix_path(self, path):
         """
