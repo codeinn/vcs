@@ -245,6 +245,12 @@ class MercurialChangeset(BaseChangeset):
     def _short(self):
         return short(self._ctx.node())
 
+    @LazyProperty
+    def id(self):
+        if self.last:
+            return 'tip'
+        return self._short
+
     def _fix_path(self, path):
         """
         Paths are stored without trailing slash so we need to get rid off it if

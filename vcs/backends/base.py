@@ -158,6 +158,24 @@ class BaseChangeset(object):
     def __repr__(self):
         return self.__str__()
 
+    @LazyProperty
+    def last(self):
+        """
+        Returns True if this is last changeset in repository, False otherwise.
+        Note that ChangesetError would be raised if object is not related with
+        repository object.
+        """
+        if self.repository is None:
+            raise ChangesetError("Cannot check if it's most recent revision")
+        return self.revision == self.repository.revisions[-1]
+
+    @LazyProperty
+    def id(self):
+        """
+        Returns string identifing this changeset.
+        """
+        raise NotImplementedError
+
     def get_file_content(self, path):
         """
         Returns content of the file at the given ``path``.

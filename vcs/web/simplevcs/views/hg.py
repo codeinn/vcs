@@ -46,7 +46,8 @@ def hgserve(request, repo_path, login_required=True, auth_callback=None):
             "cannot run callback without authorized user")
     if auth_callback and not callable(auth_callback):
         raise RequestError("auth_callback passed but is not callable")
-    # Need to catch all exceptions
+    # Need to catch all exceptions in order to show them if something
+    # goes wrong within mercurial request to response phases
     try:
         if user and not required.user.is_active:
             user = basic_auth(request)
@@ -58,11 +59,14 @@ def hgserve(request, repo_path, login_required=True, auth_callback=None):
             (login_required or request.method == 'POST')):
             return ask_basic_auth(request)
         #'''
-        #'''
+        '''
         if login_required and not user:
             return ask_basic_auth(request)
         if not user and request.method == 'POST':
             return ask_basic_auth(request)
+        '''
+        if not user and (login_required or request.method == 'POST'):
+            return ask_basic_auth
         #'''
         # run auth_callback if given
         auth_callback and auth_callback(user)
