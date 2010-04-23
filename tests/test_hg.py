@@ -1,6 +1,6 @@
 import unittest
 
-from vcs.backends.hg import MercurialRepository
+from vcs.backends.hg import MercurialRepository, MercurialChangeset
 from vcs.exceptions import ChangesetError, RepositoryError
 from vcs.nodes import NodeKind
 
@@ -22,16 +22,19 @@ class MercurialRepositoryTest(unittest.TestCase):
         self.assertTrue(subset.issubset(set(self.repo.revisions)))
 
     def test_branches(self):
-        # now there are 44 revisions and branches stated below
-        branches44 = ['default', 'web']
-        set44 = set(branches44)
-        self.assertTrue(set44.issubset(set(self.repo.branches)))
+        chset3 = self.repo.get_changeset(3)
+        self.assertEqual(chset3.branch, 'default')
+
+        chset44 = self.repo.get_changeset(44)
+        self.assertEqual(chset44.branch, 'web')
+
+        for branch in self.repo.branches:
+            self.assertTrue(isinstance(branch, MercurialChangeset))
 
     def test_tags(self):
-        # now there are 44 revisions and tags stated below
-        tags44 = ['tip']
-        set44 = set(tags44)
-        self.assertTrue(set44.issubset(set(self.repo.tags)))
+        # tip is always a tag
+        tip = self.repo.get_changeset()
+        tip in self.repo.tags
 
     def _test_single_changeset_cache(self, revision):
         chset = self.repo.get_changeset(revision)
@@ -94,7 +97,7 @@ class MercurialRepositoryTest(unittest.TestCase):
             self.repo.revisions[-1] + 1)
 
         # Small chance we ever get to this one
-        revision = pow(2, 100)
+        revision = pow(2, 30)
         self.assertRaises(RepositoryError, self.repo.get_changeset, revision)
 
     def test_changeset10(self):
@@ -251,4 +254,7 @@ class MercurialChangesetTest(unittest.TestCase):
         )
         for revision, path, size in to_check:
             self._test_file_size(revision, path, size)
+
+if __name__ == '__main__':
+    unittest.main()
 

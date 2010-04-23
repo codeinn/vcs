@@ -109,3 +109,6 @@ class NodeBasicTest(unittest.TestCase):
         for node in dirnode:
             node == dirnode.get_node(node.path)
 
+if __name__ == '__main__':
+    unittest.main()
+

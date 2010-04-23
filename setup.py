@@ -1,15 +1,20 @@
+import os
 import sys
 from setuptools import setup, find_packages
 
 vcs = __import__('vcs')
 VERSION = vcs.__version__
 readme_file = 'README.rst'
+
 try:
     long_description = open(readme_file).read()
 except IOError, err:
     sys.stderr.write("[ERROR] Cannot find file specified as "
         "long_description (%s)\n" % readme_file)
     sys.exit(1)
+
+# Nose collector won't complain about not being able to import simplevcs
+os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.simplevcs.test_settings'
 
 setup(
     name = 'vcs',

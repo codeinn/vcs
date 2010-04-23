@@ -6,12 +6,11 @@ import logging
 import cStringIO
 import traceback
 
-from vcs.web.simplevcs.settings import PUSH_SSL
+from vcs.web.simplevcs.settings import PUSH_SSL, ALWAYS_REQUIRE_LOGIN
 from vcs.web.simplevcs.utils import ask_basic_auth, basic_auth,\
     get_mercurial_response, is_mercurial
 from vcs.web.exceptions import RequestError
 from vcs.web.simplevcs.exceptions import NotMercurialRequest
-from vcs.web.simplevcs.settings import ALWAYS_REQUIRE_LOGIN
 
 def hgserve(request, repo_path, login_required=True, auth_callback=None):
     """
@@ -49,7 +48,7 @@ def hgserve(request, repo_path, login_required=True, auth_callback=None):
     # Need to catch all exceptions in order to show them if something
     # goes wrong within mercurial request to response phases
     try:
-        if user and not required.user.is_active:
+        if request.user and not request.user.is_active:
             user = basic_auth(request)
         request.user = user
 

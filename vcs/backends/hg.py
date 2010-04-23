@@ -103,11 +103,13 @@ class MercurialRepository(BaseRepository):
 
     @LazyProperty
     def branches(self):
-        return self.repo.branchmap().keys()
+        return [self.get_changeset(short(head)) for head in
+            self.repo.branchtags().values()]
 
     @LazyProperty
     def tags(self):
-        return self.repo.tags().keys()
+        return [self.get_changeset(short(head)) for head in
+            self.repo.tags().values()]
 
     def _set_repo(self, create):
         """
@@ -250,6 +252,14 @@ class MercurialChangeset(BaseChangeset):
         if self.last:
             return 'tip'
         return self._short
+
+    @LazyProperty
+    def parents(self):
+        """
+        Returns list of parents changesets.
+        """
+        return [self.repository.get_changeset(parent.rev()) for parent in
+            self._ctx.parents()]
 
     def _fix_path(self, path):
         """

@@ -25,3 +25,6 @@ class VCSTest(unittest.TestCase):
         self.assertEqual(repo.__class__, get_repo(alias, path).__class__)
         self.assertEqual(repo.path, get_repo(alias, path).path)
 
+if __name__ == '__main__':
+    unittest.main()
+

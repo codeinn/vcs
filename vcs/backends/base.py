@@ -9,6 +9,7 @@ Created on Apr 8, 2010
 @author: marcink,lukaszb
 """
 from vcs.utils.lazy import LazyProperty
+from vcs.exceptions import ChangesetError
 
 class BaseRepository(object):
     """
@@ -18,8 +19,8 @@ class BaseRepository(object):
     :attribute: revisions: list of all available revisions' ids
     :attribute: changesets: storage dict caching returned changesets
     :attribute: path: absolute local path to the repository
-    :attribute: branches: branches as list of strings
-    :attribute: tags: tags as list of strings
+    :attribute: branches: branches as list of changesets
+    :attribute: tags: tags as list of changesets
     """
 
     def __init__(self, repo_path, create=False, **kwargs):
@@ -67,6 +68,7 @@ class BaseRepository(object):
     #===========================================================================
     # CHANGESETS
     #===========================================================================
+
     def get_changeset(self, revision=None):
         """
         Returns instance of ``Changeset`` class. If ``revision`` is None, most
@@ -113,6 +115,7 @@ class BaseRepository(object):
     #===========================================================================
     # TAGS
     #===========================================================================
+
     def get_tags(self, since='', limit=10):
         raise NotImplementedError
 
@@ -125,6 +128,7 @@ class BaseRepository(object):
     #===========================================================================
     # BRANCHES
     #===========================================================================
+
     def get_branches(self, since='', limit=10):
         raise NotImplementedError
 
@@ -168,6 +172,13 @@ class BaseChangeset(object):
         if self.repository is None:
             raise ChangesetError("Cannot check if it's most recent revision")
         return self.revision == self.repository.revisions[-1]
+
+    @LazyProperty
+    def parents(self):
+        """
+        Returns list of parents changesets.
+        """
+        raise NotImplementedError
 
     @LazyProperty
     def id(self):
