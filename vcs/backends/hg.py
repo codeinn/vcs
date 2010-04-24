@@ -170,12 +170,12 @@ class MercurialRepository(BaseRepository):
                     "repository %s" % (revision, self))
         return revision
 
-    def _get_archives(self):
+    def _get_archives(self, archive_name='tip'):
         allowed = self.baseui.configlist("web", "allow_archive", untrusted=True)
         for i in [('zip', '.zip'), ('gz', '.tar.gz'), ('bz2', '.tar.bz2')]:
             if i[0] in allowed or self.repo.ui.configbool("web", "allow" + i[0],
                                                 untrusted=True):
-                yield {"type" : i[0], "extension": i[1], "node": 'tip'}
+                yield {"type" : i[0], "extension": i[1], "node": archive_name}
 
     def get_changeset(self, revision=None):
         """
