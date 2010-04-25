@@ -16,6 +16,9 @@ def browse_repository(request, repository, template_name, revision=None,
 
     """
     context = {}
+    for key, value in extra_context.items():
+        context[key] = callable(value) and value() or value
+
     try:
         context.update(dict(
             changeset = repository.get_changeset(),
@@ -23,8 +26,6 @@ def browse_repository(request, repository, template_name, revision=None,
         ))
     except VCSError, err:
         messages.error(request, str(err))
-    for key, value in extra_context.items():
-        context[key] = callable(value) and value() or value
 
     return render_to_response(template_name, context, RequestContext(request))
 
