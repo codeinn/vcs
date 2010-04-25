@@ -17,3 +17,6 @@ Views
 .. automodule:: vcs.web.simplevcs.views
    :members:
 
+.. automodule:: vcs.web.simplevcs.views.hg
+   :members:
+
