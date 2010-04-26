@@ -83,7 +83,24 @@ Now let's ask for nodes at revision 44
 
 .. code-block:: python
 
+   >>> chset44 = repo.get_changeset(44)
+   >>> root = chset44.root
+   >>> # You may also use shorter one-liner:
    >>> root = repo.request('', 44)
+
+.. note::
+   If you have to check this to believe, you may get raw id of the changeset and
+   open browser on same changeset at bitbucket::
+
+      >>> print root.changeset.raw_id
+      a0eada0b9e4e
+
+   This show us that 44 revision has hex of (shorter version): ``a0eada0b9e4e``
+   which you can follow on bitbucket at:
+   http://bitbucket.org/marcinkuzminski/vcs/src/a0eada0b9e4e/
+
+.. code-block:: python
+
    >>> print root.dirs
    [<DirNode 'docs'>, <DirNode 'examples'>, <DirNode 'tests'>, <DirNode 'vcs'>]
 

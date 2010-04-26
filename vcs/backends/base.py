@@ -187,6 +187,14 @@ class BaseChangeset(object):
         """
         raise NotImplementedError
 
+    @LazyProperty
+    def raw_id(self):
+        """
+        Returns raw string identifing this changeset, useful for web
+        representation.
+        """
+        raise NotImplementedError
+
     def get_file_content(self, path):
         """
         Returns content of the file at the given ``path``.

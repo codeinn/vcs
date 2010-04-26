@@ -254,6 +254,14 @@ class MercurialChangeset(BaseChangeset):
         return self._short
 
     @LazyProperty
+    def raw_id(self):
+        """
+        Returns raw string identifing this changeset, useful for web
+        representation.
+        """
+        return self._short
+
+    @LazyProperty
     def parents(self):
         """
         Returns list of parents changesets.

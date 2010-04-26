@@ -181,6 +181,7 @@ class FileNode(Node):
             return self.changeset.get_file_changeset(self.path)
         raise NodeError("Cannot retrieve last changeset of the file without "
             "related changeset attribute")
+
     @LazyProperty
     def mimetype(self):
         """
