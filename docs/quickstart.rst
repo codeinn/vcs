@@ -18,7 +18,6 @@ not use it? Simply run following commands in your shell
 
    cd /tmp
    hg clone http://bitbucket.org/marcinkuzminski/vcs/
-   hg update web # temporary, new parts haven't yet landed into default branch
    cd vcs
 
 Now run your python interpreter of choice::
@@ -73,6 +72,12 @@ Let's ask repo about the content...
    >>>
    >>> # Iterate repository
    >>> list(repo) == repo.changesets.values()
+   False
+   >>> # Those are not equal, as repo iterator returns only changesets for keys
+   >>> # from repo.revisions and repo.changesets is a dict caching calls for
+   >>> # each changeset; but repo iterator would always be a subset of cached
+   >>> # changesets
+   >>> set(list(repo)).issubset(set(repo.changesets.values()))
    True
    
 Walking
@@ -156,15 +161,15 @@ Tags and branches
 
 .. code-block:: python
    
-   >>> repo.branches
+   >>> [changeset.branch for changeset in repo.branches]
    ['default', 'web']
-   >>> repo.tags
-   ['tip']
+   >>> [changeset.tags for changeset in repo.tags]
+   [['tip']]
    >>> # get changeset we know well
    >>> chset44 = repo.get_changeset(44)
    >>> chset44.branch
    'web'
-   >>> chset44.tags # most probably empty list after commit
+   >>> chset44.tags
    []
 
 Give me a file finally!
@@ -203,6 +208,7 @@ Give me a file finally!
    >>> f.lexer_alias # shortcut to get first of lexers' available aliases
    'python'
    >>> f.name
+   'hg.py'
    >>>
    >>> # wanna go back? why? oh, whatever...
    >>> f.parent
