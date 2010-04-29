@@ -261,21 +261,13 @@ class DirNode(Node):
         self._nodes_dict = dict((node.path, node) for node in nodes)
         return sorted(nodes)
 
-    def _get_files(self):
-        """
-        Cannot be implemented as LazyProperty, and have to stay *after* nodes
-        lazy attribute.
-        """
+    @LazyProperty
+    def files(self):
         return sorted((node for node in self.nodes if node.is_file()))
-    files = property(_get_files)
 
-    def _get_dirs(self):
-        """
-        Cannot be implemented as LazyProperty, and have to stay *after* nodes
-        lazy attribute.
-        """
+    @LazyProperty
+    def dirs(self):
         return sorted((node for node in self.nodes if node.is_dir()))
-    dirs = property(_get_dirs)
 
     def __iter__(self):
         for node in self.nodes:
