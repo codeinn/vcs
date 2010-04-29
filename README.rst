@@ -11,9 +11,6 @@ Introduction
 ``vcs`` is abstraction layer over various version control systems. It is
 designed as feature-rich Python_ library with clean *API*. 
 
-.. warning::
-   This library is at early-development *ALPHA* stage.
-
 .. note::
    Currently only Mercurial_ backend is being developed. Git_ is going to be
    second backend.
@@ -21,6 +18,8 @@ designed as feature-rich Python_ library with clean *API*.
 **Features**
 
 - Common *API* for SCM backends
+- Fetching repositories data lazily
+- Simple caching mechanism so we don't hit repo too often
 
 **Incoming**
 
@@ -37,9 +36,6 @@ http://packages.python.org/vcs/.
 You may also build documentation for yourself - go into ``docs/`` and run::
 
    make html
-
-.. note::
-   In order to build documentation you would need Sphinx_.
 
 .. _python: http://www.python.org/
 .. _Django: http://www.djangoproject.com/

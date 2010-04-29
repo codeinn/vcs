@@ -76,7 +76,7 @@ class MercurialRepository(BaseRepository):
     Mercurial repository backend
     """
 
-    def __init__(self, repo_path, create=False, baseui=ui.ui()):
+    def __init__(self, repo_path, create=False, baseui=None):
         """
         Raises RepositoryError if repository could not be find at the given
         ``repo_path``.
@@ -88,7 +88,7 @@ class MercurialRepository(BaseRepository):
         """
 
         self.path = abspath(repo_path)
-        self.baseui = baseui
+        self.baseui = baseui or ui.ui()
         # We've set path and ui, now we can set repo itself
         self._set_repo(create)
         self.description = self.get_description()
