@@ -155,7 +155,7 @@ def ask_basic_auth(request, realm=BASIC_AUTH_REALM):
     """
     response = HttpResponse()
     response.status_code = 401
-    response['www-authenticate'] = 'Basic realm="%s"' % 'qwe'
+    response['www-authenticate'] = 'Basic realm="%s"' % realm
     return response
 
 def log_error(error):

@@ -11,7 +11,7 @@ def validate_type(type):
 
 class Repository(models.Model):
     type = models.CharField(max_length=32, validators=[validate_type])
-    path = models.CharField(max_length=1024, unique=True)
+    path = models.CharField(max_length=255, unique=True)
 
     @LazyProperty
     def _repo(self):
