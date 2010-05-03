@@ -225,15 +225,9 @@ class FileNode(Node):
 
     @LazyProperty
     def history(self):
-        def _generator():
-            from mercurial.node import hex
-            if self.changeset == None:
-                raise NodeError('Unable to get changeset for this FileNode')
-            fctx = self.changeset._get_filectx(self.path)
-            for x in fctx.filelog():
-                n = fctx.filectx(x).node()
-                yield self.changeset.repository.get_changeset(hex(n))
-        return _generator()
+        if self.changeset == None:
+            raise NodeError('Unable to get changeset for this FileNode')
+        return self.changeset.get_file_history(self.path)
 
 class DirNode(Node):
     """

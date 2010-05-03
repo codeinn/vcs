@@ -23,6 +23,7 @@ from mercurial import ui
 from mercurial.context import short
 from mercurial.localrepo import localrepository
 from mercurial.error import RepoError, RepoLookupError
+from mercurial.node import hex
 from mercurial.hgweb.hgwebdir_mod import findrepos
 
 def get_repositories(repos_prefix, repos_path, baseui):
@@ -109,7 +110,7 @@ class MercurialRepository(BaseRepository):
 
     @LazyProperty
     def tags(self):
-        
+
         sortkey = lambda ctx: ctx._ctx.rev()
         return sorted([self.get_changeset(short(head)) for head in
             self.repo.tags().values()], key=sortkey, reverse=True)
@@ -336,6 +337,17 @@ class MercurialChangeset(BaseChangeset):
         fctx = self._get_filectx(path)
         changeset = self.repository.get_changeset(fctx.linkrev())
         return changeset
+
+    def get_file_history(self, path):
+        """
+        Returns history of file as reversed list of ``Changeset`` objects for
+        which file at given ``path`` has been modified.
+        """
+        fctx = self._get_filectx(path)
+        nodes = [fctx.filectx(x).node() for x in fctx.filelog()]
+        changesets = [self.repository.get_changeset(hex(node))
+            for node in reversed(nodes)]
+        return changesets
 
     def get_nodes(self, path):
         """

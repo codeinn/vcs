@@ -220,6 +220,13 @@ class BaseChangeset(object):
         """
         raise NotImplementedError
 
+    def get_file_history(self, path):
+        """
+        Returns history of file as reversed list of ``Changeset`` objects for
+        which file at given ``path`` has been modified.
+        """
+        raise NotImplementedError
+
     def get_nodes(self, path):
         """
         Returns combined ``DirNode`` and ``FileNode`` objects list representing
