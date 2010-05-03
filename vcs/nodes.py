@@ -223,6 +223,18 @@ class FileNode(Node):
         """
         return self.lexer.aliases[0]
 
+    @LazyProperty
+    def history(self):
+        def _generator():
+            from mercurial.node import hex
+            if self.changeset == None:
+                raise NodeError('Unable to get changeset for this FileNode')
+            fctx = self.changeset._get_filectx(self.path)
+            for x in fctx.filelog():
+                n = fctx.filectx(x).node()
+                yield self.changeset.repository.get_changeset(hex(n))
+        return _generator()
+
 class DirNode(Node):
     """
     DirNode stores list of files and directories within this node.
