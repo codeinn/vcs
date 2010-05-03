@@ -108,8 +108,9 @@ class MercurialRepository(BaseRepository):
 
     @LazyProperty
     def tags(self):
-        return [self.get_changeset(short(head)) for head in
-            self.repo.tags().values()]
+        sortkey = lambda ctx: ('close' not in ctx._ctx.extra(), ctx._ctx.rev())
+        return sorted([self.get_changeset(short(head)) for head in
+            self.repo.tags().values()], key=sortkey, reverse=True)
 
     def _set_repo(self, create):
         """
