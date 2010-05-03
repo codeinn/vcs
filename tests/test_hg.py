@@ -255,6 +255,26 @@ class MercurialChangesetTest(unittest.TestCase):
         for revision, path, size in to_check:
             self._test_file_size(revision, path, size)
 
+    def test_file_history(self):
+        # we can only check if those revisions are present in the history
+        # as we cannot update this test every time file is changed
+        files = {
+            'setup.py': [7, 18, 45, 46, 47, 69, 77],
+            'vcs/nodes.py': [7, 8, 24, 26, 30, 45, 47, 49, 56, 57, 58, 59, 60,
+                61, 73, 76],
+            'vcs/backends/hg.py': [4, 5, 6, 11, 12, 13, 14, 15, 16, 21, 22, 23,
+                26, 27, 28, 30, 31, 33, 35, 36, 37, 38, 39, 40, 41, 44, 45, 47,
+                48, 49, 53, 54, 55, 58, 60, 61, 67, 68, 69, 70, 73, 77, 78, 79,
+                82],
+        }
+        for path, revs in files.items():
+            node = self.repo.request(path)
+            node_revs = [chset.revision for chset in node.history]
+            self.assertTrue(set(revs).issubset(set(node_revs)),
+                "We assumed that %s is subset of revisions for which file %s "
+                "has been changed, and history of that node returned: %s"
+                % (revs, path, node_revs))
+
 if __name__ == '__main__':
     unittest.main()
 
