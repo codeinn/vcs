@@ -172,8 +172,8 @@ Tags and branches
    >>> chset44.tags
    []
 
-Give me a file finally!
-~~~~~~~~~~~~~~~~~~~~~~~
+Give me a file, finally!
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -217,4 +217,44 @@ Give me a file finally!
    >>> # is it cached? hell yeah...
    >>> f is f.parent.get_node('hg.py') is repo.request('vcs/backends/hg.py', 44)
    True
+
+How about history?
+~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 0.1.1
+
+It is possible to retrieve changesets for which file node has been changed and
+this is pretty damn simple. Let's say we want to see history of the file located
+at ``vcs/nodes.py``.
+
+.. code-block:: python
+
+   >>> f = repo.request('vcs/nodes.py')
+   >>> print f.history
+   [<MercurialChangeset at 82>, <MercurialChangeset at 81>, <MercurialChange
+   ...
+
+Note that ``history`` attribute is computed lazily and returned list is reversed
+- changesets are retrieved from most recent to oldest.
+
+Show me the difference!
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Here we present naive implementation of diff table for the given file node
+located at ``vcs/nodes.py``. First we have to get the node from repository.
+After that we retrieve last changeset for which the file has been modified
+and we create a html file using `difflib`_.
+
+.. code-block:: python
+
+   >>> f = repo.request('vcs/nodes.py', 82)
+   >>> f_old = repo.request(f.path, 81)
+   >>> out = open('out.html', 'w')
+   >>> from difflib import HtmlDiff
+   >>> hd = HtmlDiff(tabsize=4)
+   >>> diffs = hd.make_file(f.content.split('\n'), f_old.content.split('\n'))
+   >>> out.write(diffs)
+   >>> out.close()
+
+.. _difflib: http://docs.python.org/library/difflib.html
 
