@@ -5,20 +5,17 @@ from vcs import get_repo, RepositoryError
 from vcs.utils.lazy import LazyProperty
 from vcs.web.simplevcs.settings import AVAILABLE_BACKENDS
 
-def validate_type(type):
-    if type not in AVAILABLE_BACKENDS:
-        raise ValidationError("Cannot use type %r" % type)
+def validate_alias(alias):
+    if alias not in AVAILABLE_BACKENDS:
+        raise ValidationError("Cannot use alias %r" % alias)
 
 class Repository(models.Model):
-    type = models.CharField(max_length=32, validators=[validate_type])
+    alias = models.CharField(max_length=32, validators=[validate_alias])
     path = models.CharField(max_length=255, unique=True)
 
     @LazyProperty
     def _repo(self):
-        if not self.id:
-            raise ValidationError("Cannot access backend repository "
-                "object until model is saved")
-        repo = get_repo(self.type, path=self.path)
+        repo = get_repo(self.alias, path=self.path)
         return repo
 
     @LazyProperty
@@ -50,8 +47,8 @@ class Repository(models.Model):
 
     def save(self, *args, **kwargs):
         try:
-            get_repo(self.type, path=self.path, create=True)
+            get_repo(self.alias, path=self.path, create=True)
         except RepositoryError:
-            get_repo(self.type, path=self.path)
+            get_repo(self.alias, path=self.path)
         super(Repository, self).save(*args, **kwargs)
 

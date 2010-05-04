@@ -1,13 +1,15 @@
+from difflib import unified_diff
 from django.contrib import messages
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 
 from vcs.exceptions import VCSError
+from vcs.utils.diffs import get_udiff
 from vcs.web.simplevcs.utils import get_repository
 
-def browse_repository(request, template_name, repository=None,
-        repository_path=None, repository_alias=None, revision=None,
-        node_path='', extra_context={}):
+def diff_file(request, file_path, template_name, repository=None,
+        repository_path=None, repository_alias=None, revision1=None,
+        revision2=None, extra_context={}):
     """
     Generic repository browser view.
 
@@ -16,19 +18,16 @@ def browse_repository(request, template_name, repository=None,
     - Either ``repository`` or (``repository_path`` *and* ``repository_alias``
       is required
 
+    - ``file_path``: relative location of the file node in the repository.
+
+    - ``revision1``: object identifying changeset on a backend.
+
+    - ``revision2``: object identifying changeset on a backend.
+
     - ``template_name``: The full name of a template to use in rendering the
       page.
 
     **Optional arguments:**
-
-    - ``revision``: object with which backend may identify changeset. In
-      example, mercurial backend recognizes *hex* or **short** strings, revision
-      numbers (given as integer or string) or ``tip`` string. If none specified,
-      most recent changeset (sometimes called ``tip``) is taken.
-
-    - ``node_path``: relative location of the node in the repository (location
-      to file or directory). By default this is an empty string which would
-      retrieve root node from repository.
 
     - ``extra_context``: A dictionary of values to add to the template context.
       By default, this is an empty dictionary.
@@ -40,9 +39,12 @@ def browse_repository(request, template_name, repository=None,
     - ``repository``: same what was given or computed from ``repository_path``
       and ``repository_alias``
 
-    - ``changeset``: based on the given ``revision`` or tip if none given
+    - ``file1``: ``FileNode`` retrieved by backend for given ``revision1`` param
 
-    - ``root``: repository's node on the given ``node_path``
+    - ``file2``: ``FileNode`` retrieved by backend for given ``revision2`` param
+
+    - ``diff_content``: unified diff for retrieved ``file1`` and ``file2``
+      contents
 
     """
     context = {}
@@ -52,10 +54,15 @@ def browse_repository(request, template_name, repository=None,
     try:
         repository = get_repository(repository, repository_path,
             repository_alias)
+        file1 = repository.request(file_path, revision1)
+        file2 = repository.request(file_path, revision2)
+        diff_content = get_udiff(file1.content, file2.content)
+
         context.update(dict(
             repository = repository,
-            changeset = repository.get_changeset(),
-            root = repository.request(node_path, revision=revision),
+            file1 = file1,
+            file2 = file2,
+            diff_content = diff_content,
         ))
     except VCSError, err:
         messages.error(request, str(err))

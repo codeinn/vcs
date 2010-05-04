@@ -10,7 +10,10 @@ from django.http import HttpResponse
 from django.utils.encoding import smart_str
 from django.contrib.auth import authenticate
 
+from vcs import get_repo
 from vcs.web.simplevcs.settings import BASIC_AUTH_REALM
+from vcs.web.simplevcs.models import Repository
+from vcs.web.exceptions import RequestError
 
 class MercurialRequest(wsgirequest):
     """
@@ -168,4 +171,24 @@ def log_error(error):
     msg = "Got exception: %s\n\n%s"\
         % (error, f.getvalue())
     logging.error(msg)
+
+def get_repository(repository=None, path=None, alias=None):
+    """
+    Normalizes given parameters to a ``Repository`` object. May pass only
+    ``repository`` or both ``path`` *AND* ``alias``.
+
+    :param: repository: should be a backend ``Repository`` object
+    :param: path: path to repository on local machine
+    :param: alias: alias of backend specified at ``vcs.backends.BACKENDS`` dict
+    """
+    if repository and not isinstance(repository, Repository):
+        raise RequestError("Given repository has to be instance of Repository "
+            "model, not %s" % repository.__class__)
+    elif repository and (path or alias):
+        raise RequestError("Cannot pass both repository with path/alias")
+    elif not repository and not (path and alias):
+        raise RequestError("Have to pass repository OR path/alias")
+    if not repository:
+        repository = get_repo(alias=alias, path=path)
+    return repository
 
