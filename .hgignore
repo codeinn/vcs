@@ -6,6 +6,7 @@ syntax: regexp
 ^\.pydevproject$
 syntax: glob
 *.pyc
+*.orig
 *.log
 *.egg
 *.egg-info
