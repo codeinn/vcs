@@ -49,7 +49,7 @@ copyright = u'2010, Marcin Kuzminski & Lukasz Balcerzak'
 # built documents.
 #
 # The short X.Y version.
-version = '.'.join(map(str, vcs.VERSION[:2]))
+version = vcs.get_version()
 # The full version, including alpha/beta/rc tags.
 release = vcs.__version__
 

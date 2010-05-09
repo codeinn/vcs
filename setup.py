@@ -3,7 +3,6 @@ import sys
 from setuptools import setup, find_packages
 
 vcs = __import__('vcs')
-VERSION = vcs.__version__
 readme_file = 'README.rst'
 
 try:
@@ -18,7 +17,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.simplevcs.test_settings'
 
 setup(
     name = 'vcs',
-    version = VERSION,
+    version = vcs.get_version(),
     url = 'http://bitbucket.org/marcinkuzminski/vcs/',
     author = 'Marcin Kuzminski, Lukasz Balcerzak',
     author_email = 'marcin@python-blog.com',
