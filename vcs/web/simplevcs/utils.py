@@ -186,9 +186,9 @@ def get_repository(repository=None, path=None, alias=None):
             "model, not %s" % repository.__class__)
     elif repository and (path or alias):
         raise RequestError("Cannot pass both repository with path/alias")
-    elif not repository and not (path and alias):
+    elif repository is None and not (path and alias):
         raise RequestError("Have to pass repository OR path/alias")
-    if not repository:
+    if repository is None:
         repository = get_repo(alias=alias, path=path)
     return repository
 
