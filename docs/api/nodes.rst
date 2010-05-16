@@ -17,6 +17,12 @@ FileNode
 .. autoclass:: vcs.nodes.FileNode
    :members:
 
+RemovedFileNode
+---------------
+
+.. autoclass:: vcs.nodes.RemovedFileNode
+   :members:
+
 DirNode
 -------
 

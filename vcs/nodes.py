@@ -269,11 +269,12 @@ class FileNode(Node):
 
 class RemovedFileNode(FileNode):
     """
-    Dummy FileNode objects - trying to access any public attribute
-    except path, name or changset would raise RemovedFileNodeError.
+    Dummy FileNode class - trying to access any public attribute except path,
+    name, kind or state (or methods/attributes checking those two) would raise
+    RemovedFileNodeError.
     """
     ALLOWED_ATTRIBUTES = ['name', 'path', 'state', 'is_root', 'is_file',
-        'is_dir', 'kind']
+        'is_dir', 'kind', 'added', 'changed', 'not_changed', 'removed']
 
     def __init__(self, path):
         """
