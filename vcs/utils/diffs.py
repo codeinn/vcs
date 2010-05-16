@@ -269,7 +269,6 @@ class DiffProcessor(object):
                     anchor_new = "%(filename)s_NEW%(oldline_no)s" % \
                                              {'filename':diff['filename'],
                                              'oldline_no':change['new_lineno']}
-                    print change
                     cond_old = change['old_lineno'] != '...' and \
                                                         change['old_lineno']
                     cond_new = change['new_lineno'] != '...' and \
