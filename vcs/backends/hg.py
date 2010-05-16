@@ -15,7 +15,7 @@ import datetime
 
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, VCSError, ChangesetError
-from vcs.nodes import FileNode, DirNode, NodeKind, RootNode
+from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.paths import abspath, get_dirs_for_path
 from vcs.utils.lazy import LazyProperty
 
@@ -391,8 +391,56 @@ class MercurialChangeset(BaseChangeset):
                     node = DirNode(path, changeset=self)
             else:
                 raise ChangesetError("There is no file nor directory "
-                    "at the given path: %r" % path)
+                    "at the given path: %r at revision %r"
+                    % (path, '%s:%s' % (self.revision, self.id)))
             # cache node
             self.nodes[path] = node
         return self.nodes[path]
+
+    @LazyProperty
+    def added(self):
+        """
+        Returns list of added ``FileNode`` objects.
+        """
+        paths = self._ctx.files()
+        added_nodes = []
+        for path in paths:
+            try:
+                node = self.get_node(path)
+                if node.history[-1] is self:
+                    added_nodes.append(node)
+            except ChangesetError:
+                pass
+        return added_nodes
+
+    @LazyProperty
+    def changed(self):
+        """
+        Returns list of modified ``FileNode`` objects.
+        """
+        paths = self._ctx.files()
+        changed_nodes = []
+        for path in paths:
+            try:
+                node = self.get_node(path)
+                if node.history[-1] is not self:
+                    changed_nodes.append(node)
+            except ChangesetError:
+                pass
+        return changed_nodes
+
+    @LazyProperty
+    def removed(self):
+        """
+        Returns list of removed ``FileNode`` objects.
+        """
+        paths = self._ctx.files()
+        removed_nodes = []
+        for path in paths:
+            try:
+                self.get_node(path)
+            except ChangesetError:
+                node = RemovedFileNode(path=path, changeset=self)
+                removed_nodes.append(node)
+        return removed_nodes
 

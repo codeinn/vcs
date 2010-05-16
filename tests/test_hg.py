@@ -275,6 +275,50 @@ class MercurialChangesetTest(unittest.TestCase):
                 "has been changed, and history of that node returned: %s"
                 % (revs, path, node_revs))
 
+    def test_files_state(self):
+        """
+        Tests which files have been added/changed/removed at particular revision
+        """
+        # 88, 85, 82, 68, 64
+        # 88:
+        #    added:   0
+        #    changed: 1 ['.hgignore']
+        #    removed: 0
+        chset88 = self.repo.get_changeset(88)
+        self.assertEqual(set((node.path for node in chset88.added)),  set())
+        self.assertEqual(set((node.path for node in chset88.changed)),
+            set(['.hgignore']))
+        self.assertEqual(set((node.path for node in chset88.removed)), set())
+
+        # 85:
+        #    added:   2 ['vcs/utils/diffs.py', 'vcs/web/simplevcs/views/diffs.py']
+        #    changed: 4 ['vcs/web/simplevcs/models.py', ...]
+        #    removed: 1 ['vcs/utils/web.py']
+        chset85 = self.repo.get_changeset(85)
+        self.assertEqual(set((node.path for node in chset85.added)), set([
+            'vcs/utils/diffs.py',
+            'vcs/web/simplevcs/views/diffs.py']))
+        self.assertEqual(set((node.path for node in chset85.changed)), set([
+            'vcs/web/simplevcs/models.py',
+            'vcs/web/simplevcs/utils.py',
+            'vcs/web/simplevcs/views/__init__.py',
+            'vcs/web/simplevcs/views/repository.py',
+            ]))
+        self.assertEqual(set((node.path for node in chset85.removed)),
+            set(['vcs/utils/web.py']))
+
+        # 64:
+        #    added:   0
+        #    changed: 1 ['.hgignore']
+        #    removed: 20
+        chset64 = self.repo.get_changeset(64)
+        self.assertEqual(set((node.path for node in chset64.added)), set())
+        self.assertEqual(set((node.path for node in chset64.changed)),
+            set(['vcs/backends/base.py']))
+        self.assertTrue('docs/api.rst' in
+            [node.path for node in chset64.removed])
+
+
 if __name__ == '__main__':
     unittest.main()
 

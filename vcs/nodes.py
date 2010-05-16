@@ -10,6 +10,9 @@ from vcs.exceptions import VCSError
 class NodeError(VCSError):
     pass
 
+class RemovedFileNodeError(NodeError):
+    pass
+
 class NodeKind:
     DIR = 1
     FILE = 2
@@ -228,6 +231,23 @@ class FileNode(Node):
         if self.changeset == None:
             raise NodeError('Unable to get changeset for this FileNode')
         return self.changeset.get_file_history(self.path)
+
+class RemovedFileNode(FileNode):
+    """
+    Dummy FileNode objects - trying to access any public attribute
+    except path, name or changset would raise RemovedFileNodeError.
+    """
+    ALLOWED_ATTRIBUTES = ['name', 'path', 'changeset', 'is_root', 'is_file',
+        'is_dir', 'kind']
+
+    def __init__(self, path, changeset=None):
+        super(RemovedFileNode, self).__init__(path=path, changeset=changeset)
+
+    def __getattribute__(self, attr):
+        if attr.startswith('_') or attr in RemovedFileNode.ALLOWED_ATTRIBUTES:
+            return super(RemovedFileNode, self).__getattribute__(attr)
+        raise RemovedFileNodeError("Cannot access attribute %s on "
+            "RemovedFileNode" % attr)
 
 class DirNode(Node):
     """

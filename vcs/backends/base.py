@@ -249,3 +249,24 @@ class BaseChangeset(object):
         """
         return self.get_node('')
 
+    @LazyProperty
+    def added(self):
+        """
+        Returns list of added ``FileNode`` objects.
+        """
+        raise NotImplementedError
+
+    @LazyProperty
+    def changed(self):
+        """
+        Returns list of modified ``FileNode`` objects.
+        """
+        raise NotImplementedError
+
+    @LazyProperty
+    def removed(self):
+        """
+        Returns list of removed ``FileNode`` objects.
+        """
+        raise NotImplementedError
+
