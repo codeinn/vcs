@@ -2,7 +2,7 @@ import unittest
 
 from vcs.backends.hg import MercurialRepository, MercurialChangeset
 from vcs.exceptions import ChangesetError, RepositoryError
-from vcs.nodes import NodeKind
+from vcs.nodes import NodeKind, NodeState
 
 TEST_HG_REPO = '/tmp/vcs'
 
@@ -275,7 +275,7 @@ class MercurialChangesetTest(unittest.TestCase):
                 "has been changed, and history of that node returned: %s"
                 % (revs, path, node_revs))
 
-    def test_files_state(self):
+    def test_changeset_state(self):
         """
         Tests which files have been added/changed/removed at particular revision
         """
@@ -317,6 +317,37 @@ class MercurialChangesetTest(unittest.TestCase):
             set(['vcs/backends/base.py']))
         self.assertTrue('docs/api.rst' in
             [node.path for node in chset64.removed])
+        self.assertEqual(20, len(chset64.removed))
+
+    def test_files_state(self):
+        """
+        Tests state of FileNodes.
+        """
+        node = self.repo.request('vcs/utils/diffs.py', 85)
+        self.assertTrue(node.state, NodeState.ADDED)
+        self.assertTrue(node.added)
+        self.assertFalse(node.changed)
+        self.assertFalse(node.not_changed)
+        self.assertFalse(node.removed)
+
+        node = self.repo.request('.hgignore', 88)
+        self.assertTrue(node.state, NodeState.CHANGED)
+        self.assertFalse(node.added)
+        self.assertTrue(node.changed)
+        self.assertFalse(node.not_changed)
+        self.assertFalse(node.removed)
+
+        node = self.repo.request('setup.py', 85)
+        self.assertTrue(node.state, NodeState.NOT_CHANGED)
+        self.assertFalse(node.added)
+        self.assertFalse(node.changed)
+        self.assertTrue(node.not_changed)
+        self.assertFalse(node.removed)
+
+        # If node has REMOVED state then trying to fetch it would raise
+        # ChangesetError exception
+        self.assertRaises(ChangesetError,
+            self.repo.request, 'vcs/utils/web.py', 85)
 
 
 if __name__ == '__main__':
