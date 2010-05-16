@@ -109,6 +109,15 @@ class NodeBasicTest(unittest.TestCase):
         for node in dirnode:
             node == dirnode.get_node(node.path)
 
+    def test_node_state(self):
+        """
+        Without link to changeset nodes should raise NodeError.
+        """
+        node = FileNode('anything')
+        self.assertRaises(NodeError, getattr, node, 'state')
+        node = DirNode('anything')
+        self.assertRaises(NodeError, getattr, node, 'state')
+
 if __name__ == '__main__':
     unittest.main()
 

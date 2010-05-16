@@ -440,7 +440,7 @@ class MercurialChangeset(BaseChangeset):
             try:
                 self.get_node(path)
             except ChangesetError:
-                node = RemovedFileNode(path=path, changeset=self)
+                node = RemovedFileNode(path=path)
                 removed_nodes.append(node)
         return removed_nodes
 

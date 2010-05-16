@@ -17,6 +17,12 @@ class NodeKind:
     DIR = 1
     FILE = 2
 
+class NodeState:
+    ADDED = 'added'
+    CHANGED = 'changed'
+    NOT_CHANGED = 'not changed'
+    REMOVED = 'removed'
+
 class Node(object):
     """
     Simplest class representing file or directory on repository.  SCM backends
@@ -127,6 +133,23 @@ class Node(object):
         """
         return self.kind == NodeKind.DIR and self.path == ''
 
+    @LazyProperty
+    def added(self):
+        return self.state is NodeState.ADDED
+
+    @LazyProperty
+    def changed(self):
+        return self.state is NodeState.CHANGED
+
+    @LazyProperty
+    def not_changed(self):
+        return self.state is NodeState.NOT_CHANGED
+
+    @LazyProperty
+    def removed(self):
+        return self.state is NodeState.REMOVED
+
+
 class FileNode(Node):
     """
     Class representing file nodes.
@@ -232,22 +255,41 @@ class FileNode(Node):
             raise NodeError('Unable to get changeset for this FileNode')
         return self.changeset.get_file_history(self.path)
 
+    @LazyProperty
+    def state(self):
+        if not self.changeset:
+            raise NodeError("Cannot check state of the node if it's not "
+                "linked with changeset")
+        elif self in self.changeset.added:
+            return NodeState.ADDED
+        elif self in self.changeset.changed:
+            return NodeState.CHANGED
+        else:
+            return NodeState.NOT_CHANGED
+
 class RemovedFileNode(FileNode):
     """
     Dummy FileNode objects - trying to access any public attribute
     except path, name or changset would raise RemovedFileNodeError.
     """
-    ALLOWED_ATTRIBUTES = ['name', 'path', 'changeset', 'is_root', 'is_file',
+    ALLOWED_ATTRIBUTES = ['name', 'path', 'state', 'is_root', 'is_file',
         'is_dir', 'kind']
 
-    def __init__(self, path, changeset=None):
-        super(RemovedFileNode, self).__init__(path=path, changeset=changeset)
+    def __init__(self, path):
+        """
+        :param path: relative path to the node
+        """
+        super(RemovedFileNode, self).__init__(path=path)
 
     def __getattribute__(self, attr):
         if attr.startswith('_') or attr in RemovedFileNode.ALLOWED_ATTRIBUTES:
             return super(RemovedFileNode, self).__getattribute__(attr)
         raise RemovedFileNodeError("Cannot access attribute %s on "
             "RemovedFileNode" % attr)
+
+    @LazyProperty
+    def state(self):
+        return NodeState.REMOVED
 
 class DirNode(Node):
     """
@@ -339,6 +381,10 @@ class DirNode(Node):
                 raise KeyError
         except KeyError:
             raise NodeError("Node does not exist at %s" % path)
+
+    @LazyProperty
+    def state(self):
+        raise NodeError("Cannot access state of DirNode")
 
 class RootNode(DirNode):
     """
