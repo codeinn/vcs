@@ -1,30 +1,37 @@
 # -*- coding: utf-8 -*-
 # original copyright: 2007-2008 by Armin Ronacher
 # licensed under the BSD license.
+import re
+import difflib
+import logging
 
 from vcs.nodes import FileNode
 from vcs.exceptions import VCSError
 from difflib import unified_diff
-import re, difflib
 
-def get_udiff(filenode1, filenode2):
+def get_udiff(filenode_old, filenode_new):
     """
-    Returns unified diff between given ``filenode1`` and ``filenode2``.
+    Returns unified diff between given ``filenode_old`` and ``filenode_new``.
     """
-    if not isinstance(filenode1, FileNode) or not isinstance(filenode2, FileNode):
-        raise VCSError('given file should be a FileNode object')
-    
-    vcs_udiff = unified_diff(filenode1.content.splitlines(True),
-                               filenode2.content.splitlines(True),
-                               filenode1.name,
-                               filenode2.name,
-                               filenode1.last_changeset.date,
-                               filenode2.last_changeset.date)
+    for filenode in (filenode_old, filenode_new):
+        if not isinstance(filenode, FileNode):
+            raise VCSError("Given object should be FileNode object, not %s"
+                % filenode.__class__)
+    if not filenode_old.last_changeset.date < filenode.last_changeset.date:
+        logging.debug("Generating udiff for filenodes with not increasing "
+            "dates")
+
+    vcs_udiff = unified_diff(filenode_old.content.splitlines(True),
+                               filenode_new.content.splitlines(True),
+                               filenode_old.name,
+                               filenode_new.name,
+                               filenode_old.last_changeset.date,
+                               filenode_new.last_changeset.date)
     return vcs_udiff
 
-
 class DiffProcessor(object):
-    """Give it a unified diff and it returns a list of the files that were
+    """
+    Give it a unified diff and it returns a list of the files that were
     mentioned in the diff together with a dict of meta information that
     can be used to render it in a HTML template.
     """
@@ -36,49 +43,53 @@ class DiffProcessor(object):
         """
         if isinstance(udiff, basestring):
             udiff = udiff.splitlines(1)
-        
+
         self.lines = map(self.escaper, udiff)
-        
+
         # Select a differ.
         if differ == 'difflib':
             self.differ = self._highlight_line_difflib
         else:
             self.differ = self._highlight_line_udiff
-            
+
     def escaper(self, string):
         return string.replace('<', '&lt;').replace('>', '&gt;')
 
     def _extract_rev(self, line1, line2):
-        """Extract the filename and revision hint from a line."""
+        """
+        Extract the filename and revision hint from a line.
+        """
         try:
             if line1.startswith('--- ') and line2.startswith('+++ '):
                 l1 = line1[4:].split(None, 1)
                 old_filename = l1[0] if len(l1) >= 1 else None
                 old_rev = l1[1] if len(l1) == 2 else 'old'
-                
+
                 l2 = line1[4:].split(None, 1)
-                new_filename = l2[0] if len(l2) >= 1 else None
+                #new_filename = l2[0] if len(l2) >= 1 else None
                 new_rev = l2[1] if len(l2) == 2 else 'new'
-                                 
+
                 return old_filename, new_rev, old_rev
         except (ValueError, IndexError):
             pass
-        
+
         return None, None, None
 
     def _highlight_line_difflib(self, line, next):
-        """Highlight inline changes in both lines."""
-            
+        """
+        Highlight inline changes in both lines.
+        """
+
         if line['action'] == 'del':
             old, new = line, next
         else:
             old, new = next, line
-        
+
         oldwords = re.split(r'(\W)', old['line'])
         newwords = re.split(r'(\W)', new['line'])
-        
+
         sequence = difflib.SequenceMatcher(None, oldwords, newwords)
-        
+
         oldfragments, newfragments = [], []
         for tag, i1, i2, j1, j2 in sequence.get_opcodes():
             oldfrag = ''.join(oldwords[i1:i2])
@@ -90,12 +101,14 @@ class DiffProcessor(object):
                     newfrag = '<ins>%s</ins>' % newfrag
             oldfragments.append(oldfrag)
             newfragments.append(newfrag)
-        
+
         old['line'] = "".join(oldfragments)
         new['line'] = "".join(newfragments)
 
     def _highlight_line_udiff(self, line, next):
-        """Highlight inline changes in both lines."""
+        """
+        Highlight inline changes in both lines.
+        """
         start = 0
         limit = min(len(line['line']), len(next['line']))
         while start < limit and line['line'][start] == next['line'][start]:
@@ -123,7 +136,9 @@ class DiffProcessor(object):
             do(next)
 
     def _parse_udiff(self):
-        """Parse the diff an return data for the template."""
+        """
+        Parse the diff an return data for the template.
+        """
         lineiter = iter(self.lines)
         files = []
         try:
@@ -151,7 +166,7 @@ class DiffProcessor(object):
                     match = self._chunk_re.match(line)
                     if not match:
                         break
-                    
+
                     lines = []
                     chunks.append(lines)
 
@@ -162,7 +177,7 @@ class DiffProcessor(object):
                     context = len(match.groups()) == 5
                     old_end += old_line
                     new_end += new_line
-                    
+
 
                     if context:
                         if not skipfirst:
@@ -213,7 +228,7 @@ class DiffProcessor(object):
         for file in files:
             for chunk in chunks:
                 lineiter = iter(chunk)
-                first = True
+                #first = True
                 try:
                     while 1:
                         line = lineiter.next()
@@ -241,18 +256,18 @@ class DiffProcessor(object):
         """
         Return udiff as html table with customized css classes
         """
-        
+
         def _link_to_if(condition, label, url):
             """
             Generates a link if condition is meet or just the label if not.
             """
-        
+
             if condition:
                 return '''<a href="%(url)s">%(label)s</a>''' % {'url': url,
                                                                 'label':label}
             else:
                 return label
-        
+
         diff_lines = self.prepare()
         _html = '''<table class="%(table_class)s">\n''' \
                                             % {'table_class':table_class}
@@ -272,46 +287,46 @@ class DiffProcessor(object):
                     cond_old = change['old_lineno'] != '...' and \
                                                         change['old_lineno']
                     cond_new = change['new_lineno'] != '...' and \
-                                                        change['new_lineno']               
+                                                        change['new_lineno']
                     if cond_old:
                         anchor_old_id = 'id="%s"' % anchor_old
                     if cond_new:
                         anchor_new_id = 'id="%s"' % anchor_new
                     ############################################################
-                    # OLD LINE NUMBER    
+                    # OLD LINE NUMBER
                     ############################################################
                     _html += '''\t<td %(a_id)s class="%(old_lineno_cls)s">''' \
                                     % {'a_id':anchor_old_id,
-                                       'old_lineno_cls':old_lineno_class} 
-                                    
+                                       'old_lineno_cls':old_lineno_class}
+
                     _html += '''<pre>%(link)s</pre>''' \
                         % {'link':
                         _link_to_if(cond_old, change['old_lineno'], '#%s' \
-                                                                % anchor_old)} 
-                    _html += '''</td>\n''' 
+                                                                % anchor_old)}
+                    _html += '''</td>\n'''
                     ############################################################
                     # NEW LINE NUMBER
                     ############################################################
-                    
+
                     _html += '''\t<td %(a_id)s class="%(new_lineno_cls)s">''' \
                                     % {'a_id':anchor_new_id,
-                                       'new_lineno_cls':new_lineno_class} 
-                                    
+                                       'new_lineno_cls':new_lineno_class}
+
                     _html += '''<pre>%(link)s</pre>''' \
                         % {'link':
                         _link_to_if(cond_new, change['new_lineno'], '#%s' \
-                                                                % anchor_new)} 
+                                                                % anchor_new)}
                     _html += '''</td>\n'''
                     ############################################################
-                    # CODE           
+                    # CODE
                     ############################################################
                     _html += '''\t<td class="%(code_class)s">''' \
-                                                    % {'code_class':code_class} 
+                                                    % {'code_class':code_class}
                     _html += '''\n\t\t<pre>%(code)s</pre>\n''' \
-                                                    % {'code':change['line']} 
+                                                    % {'code':change['line']}
                     _html += '''\t</td>'''
-                    _html += '''\n</tr>\n''' 
-        _html += '''</table>''' 
+                    _html += '''\n</tr>\n'''
+        _html += '''</table>'''
         return _html
 
 

@@ -1,10 +1,9 @@
-from difflib import unified_diff
 from django.contrib import messages
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 
 from vcs.exceptions import VCSError
-from vcs.utils.diffs import get_udiff
+from vcs.utils.diffs import get_udiff, DiffProcessor
 from vcs.web.simplevcs.utils import get_repository
 
 def diff_file(request, file_path, template_name, repository=None,
@@ -56,13 +55,14 @@ def diff_file(request, file_path, template_name, repository=None,
             repository_alias)
         file1 = repository.request(file_path, revision1)
         file2 = repository.request(file_path, revision2)
-        diff_content = get_udiff(file1.content, file2.content)
+        diff_content = get_udiff(file1, file2)
 
         context.update(dict(
             repository = repository,
             file1 = file1,
             file2 = file2,
             diff_content = diff_content,
+            differ = DiffProcessor(diff_content),
         ))
     except VCSError, err:
         messages.error(request, str(err))
