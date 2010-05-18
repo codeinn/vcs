@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # original copyright: 2007-2008 by Armin Ronacher
 # licensed under the BSD license.
-import re
+from difflib import unified_diff
+from vcs.exceptions import VCSError
+from vcs.nodes import FileNode
 import difflib
 import logging
-
-from vcs.nodes import FileNode
-from vcs.exceptions import VCSError
-from difflib import unified_diff
+import re
+from itertools import tee
 
 def get_udiff(filenode_old, filenode_new):
     """
@@ -41,11 +41,15 @@ class DiffProcessor(object):
         """
         :param udiff:   a text in udiff format
         """
-        if isinstance(udiff, basestring):
-            udiff = udiff.splitlines(1)
-
-        self.lines = map(self.escaper, udiff)
-
+        
+        self.__udiff = udiff
+        if isinstance(self.__udiff, basestring):
+            udiff = self.__udiff.splitlines(1)
+        else:
+            udiff_copy = self.copy_iterator()
+            
+        self.lines = map(self.escaper, udiff_copy)
+        
         # Select a differ.
         if differ == 'difflib':
             self.differ = self._highlight_line_difflib
@@ -55,6 +59,15 @@ class DiffProcessor(object):
     def escaper(self, string):
         return string.replace('<', '&lt;').replace('>', '&gt;')
 
+    def copy_iterator(self):
+        """
+        make a fresh copy of generator, we should not iterate thru 
+        an original as it's needed for repeating operations on 
+        this instance of DiffProcessor
+        """ 
+        self.__udiff, iterator_copy = tee(self.__udiff)
+        return iterator_copy
+        
     def _extract_rev(self, line1, line2):
         """
         Extract the filename and revision hint from a line.
@@ -250,7 +263,13 @@ class DiffProcessor(object):
         """
         return self._parse_udiff()
 
-    def as_HTML(self, table_class='code-difftable', line_class='line',
+    def raw_diff(self):
+        """
+        Returns raw string as udiff
+        """
+        return ''.join(self.copy_iterator())
+
+    def as_html(self, table_class='code-difftable', line_class='line',
                 new_lineno_class='lineno old', old_lineno_class='lineno new',
                 code_class='code'):
         """
