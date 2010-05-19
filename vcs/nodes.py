@@ -251,10 +251,22 @@ class FileNode(Node):
 
     @LazyProperty
     def history(self):
+        """
+        Returns a list of changeset for this file in which the file was changed
+        """
         if self.changeset == None:
             raise NodeError('Unable to get changeset for this FileNode')
         return self.changeset.get_file_history(self.path)
 
+    @LazyProperty
+    def annotate(self):
+        """
+        Returns a list of three element tuples with lineno,changeset and line
+        """
+        if self.changeset == None:
+            raise NodeError('Unable to get changeset for this FileNode')
+        return self.changeset.get_file_annotate(self.path)
+    
     @LazyProperty
     def state(self):
         if not self.changeset:
