@@ -229,6 +229,10 @@ class FileNode(Node):
         return mtype
 
     @LazyProperty
+    def mimetype_main(self):
+        return self.mimetype.split('/')[0]
+
+    @LazyProperty
     def lexer(self):
         """
         Returns pygment's lexer class. Would try to guess lexer taking file's
@@ -266,7 +270,7 @@ class FileNode(Node):
         if self.changeset == None:
             raise NodeError('Unable to get changeset for this FileNode')
         return self.changeset.get_file_annotate(self.path)
-    
+
     @LazyProperty
     def state(self):
         if not self.changeset:

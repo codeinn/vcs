@@ -5,6 +5,7 @@ from vcs.utils.imports import import_class
 
 BACKENDS = {
     'hg': 'vcs.backends.hg.MercurialRepository',
+    'git': 'vcs.backends.git.GitRepository',
 }
 
 def get_repo(alias, path, create=False):
