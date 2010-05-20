@@ -157,24 +157,24 @@ class MercurialChangesetTest(unittest.TestCase):
         """
         self.setUp()
         chset = self.repo.get_changeset(45)
-        self.assertTrue( len(chset.nodes) == 0 )
+        self.assertTrue(len(chset.nodes) == 0)
         root = chset.root
-        self.assertTrue( len(chset.nodes) == 1 )
-        self.assertTrue( len(root.nodes) == 8 )
+        self.assertTrue(len(chset.nodes) == 1)
+        self.assertTrue(len(root.nodes) == 8)
         # accessing root.nodes updates chset.nodes
-        self.assertTrue( len(chset.nodes) == 9 )
+        self.assertTrue(len(chset.nodes) == 9)
 
         docs = root.get_node('docs')
         # we haven't yet accessed anything new as docs dir was already cached
-        self.assertTrue( len(chset.nodes) == 9 )
-        self.assertTrue( len(docs.nodes) == 8 )
+        self.assertTrue(len(chset.nodes) == 9)
+        self.assertTrue(len(docs.nodes) == 8)
         # accessing docs.nodes updates chset.nodes
-        self.assertTrue( len(chset.nodes) == 17 )
+        self.assertTrue(len(chset.nodes) == 17)
 
-        self.assertTrue( docs is chset.get_node('docs') )
-        self.assertTrue( docs is root.nodes[0] )
-        self.assertTrue( docs is root.dirs[0] )
-        self.assertTrue( docs is chset.get_node('docs') )
+        self.assertTrue(docs is chset.get_node('docs'))
+        self.assertTrue(docs is root.nodes[0])
+        self.assertTrue(docs is root.dirs[0])
+        self.assertTrue(docs is chset.get_node('docs'))
 
     def test_nodes_with_changeset(self):
         self.setUp()
@@ -221,7 +221,7 @@ class MercurialChangesetTest(unittest.TestCase):
                 self.repo.get_changeset(rev))
         result = list(self.repo.get_changesets(limit=limit, offset=offset))
         start = offset
-        end = limit and offset+limit or None
+        end = limit and offset + limit or None
         sliced = list(self.repo[start:end])
         self.failUnlessEqual(result, sliced,
             msg="Comparison failed for limit=%s, offset=%s"
@@ -274,7 +274,50 @@ class MercurialChangesetTest(unittest.TestCase):
                 "We assumed that %s is subset of revisions for which file %s "
                 "has been changed, and history of that node returned: %s"
                 % (revs, path, node_revs))
+    def test_file_annotate(self):
+        files = {
+                 'vcs/backends/__init__.py': 
+                  {89: {'lines_no': 31,
+                        'changesets': [32, 32, 61, 32, 32, 37, 32, 32, 32, 44,
+                                       37, 37, 37, 37, 45, 37, 44, 37, 37, 37,
+                                       32, 32, 32, 32, 37, 32, 37, 37, 32,
+                                       32, 32]},
+                   20: {'lines_no': 1,
+                        'changesets': [4]},
+                   55: {'lines_no': 31,
+                        'changesets': [32, 32, 45, 32, 32, 37, 32, 32, 32, 44,
+                                       37, 37, 37, 37, 45, 37, 44, 37, 37, 37,
+                                       32, 32, 32, 32, 37, 32, 37, 37, 32,
+                                       32, 32]}},
+                 'vcs/exceptions.py': 
+                 {89: {'lines_no': 18,
+                       'changesets': [16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+                                      16, 16, 17, 16, 16, 18, 18, 18]},
+                  20: {'lines_no': 18,
+                       'changesets': [16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+                                      16, 16, 17, 16, 16, 18, 18, 18]},
+                  55: {'lines_no': 18, 'changesets': [16, 16, 16, 16, 16, 16,
+                                                      16, 16, 16, 16, 16, 16,
+                                                      17, 16, 16, 18, 18, 18]}},
+                 'MANIFEST.in': {89: {'lines_no': 5,
+                                      'changesets': [7, 7, 7, 71, 71]},
+                                 20: {'lines_no': 3,
+                                      'changesets': [7, 7, 7]},
+                                 55: {'lines_no': 3,
+                                     'changesets': [7, 7, 7]}}}
 
+        
+        for fname, revision_dict in files.items():
+            for rev, data in revision_dict.items():
+                cs = self.repo.get_changeset(rev)
+                ann = cs.get_file_annotate(fname)
+
+                l1 = [x[1].revision for x in ann]
+                l2 = files[fname][rev]['changesets']
+                self.assertTrue(l1 == l2 , "The lists of revision for %s@rev%s"
+                                "from annotation list should match each other," 
+                                "got \n%s \nvs \n%s " % (fname, rev, l1, l2))
+                
     def test_changeset_state(self):
         """
         Tests which files have been added/changed/removed at particular revision
@@ -285,7 +328,7 @@ class MercurialChangesetTest(unittest.TestCase):
         #    changed: 1 ['.hgignore']
         #    removed: 0
         chset88 = self.repo.get_changeset(88)
-        self.assertEqual(set((node.path for node in chset88.added)),  set())
+        self.assertEqual(set((node.path for node in chset88.added)), set())
         self.assertEqual(set((node.path for node in chset88.changed)),
             set(['.hgignore']))
         self.assertEqual(set((node.path for node in chset88.removed)), set())
