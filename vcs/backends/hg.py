@@ -349,7 +349,7 @@ class MercurialChangeset(BaseChangeset):
         changesets = [self.repository.get_changeset(hex(node))
             for node in reversed(nodes)]
         return changesets
-    
+
     def get_file_annotate(self, path):
         """
         Returns a list of three element tuples with lineno,changeset and line
@@ -360,9 +360,9 @@ class MercurialChangeset(BaseChangeset):
             annotate.append((ln_no, self.repository\
                              .get_changeset(hex(annotate_data[0].node())),
                              annotate_data[1],))
-            
+
         return annotate
-        
+
     def get_nodes(self, path):
         """
         Returns combined ``DirNode`` and ``FileNode`` objects list representing
