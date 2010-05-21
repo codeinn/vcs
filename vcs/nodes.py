@@ -180,9 +180,21 @@ class FileNode(Node):
     @LazyProperty
     def content(self):
         if self.changeset:
-            return self.changeset.get_file_content(self.path)
+            content = self.changeset.get_file_content(self.path)
         else:
-            return self._content
+            content = self._content
+        return content
+
+    @LazyProperty
+    def content_decoded(self):
+        """
+        Tries to retrieve content, firstly decoded. If cannot decode, would
+        return basic content.
+        """
+        try:
+            return self.content.decode('utf-8')
+        except UnicodeDecodeError:
+            return self.content
 
     @LazyProperty
     def nodes(self):
