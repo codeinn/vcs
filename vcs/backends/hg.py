@@ -166,7 +166,8 @@ class MercurialRepository(BaseRepository):
         if isinstance(revision, int) and revision not in self.revisions:
             raise RepositoryError("Revision %r does not exist for this "
                 "repository %s" % (revision, self))
-        elif isinstance(revision, (str, unicode)) and revision.isdigit():
+        elif isinstance(revision, (str, unicode)) and revision.isdigit() \
+                                                    and len(revision) < 12:
             revision = int(revision)
         elif isinstance(revision, (str, unicode)):
             pattern = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
