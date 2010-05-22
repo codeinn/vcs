@@ -26,7 +26,7 @@ setup(
     zip_safe = False,
     packages = find_packages(),
     test_suite = 'nose.collector',
-    install_requires = ['nose'],
+    install_requires = ['nose', 'Pygments'],
     include_package_data = True,
     classifiers = [
         'Development Status :: 4 - Beta',

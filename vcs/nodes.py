@@ -7,6 +7,8 @@ import mimetypes
 from vcs.utils.lazy import LazyProperty
 from vcs.exceptions import VCSError
 
+from pygments import lexers
+
 class NodeError(VCSError):
     pass
 
@@ -178,9 +180,21 @@ class FileNode(Node):
     @LazyProperty
     def content(self):
         if self.changeset:
-            return self.changeset.get_file_content(self.path)
+            content = self.changeset.get_file_content(self.path)
         else:
-            return self._content
+            content = self._content
+        return content
+
+    @LazyProperty
+    def content_decoded(self):
+        """
+        Tries to retrieve content, firstly decoded. If cannot decode, would
+        return basic content.
+        """
+        try:
+            return self.content.decode('utf-8')
+        except UnicodeDecodeError:
+            return self.content
 
     @LazyProperty
     def nodes(self):
@@ -234,7 +248,6 @@ class FileNode(Node):
         Returns pygment's lexer class. Would try to guess lexer taking file's
         content, name and mimetype.
         """
-        from pygments import lexers
         try:
             lexer = lexers.guess_lexer_for_filename(self.name, self.content)
         except lexers.ClassNotFound:
@@ -266,7 +279,7 @@ class FileNode(Node):
         if self.changeset == None:
             raise NodeError('Unable to get changeset for this FileNode')
         return self.changeset.get_file_annotate(self.path)
-    
+
     @LazyProperty
     def state(self):
         if not self.changeset:
@@ -277,7 +290,20 @@ class FileNode(Node):
         elif self in self.changeset.changed:
             return NodeState.CHANGED
         else:
-            return NodeState.NOT_CHANGED
+         return NodeState.NOT_CHANGED
+
+    @LazyProperty
+    def is_binary(self):
+        """
+        Returns True if file has binary content.
+        """
+        if self.lexer is lexers.TextLexer:
+           # textlexer is default lexer so it just may be binary data
+           try:
+               self.content.decode('utf-8')
+           except UnicodeDecodeError:
+               return True
+        return False
 
 class RemovedFileNode(FileNode):
     """
