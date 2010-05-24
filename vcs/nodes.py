@@ -294,7 +294,7 @@ class FileNode(Node):
         """
         Returns True if file has binary content.
         """
-        if self.lexer is lexers.TextLexer:
+        if isinstance(self.lexer, lexers.TextLexer):
            # textlexer is default lexer so it just may be binary data
            try:
                self.content.decode('utf-8')
