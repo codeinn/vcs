@@ -179,22 +179,19 @@ class FileNode(Node):
 
     @LazyProperty
     def content(self):
+        """
+        Returns lazily content of the FileNode. If possible, would try to
+        decode content from UTF-8.
+        """
         if self.changeset:
             content = self.changeset.get_file_content(self.path)
         else:
             content = self._content
-        return content
-
-    @LazyProperty
-    def content_decoded(self):
-        """
-        Tries to retrieve content, firstly decoded. If cannot decode, would
-        return basic content.
-        """
         try:
-            return self.content.decode('utf-8')
+            content = content.decode('utf-8')
         except UnicodeDecodeError:
-            return self.content
+            pass
+        return content
 
     @LazyProperty
     def nodes(self):
@@ -251,7 +248,7 @@ class FileNode(Node):
         try:
             lexer = lexers.guess_lexer_for_filename(self.name, self.content)
         except lexers.ClassNotFound:
-            lexer = lexers.TextLexer
+            lexer = lexers.TextLexer()
         # returns first alias
         return lexer
 
