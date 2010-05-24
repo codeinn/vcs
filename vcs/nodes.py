@@ -7,6 +7,8 @@ import mimetypes
 from vcs.utils.lazy import LazyProperty
 from vcs.exceptions import VCSError
 
+from pygments import lexers
+
 class NodeError(VCSError):
     pass
 
@@ -177,10 +179,19 @@ class FileNode(Node):
 
     @LazyProperty
     def content(self):
+        """
+        Returns lazily content of the FileNode. If possible, would try to
+        decode content from UTF-8.
+        """
         if self.changeset:
-            return self.changeset.get_file_content(self.path)
+            content = self.changeset.get_file_content(self.path)
         else:
-            return self._content
+            content = self._content
+        try:
+            content = content.decode('utf-8')
+        except UnicodeDecodeError:
+            pass
+        return content
 
     @LazyProperty
     def nodes(self):
@@ -238,11 +249,10 @@ class FileNode(Node):
         Returns pygment's lexer class. Would try to guess lexer taking file's
         content, name and mimetype.
         """
-        from pygments import lexers
         try:
             lexer = lexers.guess_lexer_for_filename(self.name, self.content)
         except lexers.ClassNotFound:
-            lexer = lexers.TextLexer
+            lexer = lexers.TextLexer()
         # returns first alias
         return lexer
 
@@ -282,6 +292,19 @@ class FileNode(Node):
             return NodeState.CHANGED
         else:
             return NodeState.NOT_CHANGED
+
+    @LazyProperty
+    def is_binary(self):
+        """
+        Returns True if file has binary content.
+        """
+        if isinstance(self.lexer, lexers.TextLexer):
+            # textlexer is default lexer so it just may be binary data
+            try:
+                self.content.decode('utf-8')
+            except UnicodeDecodeError:
+                return True
+            return False
 
 class RemovedFileNode(FileNode):
     """

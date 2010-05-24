@@ -166,7 +166,8 @@ class MercurialRepository(BaseRepository):
         if isinstance(revision, int) and revision not in self.revisions:
             raise RepositoryError("Revision %r does not exist for this "
                 "repository %s" % (revision, self))
-        elif isinstance(revision, (str, unicode)) and revision.isdigit():
+        elif isinstance(revision, (str, unicode)) and revision.isdigit() \
+                                                    and len(revision) < 12:
             revision = int(revision)
         elif isinstance(revision, (str, unicode)):
             pattern = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
@@ -349,7 +350,7 @@ class MercurialChangeset(BaseChangeset):
         changesets = [self.repository.get_changeset(hex(node))
             for node in reversed(nodes)]
         return changesets
-    
+
     def get_file_annotate(self, path):
         """
         Returns a list of three element tuples with lineno,changeset and line
@@ -360,9 +361,9 @@ class MercurialChangeset(BaseChangeset):
             annotate.append((ln_no, self.repository\
                              .get_changeset(hex(annotate_data[0].node())),
                              annotate_data[1],))
-            
+
         return annotate
-        
+
     def get_nodes(self, path):
         """
         Returns combined ``DirNode`` and ``FileNode`` objects list representing

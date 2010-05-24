@@ -86,7 +86,6 @@ def hgserve(request, repo_path, login_required=True, auth_callback=None):
         traceback.print_exc(file=f)
         msg = "Got exception: %s\n\n%s"\
             % (err, f.getvalue())
-        print msg
         logging.error(msg)
         raise err
     return response
