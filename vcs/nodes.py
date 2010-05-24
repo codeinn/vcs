@@ -287,7 +287,7 @@ class FileNode(Node):
         elif self in self.changeset.changed:
             return NodeState.CHANGED
         else:
-         return NodeState.NOT_CHANGED
+            return NodeState.NOT_CHANGED
 
     @LazyProperty
     def is_binary(self):
@@ -295,12 +295,12 @@ class FileNode(Node):
         Returns True if file has binary content.
         """
         if isinstance(self.lexer, lexers.TextLexer):
-           # textlexer is default lexer so it just may be binary data
-           try:
-               self.content.decode('utf-8')
-           except UnicodeDecodeError:
-               return True
-        return False
+            # textlexer is default lexer so it just may be binary data
+            try:
+                self.content.decode('utf-8')
+            except UnicodeDecodeError:
+                return True
+            return False
 
 class RemovedFileNode(FileNode):
     """
