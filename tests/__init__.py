@@ -33,6 +33,12 @@ def setup_package():
             'remote_repo': HG_REMOTE_REPO,
             'clone_cmd': 'hg clone',
         },
+        'git': {
+            'alias': 'git',
+            'test_repo_path': TEST_GIT_REPO,
+            'remote_repo': GIT_REMOTE_REPO,
+            'clone_cmd': 'git clone',
+        },
     }
     try:
         for scm, fetcher_info in fetchers.items():

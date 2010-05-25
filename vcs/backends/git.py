@@ -9,7 +9,7 @@ from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.paths import abspath
 from vcs.utils.lazy import LazyProperty
 
-from dulwich.repo import Repo
+from dulwich.repo import Repo, NotGitRepository
 from dulwich import objects
 
 class GitRepository(BaseRepository):
@@ -30,7 +30,10 @@ class GitRepository(BaseRepository):
         self.changesets = {}
 
     def _set_repo(self, create):
-        self._repo = Repo(self.path)
+        try:
+            self._repo = Repo(self.path)
+        except NotGitRepository, err:
+            raise RepositoryError(str(err))
 
     def _get_revision(self, revision):
         if len(self.revisions) == 0:
@@ -62,6 +65,26 @@ class GitRepository(BaseRepository):
             changeset = GitChangeset(repository=self, revision=revision)
             self.changesets[changeset.revision] = changeset
         return self.changesets[revision]
+
+    def get_changesets(self, limit=10, offset=None):
+        """
+        Return last n number of ``MercurialChangeset`` specified by limit
+        attribute if None is given whole list of revisions is returned
+        @param limit: int limit or None
+        """
+        count = self.count()
+        offset = offset or 0
+        limit = limit or None
+        i = 0
+        while True:
+            if limit and i == limit:
+                break
+            i += 1
+            rev_index = count - offset - i
+            if rev_index < 0:
+                break
+            hex = self.revisions[rev_index]
+            yield self.get_changeset(hex)
 
 class GitChangeset(BaseChangeset):
     """
@@ -116,6 +139,10 @@ class GitChangeset(BaseChangeset):
                         self._paths[fullpath] = hex
                     if dir == name:
                         tree = self.repository._repo.tree(hex)
+                if parent:
+                    parent = '/'.join((parent, dir))
+                else:
+                    parent = dir
             for stat, name, hex in tree.entries():
                 if parent is None:
                     self._paths[name] = hex
@@ -123,6 +150,7 @@ class GitChangeset(BaseChangeset):
                     fullpath = '/'.join((parent, name))
                     self._paths[fullpath] = hex
             if not path in self._paths:
+                print self._paths
                 raise ChangesetError("There is no file nor directory "
                     "at the given path %r at revision %r"
                     % (path, self.revision))
@@ -143,6 +171,14 @@ class GitChangeset(BaseChangeset):
         hex = self._get_hex_for_path(path)
         blob = self.repository._repo[hex]
         return blob.as_pretty_string()
+
+    def get_file_size(self, path):
+        """
+        Returns size of the file at given ``path``.
+        """
+        hex = self._get_hex_for_path(path)
+        blob = self.repository._repo[hex]
+        return blob.raw_length()
 
     @LazyProperty
     def parents(self):
