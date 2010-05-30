@@ -16,4 +16,5 @@ syntax: glob
 pip-log.txt
 dist
 .DS_Store
+.coverage
 build
