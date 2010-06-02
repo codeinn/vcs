@@ -14,7 +14,7 @@ import posixpath
 import datetime
 
 from vcs.backends.base import BaseRepository, BaseChangeset
-from vcs.exceptions import RepositoryError, VCSError, ChangesetError
+from vcs.exceptions import RepositoryError, ChangesetError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.paths import abspath, get_dirs_for_path
 from vcs.utils.lazy import LazyProperty
@@ -24,53 +24,6 @@ from mercurial.context import short
 from mercurial.localrepo import localrepository
 from mercurial.error import RepoError, RepoLookupError
 from mercurial.node import hex
-from mercurial.hgweb.hgwebdir_mod import findrepos
-
-def get_repositories(repos_prefix, repos_path, baseui):
-    """
-    Listing of repositories in given path. This path should not be a repository
-    itself. Return a list of repository objects
-    :param repos_path: path to directory it could take syntax with * or ** for
-    deep recursive displaying repositories
-    """
-    if not repos_path.endswith('*') and not repos_path.endswith('*'):
-        raise VCSError('You need to specify * or ** at the end of path \
-        for recursive scanning')
-
-    check_repo_dir(repos_path)
-    repos = findrepos([(repos_prefix, repos_path)])
-
-    if not isinstance(baseui, ui.ui):
-        baseui = ui.ui()
-
-    my_ui = ui.ui()
-    my_ui.setconfig('ui', 'report_untrusted', 'off')
-    my_ui.setconfig('ui', 'interactive', 'off')
-
-    repos_list = []
-    for name, path in repos:
-        try:
-            r = MercurialRepository(path, baseui=baseui)
-            repos_list.append(r)
-        except OSError:
-            continue
-    return repos_list
-
-
-def check_repo_dir(path):
-    """
-    Checks the repository
-    :param path:
-    """
-    repos_path = path.split('/')
-    if repos_path[-1] in ['*', '**']:
-        repos_path = repos_path[:-1]
-    if repos_path[0] != '/':
-        repos_path[0] = '/'
-    if not os.path.isdir(os.path.join(*repos_path)):
-        raise RepositoryError('Not a valid repository in %s' % path[0][1])
-
-
 
 class MercurialRepository(BaseRepository):
     """
