@@ -11,7 +11,8 @@ class LazyProperty(object):
               print 'Calculating self._bar'
               return 42
 
-    Taken from http://blog.pythonisito.com/2008/08/lazy-descriptors.html.
+    Taken from http://blog.pythonisito.com/2008/08/lazy-descriptors.html and
+    used widely.
     """
 
 

@@ -20,8 +20,8 @@ def annotate_highlight(filenode, annotate_from_changeset_func=None,
     :param order: ordered sequence of ``ls`` (line numbers column), ``annotate``
       (annotate column), ``code`` (code column); Default is ``['ls', 'annotate',
       'code']``
-    :param headers: dictionary with headers (keys are what in ``order``
-      parameter;
+    :param headers: dictionary with headers (keys are whats in ``order``
+      parameter)
     """
     options['linenos'] = True
     formatter = AnnotateHtmlFormatter(filenode=filenode, order=order,
@@ -34,24 +34,38 @@ def annotate_highlight(filenode, annotate_from_changeset_func=None,
 class AnnotateHtmlFormatter(HtmlFormatter):
 
     def __init__(self, filenode, annotate_from_changeset_func=None,
-            order=None, headers=None, **options):
+            order=None, **options):
         """
         If ``annotate_from_changeset_func`` is passed it should be a function
-        which returns str from the given changeset. For example, we may pass
+        which returns string from the given changeset. For example, we may pass
         following function as ``annotate_from_changeset_func``::
 
             def changeset_to_anchor(changeset):
                 return '<a href="/changesets/%s/">%s</a>\n' %\
                        (changeset.id, changeset.id)
+
+        :param annotate_from_changeset_func: see above
+        :param order: (default: ``['ls', 'annotate', 'code']``); order of
+          columns;
+        :param options: standard pygment's HtmlFormatter options, there is
+          extra option tough, ``headers``. For instance we can pass::
+
+             formatter = AnnotateHtmlFormatter(filenode, headers={
+                'ls': '#',
+                'annotate': 'Annotate',
+                'code': 'Code',
+             })
+
         """
         super(AnnotateHtmlFormatter, self).__init__(**options)
         self.annotate_from_changeset_func = annotate_from_changeset_func
         self.order = order or ('ls', 'annotate', 'code')
-        self.headers = headers or {
-            'ls': '#',
-            'annotate': 'Annotate',
-            'code': 'Code'
-        }
+        headers = options.pop('headers', None)
+        if headers and not ('ls' in headers and 'annotate' in headers and
+            'code' in headers):
+            raise ValueError("If headers option dict is specified it must "
+                "all 'ls', 'annotate' and 'code' keys")
+        self.headers = headers
         if isinstance(filenode, FileNode):
             self.filenode = filenode
         else:
@@ -130,11 +144,13 @@ class AnnotateHtmlFormatter(HtmlFormatter):
         yield 0, '</td></tr></table>'
 
         '''
-        headers_row = ['<tr class="annotate-header">']
-        for key in self.order:
-            td = ''.join(('<td>', self.headers[key], '</td>'))
-            headers_row.append(td)
-        headers_row.append('</tr>')
+        headers_row = []
+        if self.headers:
+            headers_row = ['<tr class="annotate-header">']
+            for key in self.order:
+                td = ''.join(('<td>', self.headers[key], '</td>'))
+                headers_row.append(td)
+            headers_row.append('</tr>')
 
         body_row_start = ['<tr>']
         for key in self.order:
