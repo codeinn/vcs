@@ -45,8 +45,6 @@ class MercurialRepository(BaseRepository):
         self.baseui = baseui or ui.ui()
         # We've set path and ui, now we can set repo itself
         self._set_repo(create)
-        self.description = self.get_description()
-        self.contact = self.get_contact()
         self.last_change = self.get_last_change()
         self.revisions = list(self.repo)
         self.changesets = {}
@@ -86,13 +84,14 @@ class MercurialRepository(BaseRepository):
                 msg = "Not valid repository at %s. Original error was %s"\
                     % (self.path, err)
             raise RepositoryError(msg)
-
-    def get_description(self):
+    
+    @LazyProperty
+    def description(self):
         undefined_description = 'unknown'
         return self.repo.ui.config('web', 'description',
                                    undefined_description, untrusted=True)
-
-    def get_contact(self):
+    @LazyProperty
+    def contact(self):
         from mercurial.hgweb.common import get_contact
         undefined_contact = 'Unknown'
         return get_contact(self.repo.ui.config) or undefined_contact
