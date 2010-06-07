@@ -274,8 +274,7 @@ class MercurialChangeset(BaseChangeset):
         Returns message of the last commit related to file at the given
         ``path``.
         """
-        fctx = self._get_filectx(path)
-        return fctx.description()
+        return self.get_file_changeset(path).message
 
     def get_file_revision(self, path):
         """
