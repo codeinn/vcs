@@ -51,7 +51,16 @@ class GitRepository(BaseRepository):
     @LazyProperty
     def name(self):
         return os.path.basename(self.path)
-
+    
+    @LazyProperty
+    def description(self):
+        undefined_description = 'unknown'
+        description_path = os.path.join(self.path, '.git', 'description')
+        if os.path.isfile(description_path):
+            return open(description_path).read()
+        else:
+            return undefined_description
+        
     @LazyProperty
     def branches(self):
         if not self.revisions:return []
