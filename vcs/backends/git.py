@@ -1,7 +1,6 @@
 import os
 import re
 import datetime
-import warnings
 
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, ChangesetError
@@ -18,8 +17,6 @@ class GitRepository(BaseRepository):
     """
 
     def __init__(self, repo_path, create=False):
-
-        warnings.warn("Git backend is only a proof by now")
 
         self.path = abspath(repo_path)
         self.changesets = {}
@@ -49,11 +46,38 @@ class GitRepository(BaseRepository):
         raise RepositoryError("Given revision %r not recognized" % revision)
 
     def _get_tree(self, hex):
-        return self._repo.tree(hex)
+        return self._repo[hex]
 
     @LazyProperty
     def name(self):
         return os.path.basename(self.path)
+
+    @LazyProperty
+    def branches(self):
+        if not self.revisions:return []
+        heads = [self._repo.refs.as_dict()[ref] for
+            ref in self._repo.refs.keys() if ref.startswith('refs/heads/')]
+        changesets = [self.get_changeset(head) for head in heads]
+        return changesets
+
+    @LazyProperty
+    def tags(self):
+        if not self.revisions:return []
+        _tags = [self._repo.refs.as_dict()[ref] for
+            ref in self._repo.refs.keys() if ref.startswith('refs/tags/')]
+        tags = [self._repo.get_object(tag) for tag in _tags]
+        tags = []
+        for _tag in _tags:
+            obj = self._repo.get_object(_tag)
+            if isinstance(obj, objects.Commit):
+                tag = self.get_changeset(obj.id)
+            elif isinstance(obj, objects.Tag):
+                tag = self.get_changeset(obj.object[1])
+            else:
+                raise RepositoryError("Cannot find object's type (%s)"
+                    % obj)
+            tags.append(tag)
+        return tags
 
     def get_changeset(self, revision=None):
         """
