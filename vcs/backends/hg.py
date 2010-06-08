@@ -224,8 +224,8 @@ class MercurialChangeset(BaseChangeset):
         """
         Returns list of parents changesets.
         """
-        return [self.repository.get_changeset(parent.rev()) for parent in
-            self._ctx.parents()]
+        return [self.repository.get_changeset(parent.rev()) 
+                for parent in self._ctx.parents() if parent.rev() >= 0]
 
     def _fix_path(self, path):
         """
