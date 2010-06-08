@@ -188,8 +188,8 @@ class FileNode(Node):
         else:
             content = self._content
         try:
-            content = content.decode('utf-8')
-        except UnicodeDecodeError:
+            content = content.encode('utf-8').decode('utf-8')
+        except (UnicodeDecodeError, UnicodeEncodeError):
             pass
         return content
 
