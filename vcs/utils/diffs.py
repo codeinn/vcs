@@ -71,6 +71,11 @@ class DiffProcessor(object):
             self.differ = self._highlight_line_udiff
 
     def escaper(self, string):
+        try:
+            string = unicode(string)
+        except UnicodeDecodeError:
+            #incase we have a decode error just represent as byte string
+            string = unicode(str(string).encode('string_escape'))
         return string.replace('<', '&lt;').replace('>', '&gt;')
 
     def copy_iterator(self):
