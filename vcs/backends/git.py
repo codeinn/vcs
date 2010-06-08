@@ -22,9 +22,20 @@ class GitRepository(BaseRepository):
         self.changesets = {}
         self._set_repo(create)
         self.head = self._repo.head()
-        self.revisions = [commit.id for commit in
-            reversed(self._repo.revision_history(self.head))]
+        self.revisions = self._get_all_revisions()
         self.changesets = {}
+
+    def _get_all_revisions(self):
+        refs = self._repo.get_refs()
+        heads = [value for key, value in refs.items()
+                if key.startswith('refs/heads/')]
+        commits = set()
+        for head in heads:
+            commits.update(self._repo.revision_history(head))
+        commits = list(commits)
+        commits.sort(key=lambda commit: commit.commit_time)
+        revisions = [commit.id for commit in commits]
+        return revisions
 
     def _set_repo(self, create):
         try:
@@ -140,6 +151,23 @@ class GitChangeset(BaseChangeset):
         self.id = revision
         self.raw_id = revision
         self._paths = {}
+
+    @LazyProperty
+    def branch(self):
+        # TODO: Cache as we walk (id <-> branch name mapping)
+        refs = self.repository._repo.get_refs()
+        heads = [(key[len('refs/heads/'):], val) for key, val in refs.items()
+            if key.startswith('refs/heads/')]
+        for name, id in heads:
+            walker = self.repository._repo.object_store.get_graph_walker([id])
+            while True:
+                id = walker.next()
+                if not id:
+                    break
+                if id == self.id:
+                    return name
+        raise ChangesetError("This should not happen... Have you manually "
+            "change id of the changeset?")
 
     def _fix_path(self, path):
         """
