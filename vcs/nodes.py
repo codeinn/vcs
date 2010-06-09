@@ -240,6 +240,10 @@ class FileNode(Node):
         return mtype
 
     @LazyProperty
+    def mimetype_main(self):
+        return self.mimetype.split('/')[0]
+
+    @LazyProperty
     def lexer(self):
         """
         Returns pygment's lexer class. Would try to guess lexer taking file's

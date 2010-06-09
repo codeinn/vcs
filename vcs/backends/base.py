@@ -111,35 +111,6 @@ class BaseRepository(object):
         node = chset.get_node(path)
         return node
 
-    #===========================================================================
-    # TAGS
-    #===========================================================================
-
-    def get_tags(self, since='', limit=10):
-        raise NotImplementedError
-
-    def get_tag_by_name(self, tag_name):
-        raise NotImplementedError
-
-    def get_tag(self, tag_id):
-        raise NotImplementedError
-
-    #===========================================================================
-    # BRANCHES
-    #===========================================================================
-
-    def get_branches(self, since='', limit=10):
-        raise NotImplementedError
-
-    def get_branch_by_name(self, branch_name):
-        raise NotImplementedError
-
-    def get_branch(self, branch_id):
-        raise NotImplementedError
-
-    def get_files(self, limit):
-        raise NotImplementedError
-
 class BaseChangeset(object):
     """
     Each backend should implement it's changeset representation.
@@ -151,8 +122,9 @@ class BaseChangeset(object):
     :attribute: author: author of the changeset
     :attribute: message: message of the changeset
     :attribute: size: integer size in bytes
-    :attribute: branch: title of the branch, as string
-    :attribute: tags: list of tags, as list of strings
+    :attribute: last: True if this is last changeset in repository, False
+      otherwise; ``ChangesetError`` is raised if not related with repository
+      object
     """
 
     def __str__(self):

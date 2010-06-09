@@ -8,7 +8,7 @@ __all__ = (
     'SCM_TESTS',
 )
 
-SCM_TESTS = ['hg']
+SCM_TESTS = ['hg', 'git']
 
 TEST_HG_REPO = os.environ.get('VCS_TEST_HG_REPO', '/tmp/vcs')
 TEST_GIT_REPO = os.environ.get('VCS_TEST_GIT_REPO', '/tmp/vcs-git')

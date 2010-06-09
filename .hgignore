@@ -13,6 +13,7 @@ syntax: glob
 *.swp
 *.bak
 *.db
+.coverage
 pip-log.txt
 dist
 .DS_Store

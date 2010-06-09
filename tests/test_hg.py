@@ -22,14 +22,13 @@ class MercurialRepositoryTest(unittest.TestCase):
         self.assertTrue(subset.issubset(set(self.repo.revisions)))
 
     def test_branches(self):
-        chset3 = self.repo.get_changeset(3)
-        self.assertEqual(chset3.branch, 'default')
-
-        chset44 = self.repo.get_changeset(44)
-        self.assertEqual(chset44.branch, 'web')
-
-        for branch in self.repo.branches:
-            self.assertTrue(isinstance(branch, MercurialChangeset))
+        # TODO: Need more tests here
+        self.assertTrue('default' in self.repo.branches)
+        self.assertTrue('git' in self.repo.branches)
+        self.assertTrue('web' in self.repo.branches)
+        for name, id in self.repo.branches.items():
+            self.assertTrue(isinstance(
+                self.repo.get_changeset(id), MercurialChangeset))
 
     def test_tags(self):
         # tip is always a tag
@@ -39,7 +38,7 @@ class MercurialRepositoryTest(unittest.TestCase):
     def _test_single_changeset_cache(self, revision):
         chset = self.repo.get_changeset(revision)
         self.assertTrue(self.repo.changesets.has_key(revision))
-        self.assertEqual(chset, self.repo.changesets[revision])
+        self.assertTrue(chset is self.repo.changesets[revision])
 
     def test_changesets_cache(self):
         for revision in xrange(0, 11):
@@ -276,7 +275,7 @@ class MercurialChangesetTest(unittest.TestCase):
                 % (revs, path, node_revs))
     def test_file_annotate(self):
         files = {
-                 'vcs/backends/__init__.py': 
+                 'vcs/backends/__init__.py':
                   {89: {'lines_no': 31,
                         'changesets': [32, 32, 61, 32, 32, 37, 32, 32, 32, 44,
                                        37, 37, 37, 37, 45, 37, 44, 37, 37, 37,
@@ -289,7 +288,7 @@ class MercurialChangesetTest(unittest.TestCase):
                                        37, 37, 37, 37, 45, 37, 44, 37, 37, 37,
                                        32, 32, 32, 32, 37, 32, 37, 37, 32,
                                        32, 32]}},
-                 'vcs/exceptions.py': 
+                 'vcs/exceptions.py':
                  {89: {'lines_no': 18,
                        'changesets': [16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
                                       16, 16, 17, 16, 16, 18, 18, 18]},
@@ -306,7 +305,7 @@ class MercurialChangesetTest(unittest.TestCase):
                                  55: {'lines_no': 3,
                                      'changesets': [7, 7, 7]}}}
 
-        
+
         for fname, revision_dict in files.items():
             for rev, data in revision_dict.items():
                 cs = self.repo.get_changeset(rev)
@@ -315,9 +314,9 @@ class MercurialChangesetTest(unittest.TestCase):
                 l1 = [x[1].revision for x in ann]
                 l2 = files[fname][rev]['changesets']
                 self.assertTrue(l1 == l2 , "The lists of revision for %s@rev%s"
-                                "from annotation list should match each other," 
+                                "from annotation list should match each other,"
                                 "got \n%s \nvs \n%s " % (fname, rev, l1, l2))
-                
+
     def test_changeset_state(self):
         """
         Tests which files have been added/changed/removed at particular revision

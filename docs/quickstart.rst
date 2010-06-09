@@ -161,16 +161,11 @@ Tags and branches
 
 .. code-block:: python
    
-   >>> [changeset.branch for changeset in repo.branches]
-   ['default', 'web']
-   >>> [changeset.tags for changeset in repo.tags]
-   [['tip']]
-   >>> # get changeset we know well
-   >>> chset44 = repo.get_changeset(44)
-   >>> chset44.branch
-   'web'
-   >>> chset44.tags
-   []
+   >>> print repo.branches
+   {'default': 'f1ffc1cfbae0', 'git': '735ca3f85433', 'web': '2e6a2bf9356c'}
+   # above values may vary
+   >>> print repo.tags
+   {'0.1.1': 'eb3a60fc9643', '0.1.2': 'a7e60bff65d5', 'tip': 'f1ffc1cfbae0'}
 
 Give me a file, finally!
 ~~~~~~~~~~~~~~~~~~~~~~~~
