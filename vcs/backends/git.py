@@ -62,7 +62,7 @@ class GitRepository(BaseRepository):
     @LazyProperty
     def name(self):
         return os.path.basename(self.path)
-    
+
     @LazyProperty
     def description(self):
         undefined_description = 'unknown'
@@ -71,33 +71,22 @@ class GitRepository(BaseRepository):
             return open(description_path).read()
         else:
             return undefined_description
-        
+
     @LazyProperty
     def branches(self):
-        if not self.revisions:return []
-        heads = [self._repo.refs.as_dict()[ref] for
-            ref in self._repo.refs.keys() if ref.startswith('refs/heads/')]
-        changesets = [self.get_changeset(head) for head in heads]
-        return changesets
+        if not self.revisions:
+            return {}
+        return dict((ref.split('/')[-1], id)
+            for ref, id in self._repo.get_refs().items()
+            if ref.startswith('refs/remotes/') and not ref.endswith('/HEAD'))
 
     @LazyProperty
     def tags(self):
-        if not self.revisions:return []
-        _tags = [self._repo.refs.as_dict()[ref] for
-            ref in self._repo.refs.keys() if ref.startswith('refs/tags/')]
-        tags = [self._repo.get_object(tag) for tag in _tags]
-        tags = []
-        for _tag in _tags:
-            obj = self._repo.get_object(_tag)
-            if isinstance(obj, objects.Commit):
-                tag = self.get_changeset(obj.id)
-            elif isinstance(obj, objects.Tag):
-                tag = self.get_changeset(obj.object[1])
-            else:
-                raise RepositoryError("Cannot find object's type (%s)"
-                    % obj)
-            tags.append(tag)
-        return tags
+        if not self.revisions:
+            return {}
+        return dict((ref.split('/')[-1], id) for ref, id in
+            self._repo.get_refs().items()
+            if ref.startswith('refs/tags/'))
 
     def get_changeset(self, revision=None):
         """
@@ -138,11 +127,14 @@ class GitChangeset(BaseChangeset):
     def __init__(self, repository, revision):
         self.repository = repository
         self.revision = repository._get_revision(revision)
-        commit = self.repository._repo.get_object(revision)
+        try:
+            commit = self.repository._repo.get_object(revision)
+        except KeyError:
+            raise RepositoryError("Cannot get object with id %s" % revision)
         self._commit = commit
         self._tree_id = commit.tree
         self.author = commit.committer
-        self.message = commit.message
+        self.message = commit.message[:-1] # Always strip last eol
         #self.branch = None
         #self.tags =
         self.date = datetime.datetime.fromtimestamp(commit.commit_time)
@@ -199,7 +191,7 @@ class GitChangeset(BaseChangeset):
                         fullpath = '/'.join((parent, name))
                         self._paths[fullpath] = hex
                     if dir == name:
-                        tree = self.repository._repo.tree(hex)
+                        tree = self.repository._repo[hex]
                 if parent:
                     parent = '/'.join((parent, dir))
                 else:

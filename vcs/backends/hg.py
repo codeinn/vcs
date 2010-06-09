@@ -104,17 +104,17 @@ class MercurialRepository(BaseRepository):
 
     @LazyProperty
     def branches(self):
-        if not self.revisions:return []
-        sortkey = lambda ctx: ('close' not in ctx._ctx.extra(), ctx._ctx.rev())
-        return sorted([self.get_changeset(short(head)) for head in
-            self.repo.branchtags().values()], key=sortkey, reverse=True)
+        if not self.revisions:
+            return {}
+        return dict((name, short(head))
+            for name, head in self.repo.branchtags().items())
 
     @LazyProperty
     def tags(self):
-        if not self.revisions:return []
-        sortkey = lambda ctx: ctx._ctx.rev()
-        return sorted([self.get_changeset(short(head)) for head in
-            self.repo.tags().values()], key=sortkey, reverse=True)
+        if not self.revisions:
+            return {}
+        return dict((name, short(head))
+            for name, head in self.repo.tags().items())
 
     def _set_repo(self, create):
         """
