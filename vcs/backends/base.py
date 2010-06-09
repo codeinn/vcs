@@ -85,14 +85,13 @@ class BaseRepository(object):
         for revision in self.revisions:
             yield self.get_changeset(revision)
 
-    def get_changesets(self, since=None, limit=None):
+    def get_changesets(self, limit=10, offset=None):
         """
-        Returns all commits since given ``since`` parameter. If ``since`` is
-        None it returns all commits limited by ``limit``, or all commits if
-        ``limit`` is None.
+        Return last n number of ``Changeset`` objects specified by limit
+        attribute if None is given whole list of revisions is returned
 
-        @param since: datetime
-        @param limit: integer value for limit
+        @param limit: int limit or None
+        @param offset: int offset
         """
         raise NotImplementedError
 

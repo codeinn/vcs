@@ -45,7 +45,7 @@ class MercurialRepository(BaseRepository):
         self.baseui = baseui or ui.ui()
         # We've set path and ui, now we can set repo itself
         self._set_repo(create)
-        
+
         self.revisions = list(self.repo)
         self.changesets = {}
 
@@ -84,7 +84,7 @@ class MercurialRepository(BaseRepository):
                 msg = "Not valid repository at %s. Original error was %s"\
                     % (self.path, err)
             raise RepositoryError(msg)
-    
+
     @LazyProperty
     def description(self):
         undefined_description = 'unknown'
@@ -153,7 +153,9 @@ class MercurialRepository(BaseRepository):
         """
         Return last n number of ``MercurialChangeset`` specified by limit
         attribute if None is given whole list of revisions is returned
+
         @param limit: int limit or None
+        @param offset: int offset
         """
         count = self.count()
         offset = offset or 0
@@ -225,7 +227,7 @@ class MercurialChangeset(BaseChangeset):
         """
         Returns list of parents changesets.
         """
-        return [self.repository.get_changeset(parent.rev()) 
+        return [self.repository.get_changeset(parent.rev())
                 for parent in self._ctx.parents() if parent.rev() >= 0]
 
     def _fix_path(self, path):
