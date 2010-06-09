@@ -1,7 +1,18 @@
+#!/usr/bin/env python
+# encoding: utf-8
+#
+# Copyright (c) 2010 Marcin Kuzminski,Lukasz Balcerzak.  All rights reserved.
+#
+"""
+Created on May 21, 2010
+
+:author: marcink,lukaszb
+"""
+
 import os
 import re
 import datetime
-
+import time
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, ChangesetError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
@@ -63,6 +74,26 @@ class GitRepository(BaseRepository):
     def name(self):
         return os.path.basename(self.path)
     
+    @LazyProperty
+    def last_change(self):
+        """
+        Returns last change made on this repository
+        """
+        from vcs.utils import makedate
+        return (self._get_mtime(), makedate()[1])
+
+    def _get_mtime(self):
+        try:
+            return time.mktime(self.get_changeset().date.timetuple())
+        except RepositoryError:
+            #fallback to filesystem
+            in_path = os.path.join(self.path, '.git', "index")
+            he_path = os.path.join(self.path, '.git', "HEAD")
+            if os.path.exists(in_path):
+                return os.stat(in_path).st_mtime
+            else:
+                return os.stat(he_path).st_mtime
+            
     @LazyProperty
     def description(self):
         undefined_description = 'unknown'
