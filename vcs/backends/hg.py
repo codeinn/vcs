@@ -12,6 +12,7 @@ import os
 import re
 import posixpath
 import datetime
+import time 
 
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, ChangesetError
@@ -98,15 +99,23 @@ class MercurialRepository(BaseRepository):
 
     @LazyProperty
     def last_change(self):
-        from mercurial.util import makedate
-        return (self._get_mtime(self.repo.spath), makedate()[1])
+        """
+        Returns last change made on this repository
+        """
+        from vcs.utils import makedate
+        return (self._get_mtime(), makedate()[1])
 
-    def _get_mtime(self, spath):
-        cl_path = os.path.join(spath, "00changelog.i")
-        if os.path.exists(cl_path):
-            return os.stat(cl_path).st_mtime
-        else:
-            return os.stat(spath).st_mtime
+    def _get_mtime(self):
+        try:
+            return time.mktime(self.get_changeset().date.timetuple())
+        except RepositoryError:
+            #fallback to filesystem
+            cl_path = os.path.join(self.path, '.hg', "00changelog.i")
+            st_path = os.path.join(self.path, '.hg', "store")
+            if os.path.exists(cl_path):
+                return os.stat(cl_path).st_mtime
+            else:
+                return os.stat(st_path).st_mtime
 
     def _get_hidden(self):
         return self.repo.ui.configbool("web", "hidden", untrusted=True)
