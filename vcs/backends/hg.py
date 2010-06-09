@@ -45,7 +45,7 @@ class MercurialRepository(BaseRepository):
         self.baseui = baseui or ui.ui()
         # We've set path and ui, now we can set repo itself
         self._set_repo(create)
-        self.last_change = self.get_last_change()
+        
         self.revisions = list(self.repo)
         self.changesets = {}
 
@@ -96,7 +96,8 @@ class MercurialRepository(BaseRepository):
         undefined_contact = 'Unknown'
         return get_contact(self.repo.ui.config) or undefined_contact
 
-    def get_last_change(self):
+    @LazyProperty
+    def last_change(self):
         from mercurial.util import makedate
         return (self._get_mtime(self.repo.spath), makedate()[1])
 
