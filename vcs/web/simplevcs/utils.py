@@ -5,10 +5,12 @@ import cStringIO
 
 from mercurial.hgweb.request import wsgirequest, normalize
 from mercurial.hgweb import hgweb
+from mercurial.util import Abort
 
 from django.http import HttpResponse
 from django.utils.encoding import smart_str
 from django.contrib.auth import authenticate
+from django.core.exceptions import PermissionDenied
 
 from vcs import get_repo
 from vcs.web.simplevcs.settings import BASIC_AUTH_REALM
@@ -149,6 +151,12 @@ def basic_auth(request):
         credentials = base64_hash.decode('base64')
         username, password = credentials.split(':', 1)
         user = authenticate(username=username, password=password)
+        if not user:
+            # Raise exception instead of "letting things going" Normally it
+            # would work perfectly fine but for users with Python 2.6.5 - they
+            # would fall into endless recursion bug
+            # (http://bugs.python.org/issue8797) and we just cannot allow that
+            raise PermissionDenied
     return user
 
 def ask_basic_auth(request, realm=BASIC_AUTH_REALM):
