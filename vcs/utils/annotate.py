@@ -3,10 +3,7 @@ from vcs.nodes import FileNode
 from pygments.formatters import HtmlFormatter
 from pygments import highlight
 
-try:
-    import cStringIO as StringIO
-except ImportError:
-    import StringIO
+import StringIO
 
 def annotate_highlight(filenode, annotate_from_changeset_func=None,
         order=None, headers=None, **options):
@@ -98,11 +95,11 @@ class AnnotateHtmlFormatter(HtmlFormatter):
         if sp:
             lines = []
 
-            for i in range(fl, fl+lncount):
+            for i in range(fl, fl + lncount):
                 if i % st == 0:
                     if i % sp == 0:
                         if aln:
-                            lines.append('<a href="#%s-%d" class="special">%*d</a>' %
+                            lines.append('<a href="#%s-%d" class="special">%*d</a>' % 
                                          (la, i, mw, i))
                         else:
                             lines.append('<span class="special">%*d</span>' % (mw, i))
@@ -116,7 +113,7 @@ class AnnotateHtmlFormatter(HtmlFormatter):
             ls = '\n'.join(lines)
         else:
             lines = []
-            for i in range(fl, fl+lncount):
+            for i in range(fl, fl + lncount):
                 if i % st == 0:
                     if aln:
                         lines.append('<a href="#%s-%d">%*d</a>' % (la, i, mw, i))
@@ -156,16 +153,16 @@ class AnnotateHtmlFormatter(HtmlFormatter):
         for key in self.order:
             if key == 'ls':
                 body_row_start.append(
-                    '<td class="linenos"><div class="linenodiv"><pre>' +
+                    '<td class="linenos"><div class="linenodiv"><pre>' + 
                     ls + '</pre></div></td>')
             elif key == 'annotate':
                 body_row_start.append(
-                    '<td class="annotate"><div class="annotatediv"><pre>' +
+                    '<td class="annotate"><div class="annotatediv"><pre>' + 
                     annotate + '</pre></div></td>')
             elif key == 'code':
                 body_row_start.append('<td class="code">')
-        yield 0, ('<table class="%stable">' % self.cssclass +
-                  ''.join(headers_row) +
+        yield 0, ('<table class="%stable">' % self.cssclass + 
+                  ''.join(headers_row) + 
                   ''.join(body_row_start)
                   )
         yield 0, dummyoutfile.getvalue()
