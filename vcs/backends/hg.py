@@ -207,7 +207,6 @@ class MercurialChangeset(BaseChangeset):
         self._file_paths = list(ctx)
         self._dir_paths = list(set(get_dirs_for_path(*self._file_paths)))
         self._dir_paths.insert(0, '') # Needed for root node
-        self._paths = self._dir_paths + self._file_paths
         self.nodes = {}
 
     @LazyProperty
