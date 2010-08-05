@@ -8,23 +8,23 @@ Created on Apr 8, 2010
 
 :author: marcink,lukaszb
 """
-import os
-import re
-import posixpath
-import datetime
-import time
-
+from mercurial import ui
+from mercurial.context import short
+from mercurial.error import RepoError, RepoLookupError
+from mercurial.localrepo import localrepository
+from mercurial.node import hex
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, ChangesetError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
-from vcs.utils.paths import abspath, get_dirs_for_path
 from vcs.utils.lazy import LazyProperty
+from vcs.utils.ordered_dict import OrderedDict
+from vcs.utils.paths import abspath, get_dirs_for_path
+import datetime
+import os
+import posixpath
+import re
+import time
 
-from mercurial import ui
-from mercurial.context import short
-from mercurial.localrepo import localrepository
-from mercurial.error import RepoError, RepoLookupError
-from mercurial.node import hex
 
 class MercurialRepository(BaseRepository):
     """
@@ -57,15 +57,21 @@ class MercurialRepository(BaseRepository):
     def branches(self):
         if not self.revisions:
             return {}
-        return dict((name, short(head))
-            for name, head in self.repo.branchtags().items())
+        sortkey = lambda ctx: ctx[1]._ctx.rev()
+        s_branches = sorted([(name, self.get_changeset(short(head))) for 
+            name, head in self.repo.branchtags().items()], key=sortkey,
+            reverse=True)
+        return OrderedDict((name, cs.raw_id) for name, cs in s_branches)
 
     @LazyProperty
     def tags(self):
         if not self.revisions:
             return {}
-        return dict((name, short(head))
-            for name, head in self.repo.tags().items())
+
+        sortkey = lambda ctx: ctx[1]._ctx.rev()
+        s_tags = sorted([(name, self.get_changeset(short(head))) for 
+            name, head in self.repo.tags().items()], key=sortkey, reverse=True)
+        return OrderedDict((name, cs.raw_id) for name, cs in s_tags)
 
     def _set_repo(self, create):
         """
