@@ -25,13 +25,14 @@ from mercurial.context import short
 from mercurial.localrepo import localrepository
 from mercurial.error import RepoError, RepoLookupError
 from mercurial.node import hex
+from mercurial.commands import clone, pull
 
 class MercurialRepository(BaseRepository):
     """
     Mercurial repository backend
     """
 
-    def __init__(self, repo_path, create=False, baseui=None):
+    def __init__(self, repo_path, create=False, baseui=None, clone_url=None):
         """
         Raises RepositoryError if repository could not be find at the given
         ``repo_path``.
@@ -39,13 +40,14 @@ class MercurialRepository(BaseRepository):
         :param repo_path: local path of the repository
         :param create=False: if set to True, would try to craete repository if
            it does not exist rather than raising exception
-        :param baseui=mercurial.ui.ui(): user data
+        :param baseui=None: user data
+        :param clone_url=None: url which repository would be cloned from
         """
 
         self.path = abspath(repo_path)
         self.baseui = baseui or ui.ui()
         # We've set path and ui, now we can set repo itself
-        self._set_repo(create)
+        self._set_repo(create, clone_url)
         self.revisions = list(self.repo)
         self.changesets = {}
 
@@ -67,14 +69,18 @@ class MercurialRepository(BaseRepository):
         return dict((name, short(head))
             for name, head in self.repo.tags().items())
 
-    def _set_repo(self, create):
+    def _set_repo(self, create, clone_url=None):
         """
         Function will check for mercurial repository in given path and return
         a localrepo object. If there is no repository in that path it will raise
         an exception unless ``create`` parameter is set to True - in that case
         repository would be created and returned.
+        If ``clone_url`` is given, would try to clone repository from the given
+        url first.
         """
         try:
+            if clone_url is not None:
+                clone(self.baseui, clone_url, self.path)
             self.repo = localrepository(self.baseui, self.path, create=create)
         except RepoError, err:
             if create:
@@ -84,6 +90,17 @@ class MercurialRepository(BaseRepository):
                 msg = "Not valid repository at %s. Original error was %s"\
                     % (self.path, err)
             raise RepositoryError(msg)
+
+    def _get_repo_url(self, url):
+        """
+        Normalizes url.
+        """
+        url = str(url)
+        try:
+            url.index('://')
+        except ValueError:
+            url = '://'.join(('file', url))
+        return url
 
     @LazyProperty
     def description(self):
@@ -177,6 +194,17 @@ class MercurialRepository(BaseRepository):
             if rev < 0:
                 break
             yield self.get_changeset(rev)
+
+    def pull(self, url='default'):
+        """
+        Extra method for easier ``pull`` capability. Mercurial allows to pull
+        changes from external location (i.e. from filesystem or over http
+        protocol).
+        """
+        if url != 'default':
+            url = self._get_repo_url(url)
+        print url
+        pull(self.baseui, self.repo, url)
 
 class MercurialChangeset(BaseChangeset):
     """

@@ -1,19 +1,47 @@
+import os
 import unittest
 
 from vcs.backends.hg import MercurialRepository, MercurialChangeset
 from vcs.exceptions import ChangesetError, RepositoryError
 from vcs.nodes import NodeKind, NodeState
-
-TEST_HG_REPO = '/tmp/vcs'
+from tests.conf import PACKAGE_DIR, TEST_HG_REPO, TEST_HG_REPO_CLONE,\
+    TEST_HG_REPO_PULL
 
 class MercurialRepositoryTest(unittest.TestCase):
 
     def setUp(self):
         self.repo = MercurialRepository(TEST_HG_REPO)
 
-    def test_repo_create(self):
+    def test_repo_init(self):
         wrong_repo_path = '/tmp/errorrepo'
         self.assertRaises(RepositoryError, MercurialRepository, wrong_repo_path)
+
+    def test_repo_clone(self):
+        if os.path.exists(TEST_HG_REPO_CLONE):
+            self.fail('Cannot test mercurial clone repo as location %s already '
+                      'exists. You should manually remove it first.'
+                      % TEST_HG_REPO_CLONE)
+        repo = MercurialRepository(PACKAGE_DIR)
+        repo_clone = MercurialRepository(TEST_HG_REPO_CLONE,
+            clone_url=PACKAGE_DIR)
+        self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
+        # Checking hashes of changesets should be enough
+        for changeset in repo.get_changesets(limit=None):
+            raw_id = changeset.raw_id
+            self.assertEqual(raw_id, repo_clone.get_changeset(raw_id).raw_id)
+
+    def test_pull(self):
+        if os.path.exists(TEST_HG_REPO_PULL):
+            self.fail('Cannot test mercurial pull command as location %s '
+                      'already exists. You should manually remove it first'
+                      % TEST_HG_REPO_PULL)
+        repo_new = MercurialRepository(TEST_HG_REPO_PULL, create=True)
+        self.assertTrue(len(self.repo.revisions) > len(repo_new.revisions))
+
+        repo_new.pull(self.repo.path)
+        repo_new = MercurialRepository(TEST_HG_REPO_PULL)
+        self.assertTrue(len(self.repo.revisions) == len(repo_new.revisions))
+
 
     def test_revisions(self):
         # there are 21 revisions at bitbucket now
