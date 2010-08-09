@@ -10,9 +10,15 @@ __all__ = (
 
 SCM_TESTS = ['hg', 'git']
 
-TEST_HG_REPO = os.environ.get('VCS_TEST_HG_REPO', '/tmp/vcs')
 TEST_GIT_REPO = os.environ.get('VCS_TEST_GIT_REPO', '/tmp/vcs-git')
-
-HG_REMOTE_REPO = 'http://bitbucket.org/marcinkuzminski/vcs'
 GIT_REMOTE_REPO = 'git@github.com:lukaszb/vcs.git'
+
+TEST_HG_REPO = os.environ.get('VCS_TEST_HG_REPO', '/tmp/vcs')
+HG_REMOTE_REPO = 'http://bitbucket.org/marcinkuzminski/vcs'
+TEST_HG_REPO_CLONE = os.environ.get('VCS_TEST_HG_REPO_CLONE', '/tmp/vcshgclone')
+TEST_HG_REPO_PULL = os.environ.get('VCS_TEST_HG_REPO_PULL', '/tmp/vcshgpull')
+
+
+PACKAGE_DIR = os.path.abspath(os.path.join(
+    os.path.basename(__file__), '..'))
 
