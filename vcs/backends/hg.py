@@ -90,8 +90,10 @@ class MercurialRepository(BaseRepository):
             if clone_url:
                 url = self._get_url(clone_url)
                 clone(self.baseui, url, self.path)
+                # Don't try to create if we've already cloned repo
+                create = False
             self.repo = localrepository(self.baseui, self.path, create=create)
-        except RepoError, err:
+        except (Abort, RepoError), err:
             if create:
                 msg = "Cannot create repository at %s. Original error was %s"\
                     % (self.path, err)

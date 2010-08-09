@@ -1,9 +1,10 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
-from vcs import get_repo, RepositoryError
+from vcs import get_repo, get_backend, RepositoryError
 from vcs.utils.lazy import LazyProperty
 from vcs.web.simplevcs.settings import AVAILABLE_BACKENDS
+from vcs.web.simplevcs.managers import RepositoryManager
 
 def validate_alias(alias):
     if alias not in AVAILABLE_BACKENDS:
@@ -12,6 +13,8 @@ def validate_alias(alias):
 class Repository(models.Model):
     alias = models.CharField(max_length=32, validators=[validate_alias])
     path = models.CharField(max_length=255, unique=True)
+
+    objects = RepositoryManager()
 
     @LazyProperty
     def _repo(self):
@@ -45,10 +48,17 @@ class Repository(models.Model):
     def get_changesets(self, *args, **kwargs):
         return self._repo.get_changesets(*args, **kwargs)
 
-    def save(self, *args, **kwargs):
-        try:
-            get_repo(self.alias, path=self.path, create=True)
-        except RepositoryError:
-            get_repo(self.alias, path=self.path)
+    def save(self, clone_url=None, *args, **kwargs):
+        if clone_url:
+            backend = get_backend(self.alias)
+            try:
+                self.repo = backend(self.path, create=True, clone_url=clone_url)
+            except RepositoryError:
+                self.repo = backend(self.path, clone_url=clone_url)
+        else:
+            try:
+                self.repo = get_repo(self.alias, path=self.path, create=True)
+            except RepositoryError:
+                self.repo = get_repo(self.alias, path=self.path)
         super(Repository, self).save(*args, **kwargs)
 
