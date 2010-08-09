@@ -8,22 +8,25 @@ Created on Apr 8, 2010
 
 :author: marcink,lukaszb
 """
+import os
+import re
+import time
+import datetime
+import posixpath
+
 from mercurial import ui
 from mercurial.context import short
-from mercurial.error import RepoError, RepoLookupError
+from mercurial.error import RepoError, RepoLookupError, Abort
 from mercurial.localrepo import localrepository
 from mercurial.node import hex
+from mercurial.commands import clone, pull
+
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, ChangesetError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils.paths import abspath, get_dirs_for_path
-import datetime
-import os
-import posixpath
-import re
-import time
 
 
 class MercurialRepository(BaseRepository):
@@ -31,7 +34,7 @@ class MercurialRepository(BaseRepository):
     Mercurial repository backend
     """
 
-    def __init__(self, repo_path, create=False, baseui=None):
+    def __init__(self, repo_path, create=False, baseui=None, clone_url=None):
         """
         Raises RepositoryError if repository could not be find at the given
         ``repo_path``.
@@ -39,13 +42,14 @@ class MercurialRepository(BaseRepository):
         :param repo_path: local path of the repository
         :param create=False: if set to True, would try to craete repository if
            it does not exist rather than raising exception
-        :param baseui=mercurial.ui.ui(): user data
+        :param baseui=None: user data
+        :param clone_url=None: would try to clone repository from given location
         """
 
         self.path = abspath(repo_path)
         self.baseui = baseui or ui.ui()
         # We've set path and ui, now we can set repo itself
-        self._set_repo(create)
+        self._set_repo(create, clone_url)
         self.revisions = list(self.repo)
         self.changesets = {}
 
@@ -58,7 +62,7 @@ class MercurialRepository(BaseRepository):
         if not self.revisions:
             return {}
         sortkey = lambda ctx: ctx[1]._ctx.rev()
-        s_branches = sorted([(name, self.get_changeset(short(head))) for 
+        s_branches = sorted([(name, self.get_changeset(short(head))) for
             name, head in self.repo.branchtags().items()], key=sortkey,
             reverse=True)
         return OrderedDict((name, cs.raw_id) for name, cs in s_branches)
@@ -69,18 +73,23 @@ class MercurialRepository(BaseRepository):
             return {}
 
         sortkey = lambda ctx: ctx[1]._ctx.rev()
-        s_tags = sorted([(name, self.get_changeset(short(head))) for 
+        s_tags = sorted([(name, self.get_changeset(short(head))) for
             name, head in self.repo.tags().items()], key=sortkey, reverse=True)
         return OrderedDict((name, cs.raw_id) for name, cs in s_tags)
 
-    def _set_repo(self, create):
+    def _set_repo(self, create, clone_url=None):
         """
         Function will check for mercurial repository in given path and return
         a localrepo object. If there is no repository in that path it will raise
         an exception unless ``create`` parameter is set to True - in that case
         repository would be created and returned.
+        If ``clone_url`` is given, would try to clone repository from the
+        location.
         """
         try:
+            if clone_url:
+                url = self._get_url(clone_url)
+                clone(self.baseui, url, self.path)
             self.repo = localrepository(self.baseui, self.path, create=create)
         except RepoError, err:
             if create:
@@ -150,6 +159,16 @@ class MercurialRepository(BaseRepository):
                                                 untrusted=True):
                 yield {"type" : i[0], "extension": i[1], "node": archive_name}
 
+    def _get_url(self, url):
+        """
+        Returns normalized url. If schema is not given, would fall to filesystem
+        (``file://``) schema.
+        """
+        url = str(url)
+        if url != 'default' and not '://' in url:
+            url = '://'.join(('file', url))
+        return url
+
     def get_changeset(self, revision=None):
         """
         Returns ``MercurialChangeset`` object representing repository's
@@ -183,6 +202,17 @@ class MercurialRepository(BaseRepository):
             if rev < 0:
                 break
             yield self.get_changeset(rev)
+
+    def pull(self, url):
+        """
+        Tries to pull changes from external location.
+        """
+        url = self._get_url(url)
+        try:
+            pull(self.baseui, self.repo, url)
+        except Abort, err:
+            # Propagate error but with vcs's type
+            raise RepositoryError(str(err))
 
 class MercurialChangeset(BaseChangeset):
     """
