@@ -11,6 +11,7 @@ Created on Apr 8, 2010
 import os
 import re
 import time
+import urllib2
 import datetime
 import posixpath
 
@@ -89,7 +90,10 @@ class MercurialRepository(BaseRepository):
         try:
             if clone_url:
                 url = self._get_url(clone_url)
-                clone(self.baseui, url, self.path)
+                try:
+                    clone(self.baseui, url, self.path)
+                except urllib2.URLError:
+                    raise Abort("Got HTTP 404 error")
                 # Don't try to create if we've already cloned repo
                 create = False
             self.repo = localrepository(self.baseui, self.path, create=create)
