@@ -30,3 +30,9 @@ def get_backend(alias):
     klass = import_class(backend_path)
     return klass
 
+def get_supported_backends():
+    """
+    Returns list of aliases of supported backends.
+    """
+    return BACKENDS.keys()
+
