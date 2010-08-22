@@ -123,7 +123,6 @@ class MercurialRequest(wsgirequest):
 
         # Collect and write extra messages
         if self.is_push() and HG_EXTRA_MESSAGES_ENABLED:
-            logging.debug('collecting extra messages')
             repository = Repository.objects\
                 .select_related('info')\
                 .get(path=self.repo_path)
