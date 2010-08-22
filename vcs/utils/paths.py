@@ -16,3 +16,14 @@ def get_dirs_for_path(*paths):
                 # We don't need to yield empty path
                 break
 
+def get_dir_size(path):
+    root_path = path
+    size = 0
+    for path, dirs, files in os.walk(root_path):
+        for f in files:
+            try:
+                size +=  os.path.getsize(os.path.join(path, f))
+            except OSError:
+                pass
+    return size
+

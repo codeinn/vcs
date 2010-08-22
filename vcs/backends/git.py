@@ -15,7 +15,7 @@ import datetime
 import time
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, ChangesetError
-from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
+from vcs.nodes import FileNode, DirNode, NodeKind, RootNode
 from vcs.utils.paths import abspath
 from vcs.utils.lazy import LazyProperty
 
@@ -49,9 +49,14 @@ class GitRepository(BaseRepository):
         return revisions
 
     def _set_repo(self, create):
+        if create and os.path.exists(self.path):
+            raise RepositoryError("Location already exist")
         try:
-            self._repo = Repo(self.path)
-        except NotGitRepository, err:
+            if create:
+                self._repo = Repo.init(self.path)
+            else:
+                self._repo = Repo(self.path)
+        except (NotGitRepository, OSError), err:
             raise RepositoryError(str(err))
 
     def _get_revision(self, revision):
@@ -93,7 +98,7 @@ class GitRepository(BaseRepository):
                 return os.stat(in_path).st_mtime
             else:
                 return os.stat(he_path).st_mtime
-            
+
     @LazyProperty
     def description(self):
         undefined_description = 'unknown'

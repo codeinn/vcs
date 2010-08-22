@@ -5,17 +5,35 @@ import cStringIO
 
 from mercurial.hgweb.request import wsgirequest, normalize
 from mercurial.hgweb import hgweb
-from mercurial.util import Abort
 
 from django.http import HttpResponse
 from django.utils.encoding import smart_str
 from django.contrib.auth import authenticate
 from django.core.exceptions import PermissionDenied
+from django.utils.importlib import import_module
 
 from vcs import get_repo
-from vcs.web.simplevcs.settings import BASIC_AUTH_REALM
+from vcs.utils.lazy import LazyProperty
+from vcs.web.simplevcs.settings import BASIC_AUTH_REALM, \
+    HG_EXTRA_MESSAGES_ENABLED
 from vcs.web.simplevcs.models import Repository
 from vcs.web.exceptions import RequestError
+from vcs.web.simplevcs.signals import pre_clone, pre_push, post_clone, \
+    post_push, retrieve_hg_post_push_messages
+
+UNKNOWN = 'unknown'
+CLONE = 'clone'
+PUSH = 'push'
+
+HG_ACTIONS = {
+    'changegroup': CLONE,
+    'changegroupsubset': PUSH,
+    'unbundle': PUSH,
+    'pushkey': PUSH,
+}
+
+DEFAULT_USERNAME = 'AnonymousUser'
+
 
 class MercurialRequest(wsgirequest):
     """
@@ -23,14 +41,17 @@ class MercurialRequest(wsgirequest):
     order to properly fake mercurial client request.  Those methods need to
     operate on Django's standard ``HttpResponse``.
     """
-    _already_responded = False
-    _response_written = False
 
-    def __init__(self, request):
+    def __init__(self, request, repo_path=None):
         """
         Initializes ``MercurialRequest`` and make necessary changes to the
         ``env`` attribute (which is ``META`` attribute of the given request).
         """
+        self._already_responded = False
+        self._response_written = False
+        self.repo_path = repo_path
+        self.request = request
+        self.messages = []
 
         # Before we set environment for mercurial
         # we need to fix (if needed) it's PATH_INFO
@@ -79,17 +100,80 @@ class MercurialRequest(wsgirequest):
         Returns ``HttpResponse`` object created by this request, using given
         ``hgweb``.
         """
+        # Pre response signals for clones/pushes
+        if self.is_push():
+            pre_push.send(None, repo_path=self.repo_path, ip=self.ip,
+                username=self.username)
+        elif self.is_clone():
+            pre_clone.send(None, repo_path=self.repo_path, ip=self.ip,
+                username=self.username)
+
         if not self._response_written:
             self._response.write(''.join(
                 (each for each in hgweb.run_wsgi(self))))
             self._response_written = True
+
+        # Pre response signals for clones/pushes
+        if self.is_push():
+            post_push.send(None, repo_path=self.repo_path, ip=self.ip,
+                username=self.username)
+        elif self.is_clone():
+            post_clone.send(None, repo_path=self.repo_path, ip=self.ip,
+                username=self.username)
+
+        # Collect and write extra messages
+        if self.is_push() and HG_EXTRA_MESSAGES_ENABLED:
+            logging.debug('collecting extra messages')
+            repository = Repository.objects\
+                .select_related('info')\
+                .get(path=self.repo_path)
+            retrieve_hg_post_push_messages.send(self,
+                repository=repository)
+            for msg in self.messages :
+                self._response.write(msg + '\n')
+
         return self._response
+
+    @LazyProperty
+    def action(self):
+        """
+        Returns action type of mercurial request (unknown, clone, push).
+        """
+        QUERY_STRING = self.env.get('QUERY_STRING', None)
+        if QUERY_STRING:
+            for pair in QUERY_STRING.split('&'):
+                key, value = pair.split('=')
+                if key == 'cmd' and HG_ACTIONS.has_key(value):
+                    return HG_ACTIONS[value]
+        return UNKNOWN
+
+    def is_push(self):
+        return self.action == PUSH
+
+    def is_clone(self):
+        return self.action == CLONE
+
+    @LazyProperty
+    def ip(self):
+        """
+        Returns ip from the request.
+        """
+        return self.env.get('REMOTE_ADDR', '0.0.0.0')
+
+    @LazyProperty
+    def username(self):
+        user = getattr(self.request, 'user')
+        if user:
+            return user.username
+        return DEFAULT_USERNAME
+
 
 class MercurialServer(object):
     """
     Mimics functionality of ``hgweb``.
     """
     def __init__(self, repo_path, **webinfo):
+        self.repo_path = repo_path
         self._hgserve = hgweb(repo_path)
         self.setup_web(**webinfo)
 
@@ -103,7 +187,7 @@ class MercurialServer(object):
                 self.ui_config('web', key, value)
 
     def get_response(self, request):
-        mercurial_request = MercurialRequest(request)
+        mercurial_request = MercurialRequest(request, repo_path=self.repo_path)
         response = mercurial_request.get_response(self._hgserve)
         return response
 
@@ -199,4 +283,23 @@ def get_repository(repository=None, path=None, alias=None):
     if repository is None:
         repository = get_repo(alias=alias, path=path)
     return repository
+
+def str2obj(text):
+    """
+    Returns object pointed by the string. For example::
+
+        >>> from django.contrib.auth.models import User
+        >>> point = 'django.contrib.auth.models.User'
+        >>> obj = str2obj(point)
+        >>> obj is User
+        True
+
+    """
+    modpath, objname = text.rsplit('.', 1)
+    mod = import_module(modpath)
+    try:
+        obj = getattr(mod, objname)
+    except AttributeError:
+        raise ImportError("Cannot retrieve object from location %s" % text)
+    return obj
 
