@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.contrib import messages
+from django.http import Http404
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 
@@ -67,7 +69,11 @@ def diff_file(request, file_path, template_name, repository=None,
             differ = DiffProcessor(diff_content),
         ))
     except VCSError, err:
-        messages.error(request, str(err))
+        if settings.DEBUG:
+            msg = 'DEBUG message: %s' % err
+            messages.error(request, msg)
+        else:
+            raise Http404
 
     return render_to_response(template_name, context, RequestContext(request))
 
