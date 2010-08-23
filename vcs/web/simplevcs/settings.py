@@ -16,3 +16,6 @@ BASIC_AUTH_REALM = getattr(settings, 'VCS_BASIC_AUTH_REALM', 'Basic Auth Realm')
 
 ALWAYS_REQUIRE_LOGIN = getattr(settings, 'VCS_ALWAYS_REQUIRE_LOGIN', True)
 
+HG_EXTRA_MESSAGES_ENABLED = getattr(settings, 'VCS_HG_EXTRA_MESSAGES_ENABLED',
+    True)
+

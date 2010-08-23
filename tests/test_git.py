@@ -2,7 +2,7 @@ import unittest
 
 from vcs.backends.git import GitRepository, GitChangeset
 from vcs.exceptions import ChangesetError, RepositoryError
-from vcs.nodes import NodeKind, NodeState, FileNode, DirNode
+from vcs.nodes import NodeKind, FileNode, DirNode
 
 from conf import TEST_GIT_REPO
 
@@ -11,7 +11,7 @@ class GitRepositoryTest(unittest.TestCase):
     def setUp(self):
         self.repo = GitRepository(TEST_GIT_REPO)
 
-    def test_repo_create(self):
+    def test_wrong_repo_path(self):
         wrong_repo_path = '/tmp/errorrepo'
         self.assertRaises(RepositoryError, GitRepository, wrong_repo_path)
 
