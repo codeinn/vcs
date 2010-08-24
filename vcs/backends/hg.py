@@ -413,23 +413,25 @@ class MercurialChangeset(BaseChangeset):
             # cache node
             self.nodes[path] = node
         return self.nodes[path]
-
+   
     @LazyProperty
     def added(self):
         """
         Returns list of added ``FileNode`` objects.
-        """
+        """  
         paths = self._ctx.files()
         added_nodes = []
         for path in paths:
             try:
+                last_node = self.repository.get_changeset(hex(
+                                    self._get_filectx(path).filectx(0).node())) 
                 node = self.get_node(path)
-                if node.history[-1] is self:
+                if last_node is self:
                     added_nodes.append(node)
             except ChangesetError:
                 pass
         return added_nodes
-
+    
     @LazyProperty
     def changed(self):
         """
@@ -437,15 +439,17 @@ class MercurialChangeset(BaseChangeset):
         """
         paths = self._ctx.files()
         changed_nodes = []
-        for path in paths:
+        for path in paths:          
             try:
+                last_node = self.repository.get_changeset(hex(
+                                    self._get_filectx(path).filectx(0).node()))
                 node = self.get_node(path)
-                if node.history[-1] is not self:
+                if last_node is not self:
                     changed_nodes.append(node)
             except ChangesetError:
                 pass
         return changed_nodes
-
+    
     @LazyProperty
     def removed(self):
         """
@@ -460,4 +464,3 @@ class MercurialChangeset(BaseChangeset):
                 node = RemovedFileNode(path=path)
                 removed_nodes.append(node)
         return removed_nodes
-
