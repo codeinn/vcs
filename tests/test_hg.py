@@ -49,6 +49,11 @@ class MercurialRepositoryTest(unittest.TestCase):
         subset = set(range(0, 22))
         self.assertTrue(subset.issubset(set(self.repo.revisions)))
 
+    def test_iter_slice(self):
+        sliced = list(self.repo[:10])
+        itered = list(self.repo)[:10]
+        self.assertEqual(sliced, itered)
+
     def test_branches(self):
         # TODO: Need more tests here
         self.assertTrue('default' in self.repo.branches)

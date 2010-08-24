@@ -82,7 +82,7 @@ class BaseRepository(object):
 
         *Requires* implementation of ``__getitem__`` method.
         """
-        for revision in self.revisions:
+        for revision in reversed(self.revisions):
             yield self.get_changeset(revision)
 
     def get_changesets(self, limit=10, offset=None):
