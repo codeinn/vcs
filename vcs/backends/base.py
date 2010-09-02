@@ -128,7 +128,7 @@ class BaseChangeset(object):
     """
 
     def __str__(self):
-        return '<%s at %s>' % (self.__class__.__name__, self.revision)
+        return u'<%s at %s>' % (self.__class__.__name__, self.revision)
 
     def __repr__(self):
         return self.__str__()

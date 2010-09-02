@@ -424,6 +424,19 @@ class MercurialChangesetTest(unittest.TestCase):
         self.assertRaises(ChangesetError,
             self.repo.request, 'vcs/utils/web.py', 85)
 
+    def test_commit_message_is_unicode(self):
+        for cm in self.repo:
+            self.assertEqual(type(cm.message),unicode)
+            
+    def test_changeset_author_is_unicode(self):
+        for cm in self.repo:
+            self.assertEqual(type(cm.author),unicode)
+    
+    def test_repo_files_content_is_unicode(self):
+        test_changeset = self.repo.get_changeset(100)
+        for node in test_changeset.get_node('/'):
+            if node.is_file():
+                self.assertEqual(type(node.content),unicode)         
 
 if __name__ == '__main__':
     unittest.main()

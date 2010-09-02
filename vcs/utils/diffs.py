@@ -5,7 +5,6 @@ from difflib import unified_diff
 from itertools import tee
 from vcs.exceptions import VCSError
 from vcs.nodes import FileNode, NodeError
-from datetime import datetime
 import difflib
 import logging
 import re
@@ -71,11 +70,6 @@ class DiffProcessor(object):
             self.differ = self._highlight_line_udiff
 
     def escaper(self, string):
-        try:
-            string = unicode(string)
-        except UnicodeDecodeError:
-            #incase we have a decode error just represent as byte string
-            string = unicode(str(string).encode('string_escape'))
         return string.replace('<', '&lt;').replace('>', '&gt;')
 
     def copy_iterator(self):
