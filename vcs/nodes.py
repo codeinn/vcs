@@ -298,13 +298,7 @@ class FileNode(Node):
         """
         Returns True if file has binary content.
         """
-        if isinstance(self.lexer, lexers.TextLexer):
-            # textlexer is default lexer so it just may be binary data
-            try:
-                self.content.decode('utf-8')
-            except UnicodeDecodeError:
-                return True
-            return False
+        return bool(self.content and '\0' in self.content)
 
 class RemovedFileNode(FileNode):
     """
