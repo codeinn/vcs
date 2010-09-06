@@ -28,7 +28,7 @@ from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils.paths import abspath, get_dirs_for_path
-
+from vcs.utils import safe_unicode
 
 class MercurialRepository(BaseRepository):
     """
@@ -235,8 +235,8 @@ class MercurialChangeset(BaseChangeset):
         self.revision = ctx.rev()
         self._ctx = ctx
         self._fctx = {}
-        self.author = ctx.user()
-        self.message = ctx.description()
+        self.author = safe_unicode(ctx.user())
+        self.message = safe_unicode(ctx.description())
         self.branch = ctx.branch()
         self.tags = ctx.tags()
         self.date = datetime.datetime.fromtimestamp(ctx.date()[0])
@@ -255,12 +255,12 @@ class MercurialChangeset(BaseChangeset):
 
     @LazyProperty
     def _short(self):
-        return short(self._ctx.node())
+        return safe_unicode(short(self._ctx.node()))
 
     @LazyProperty
     def id(self):
         if self.last:
-            return 'tip'
+            return u'tip'
         return self._short
 
     @LazyProperty
@@ -325,7 +325,7 @@ class MercurialChangeset(BaseChangeset):
         Returns message of the last commit related to file at the given
         ``path``.
         """
-        return self.get_file_changeset(path).message
+        return safe_unicode(self.get_file_changeset(path).message)
 
     def get_file_revision(self, path):
         """

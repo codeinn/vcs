@@ -5,6 +5,7 @@ import posixpath
 import mimetypes
 
 from vcs.utils.lazy import LazyProperty
+from vcs.utils import safe_unicode
 from vcs.exceptions import VCSError
 
 from pygments import lexers
@@ -20,10 +21,10 @@ class NodeKind:
     FILE = 2
 
 class NodeState:
-    ADDED = 'added'
-    CHANGED = 'changed'
-    NOT_CHANGED = 'not changed'
-    REMOVED = 'removed'
+    ADDED = u'added'
+    CHANGED = u'changed'
+    NOT_CHANGED = u'not changed'
+    REMOVED = u'removed'
 
 class Node(object):
     """
@@ -64,7 +65,7 @@ class Node(object):
         Returns name of the node so if its path
         then only last part is returned.
         """
-        return self.path.rstrip('/').split('/')[-1]
+        return safe_unicode(self.path.rstrip('/').split('/')[-1])
 
     def _get_kind(self):
         return self._kind
@@ -105,7 +106,7 @@ class Node(object):
         return self.__repr__()
 
     def __unicode__(self):
-        return unicode(self.name)
+        return self.name
 
     def get_parent_path(self):
         """
@@ -187,11 +188,8 @@ class FileNode(Node):
             content = self.changeset.get_file_content(self.path)
         else:
             content = self._content
-        try:
-            content = content.encode('utf-8').decode('utf-8')
-        except (UnicodeDecodeError, UnicodeEncodeError):
-            pass
-        return content
+
+        return safe_unicode(content)
 
     @LazyProperty
     def nodes(self):
