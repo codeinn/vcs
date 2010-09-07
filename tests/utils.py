@@ -69,10 +69,7 @@ class SCMFetcher(object):
         """
         Tries to fetch repository from remote path.
         """
-        eprint("Seems that %s is empty. We need to fetch repository to run "
-               "tests. Type repository path which would be cloned into %s\n"
-               "(Hit enter to use: %s)" % (self.test_repo_path,
-                self.test_repo_path, self.remote_repo))
-        remote = raw_input() or self.remote_repo
+        remote = self.remote_repo
+        eprint("Fetching repository %s into %s" % (remote, self.test_repo_path))
         run_command(self.clone_cmd,  '%s %s' % (remote, self.test_repo_path))
 
