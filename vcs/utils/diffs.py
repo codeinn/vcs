@@ -2,6 +2,8 @@
 # original copyright: 2007-2008 by Armin Ronacher
 # licensed under the BSD license.
 from difflib import unified_diff
+from mercurial import patch
+from mercurial.mdiff import diffopts
 from itertools import tee
 from vcs.exceptions import VCSError
 from vcs.nodes import FileNode, NodeError
@@ -13,7 +15,6 @@ def get_udiff(filenode_old, filenode_new):
     """
     Returns unified diff between given ``filenode_old`` and ``filenode_new``.
     """
-    
     try:
         filenode_old_date = filenode_old.last_changeset.date
     except NodeError:
@@ -41,6 +42,22 @@ def get_udiff(filenode_old, filenode_new):
                                filenode_old_date,
                                filenode_old_date)
     return vcs_udiff
+
+
+def get_gitdiff(filenode_old, filenode_new):
+    """Returns mercurial style git diff between given 
+    ``filenode_old`` and ``filenode_new``.
+    """
+    
+    for filenode in (filenode_old, filenode_new):
+        if not isinstance(filenode, FileNode):
+            raise VCSError("Given object should be FileNode object, not %s"
+                % filenode.__class__)
+    
+    repo = filenode_new.changeset.repository    
+    return patch.diff(repo.repo, filenode_old.changeset.raw_id,
+                      filenode_new.changeset.raw_id, opts=diffopts(git=True))
+
 
 class DiffProcessor(object):
     """
