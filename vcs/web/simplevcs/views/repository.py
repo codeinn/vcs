@@ -1,3 +1,5 @@
+import re
+
 from django.conf import settings
 from django.contrib import messages
 from django.http import Http404
@@ -6,6 +8,7 @@ from django.shortcuts import render_to_response
 
 from vcs.exceptions import VCSError
 from vcs.web.simplevcs.utils import get_repository
+
 
 def browse_repository(request, template_name, repository=None,
         repository_path=None, repository_alias=None, revision=None,
@@ -46,6 +49,11 @@ def browse_repository(request, template_name, repository=None,
 
     - ``root``: repository's node on the given ``node_path``
 
+    - ``readme_node``: ``FileNode`` instance if returning ``root`` is a
+      ``DirNode`` and a readme file can be found at it's file listing (can be a
+      file which name starts with *README*, with or without any extension,
+      case is irrelevant); if no readme file could be found, None is returned
+
     """
     context = {}
     for key, value in extra_context.items():
@@ -54,10 +62,16 @@ def browse_repository(request, template_name, repository=None,
     try:
         repository = get_repository(repository, repository_path,
             repository_alias)
+        root = repository.request(node_path, revision=revision)
+        if root.is_dir():
+            readme_node = get_readme(root)
+        else:
+            readme_node = None
         context.update(dict(
             repository = repository,
             changeset = repository.get_changeset(),
-            root = repository.request(node_path, revision=revision),
+            root = root,
+            readme_node = readme_node,
         ))
     except VCSError, err:
         if settings.DEBUG:
@@ -67,4 +81,15 @@ def browse_repository(request, template_name, repository=None,
             raise Http404
 
     return render_to_response(template_name, context, RequestContext(request))
+
+
+def get_readme(dirnode):
+    """
+    Returns readme ``FileNode`` or None if no readme file is found.
+    """
+    README_RE = re.compile(r'^README', re.IGNORECASE)
+    for node in dirnode.files:
+        if README_RE.match(node.name):
+            return node
+    return None
 
