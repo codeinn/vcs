@@ -228,13 +228,10 @@ class FileNode(Node):
         if hasattr(self, '_mimetype'):
             return self._mimetype
         mtype = mimetypes.guess_type(self.name)[0]
-        if mtype is None:
-            try:
-                self.content.decode('utf-8')
-                mtype = 'text/plain'
-            except UnicodeDecodeError:
-                #logging.warning("Cannot decode %s!" % self)
-                mtype = 'application/octet-stream'
+        if mtype is None and self.is_binary:
+            mtype = 'application/octet-stream'
+        else:
+            mtype = 'text/plain'
         return mtype
 
     @LazyProperty

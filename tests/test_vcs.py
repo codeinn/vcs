@@ -2,6 +2,7 @@ import unittest
 
 from vcs import VCSError, get_repo, get_backend
 from vcs.backends.hg import MercurialRepository
+from tests.conf import TEST_HG_REPO
 
 class VCSTest(unittest.TestCase):
     """
@@ -18,7 +19,7 @@ class VCSTest(unittest.TestCase):
 
     def test_get_repo(self):
         alias = 'hg'
-        path = '/tmp/vcs'
+        path = TEST_HG_REPO
         backend = get_backend(alias)
         repo = backend(path)
 
