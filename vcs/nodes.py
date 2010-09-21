@@ -228,6 +228,7 @@ class FileNode(Node):
         if hasattr(self, '_mimetype'):
             return self._mimetype
         mtype = mimetypes.guess_type(self.name)[0]
+        print mtype
         if mtype is None and self.is_binary:
             mtype = 'application/octet-stream'
         else:
@@ -294,7 +295,13 @@ class FileNode(Node):
         Returns True if file has binary content.
         """
         return bool(self.content and '\0' in self.content)
-
+    
+    @LazyProperty
+    def extension(self):
+        """Returns filenode extension"""
+        return self.name.split('.')[-1]
+        
+    
 class RemovedFileNode(FileNode):
     """
     Dummy FileNode class - trying to access any public attribute except path,
