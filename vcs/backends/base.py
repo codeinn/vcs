@@ -111,6 +111,11 @@ class BaseRepository(object):
         node = chset.get_node(path)
         return node
 
+    def walk(self, topurl='', revision=None):
+        chset = self.get_changeset(revision)
+        return chset.walk(topurl)
+
+
 class BaseChangeset(object):
     """
     Each backend should implement it's changeset representation.
@@ -240,4 +245,16 @@ class BaseChangeset(object):
         Returns list of removed ``FileNode`` objects.
         """
         raise NotImplementedError
+
+    def walk(self, topurl=''):
+        """
+        Similar to os.walk method. Insted of filesystem it walks through
+        changeset starting at given ``topurl``.  Returns list of tuples
+        (topnode, dirnodes, filenodes).
+        """
+        topnode = self.get_node(topurl)
+        yield (topnode, topnode.dirs, topnode.files)
+        for dirnode in topnode.dirs:
+            for tup in self.walk(dirnode.path):
+                yield tup
 
