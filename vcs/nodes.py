@@ -228,11 +228,11 @@ class FileNode(Node):
         if hasattr(self, '_mimetype'):
             return self._mimetype
         mtype = mimetypes.guess_type(self.name)[0]
-        print mtype
-        if mtype is None and self.is_binary:
-            mtype = 'application/octet-stream'
-        else:
-            mtype = 'text/plain'
+        if mtype is None:
+            if self.is_binary:
+                mtype = 'application/octet-stream'
+            else:
+                mtype = 'text/plain'
         return mtype
 
     @LazyProperty
