@@ -1,7 +1,4 @@
-import sys
 import argparse
-
-from vcs.utils.helpers import run_command
 
 class VCSArgumentParser(argparse.ArgumentParser):
     """
