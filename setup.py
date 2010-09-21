@@ -25,6 +25,7 @@ setup(
     long_description = long_description,
     zip_safe = False,
     packages = find_packages(),
+    scripts = ['bin/vcs'],
     test_suite = 'nose.collector',
     install_requires = ['nose', 'Pygments'],
     include_package_data = True,

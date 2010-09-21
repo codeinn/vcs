@@ -239,7 +239,6 @@ class GitChangeset(BaseChangeset):
                     fullpath = '/'.join((parent, name))
                     self._paths[fullpath] = hex
             if not path in self._paths:
-                print self._paths
                 raise ChangesetError("There is no file nor directory "
                     "at the given path %r at revision %r"
                     % (path, self.revision))

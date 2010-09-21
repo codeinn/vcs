@@ -1,0 +1,92 @@
+#!/usr/bin/env python
+import os
+import sys
+import vcs
+
+from vcs.cli.parser import VCSArgumentParser
+from vcs.exceptions import VCSError
+from vcs.utils.helpers import get_scm
+from vcs.utils.helpers import get_highlighted_code
+from vcs.utils.paths import abspath
+
+def do_cat(args):
+    path = abspath(args.PATH)[len(abspath(args.repo_path))+1:]
+    repo = vcs.get_repo(args.scm, args.repo_path)
+    node = repo.request(path, args.revision)
+    if not node.is_file():
+        print "[ERROR] Requested object is not a file!"
+        sys.exit(-2)
+    content = get_highlighted_code(node.name, node.content)
+    print content
+    sys.exit(0)
+
+def do_list_backends(args):
+    print '\n'.join((
+        "All backends resides at vcs.backends module.",
+        "Here is a list of all implemented engines:",
+    ))
+
+    print
+    for alias, backend in vcs.BACKENDS.items():
+        print alias.rjust(10), ':', backend
+    print
+    sys.exit(0)
+
+def do_show_scm(args):
+    print "Working directory root:", args.repo_path
+    print "Working directory scm:", args.scm
+    sys.exit(0)
+
+def parse_args():
+    """
+    Returns parsed args (vcs-specific).
+    """
+
+    dir = abspath(os.path.curdir)
+    try:
+        scm, repo_path = get_scm(dir, search_recursively=True)
+    except VCSError:
+        raise VCSError("Seems like %s is not working directory" % dir)
+
+    parser = VCSArgumentParser(scm=scm, repo_path=repo_path, description=vcs.__doc__)
+
+    parser.add_argument('-V', '--version', action='version',
+        version=str(vcs.__version__), help='show version number and exit')
+
+    
+    subparsers = parser.add_subparsers(title='VCS Commands', dest='command')
+    # Commands
+    cat_parser = subparsers.add_parser('cat',
+        help='Prints content of the file at given PATH')
+    cat_parser.add_argument('PATH', action='store', default=None,
+        help='Relative path (to current dir) of the file')
+    cat_parser.add_argument('-r', '--revision', dest='revision', default=None)
+    cat_parser.set_defaults(func=do_cat)
+
+    list_backends_parser = subparsers.add_parser('list-backends',
+        help='Lists all available backends')
+    list_backends_parser.set_defaults(func=do_list_backends)
+
+    show_scm_parser = subparsers.add_parser('show-scm',
+        help='Shows scm/root path for the working directory and exits')
+    show_scm_parser.set_defaults(func=do_show_scm)
+
+    args = parser.parse_args()
+
+    return args
+
+def main():
+    """
+    Runs command with given options.
+    """
+
+    try:
+        args = parse_args()
+        if args.func:
+            args.func(args)
+    except VCSError, err:
+        print "[ERROR] %s" % err
+
+if __name__ == '__main__':
+    main()
+
