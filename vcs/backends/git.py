@@ -16,9 +16,11 @@ import time
 
 from subprocess import Popen, PIPE
 
+from itertools import chain
+
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, ChangesetError
-from vcs.nodes import FileNode, DirNode, NodeKind, RootNode
+from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.paths import abspath
 from vcs.utils.lazy import LazyProperty
 
@@ -172,8 +174,8 @@ class GitChangeset(BaseChangeset):
             raise RepositoryError("Cannot get object with id %s" % revision)
         self._commit = commit
         self._tree_id = commit.tree
-        self.author = commit.committer
-        self.message = commit.message[:-1] # Always strip last eol
+        self.author = unicode(commit.committer)
+        self.message = unicode(commit.message[:-1]) # Always strip last eol
         #self.branch = None
         #self.tags =
         self.date = datetime.datetime.fromtimestamp(commit.commit_time)
@@ -256,6 +258,9 @@ class GitChangeset(BaseChangeset):
         elif isinstance(obj, objects.Tree):
             return NodeKind.DIR
 
+    def _get_file_nodes(self):
+        return chain(*(t[2] for t in self.walk()))
+
     @LazyProperty
     def parents(self):
         """
@@ -280,6 +285,13 @@ class GitChangeset(BaseChangeset):
         blob = self.repository._repo[hex]
         return blob.raw_length()
 
+    def get_file_changeset(self, path):
+        """
+        Returns last commit of the file at the given ``path``.
+        """
+        node = self.get_node(path)
+        return node.history[0]
+
     def get_file_history(self, path):
         """
         Returns history of file as reversed list of ``Changeset`` objects for
@@ -290,8 +302,8 @@ class GitChangeset(BaseChangeset):
         iterating commits.
         """
         os.chdir(self.repository.path)
-        p = Popen('git log -p %s | grep "^commit"' % path, shell=True,
-            stdout=PIPE, stderr=PIPE)
+        p = Popen('git log --name-status -p %s -- %s | grep "^commit"' %
+            (self.id, path), shell=True, stdout=PIPE, stderr=PIPE)
         so, se = p.communicate()
         if p.returncode != 0:
             raise ChangesetError("Couldn't run git command. stderr:\n%s" % se)
@@ -374,4 +386,75 @@ class GitChangeset(BaseChangeset):
             # cache node
             self.nodes[path] = node
         return self.nodes[path]
+
+    @LazyProperty
+    def added(self):
+        """
+        Returns list of added ``FileNode`` objects.
+        """
+        if not self.parents:
+            return list(self._get_file_nodes())
+        added_nodes = []
+        old_files = set()
+        for parent in self.parents:
+            for f in parent._get_file_nodes():
+                old_files.add(f.path)
+
+        files = set([f.path for f in self._get_file_nodes()])
+        for path in (files - old_files):
+            added_nodes.append(self.get_node(path))
+
+        return added_nodes
+
+    @LazyProperty
+    def changed(self):
+        """
+        Returns list of modified ``FileNode`` objects.
+        """
+        if not self.parents:
+            return []
+        changed_nodes = []
+        os.chdir(self.repository.path)
+        not_changed_paths = [f.path for f in self.added + self.removed]
+        for parent in self.parents:
+            try:
+                cmd = 'git diff --stat %s %s' % (self.raw_id, parent.raw_id)
+                p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+                so, se = p.communicate()
+                if p.returncode != 0:
+                    raise ChangesetError("Couldn't run '%s'.stderr:\n%s"
+                        % (cmd, se))
+                for line in so.split('\n')[:-2]:
+                    path = line.split()[0]
+                    if path in not_changed_paths:
+                        continue
+                    node = self.get_node(path)
+                    changed_nodes.append(node)
+            except ChangesetError:
+                # If node cannot be found, just continue
+                pass
+            except OSError, err:
+                # os errors should be propagated
+                raise ChangesetError("Unexpected error: %s" % err)
+        return changed_nodes
+
+    @LazyProperty
+    def removed(self):
+        """
+        Returns list of removed ``FileNode`` objects.
+        """
+        if not self.parents:
+            return []
+        removed_nodes = []
+        old_files = set()
+        for parent in self.parents:
+            for f in parent._get_file_nodes():
+                old_files.add(f.path)
+
+        files = set([f.path for f in self._get_file_nodes()])
+        for path in (old_files - files):
+            node = RemovedFileNode(path)
+            removed_nodes.append(node)
+
+        return removed_nodes
 
