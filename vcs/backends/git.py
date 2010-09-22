@@ -174,8 +174,8 @@ class GitChangeset(BaseChangeset):
             raise RepositoryError("Cannot get object with id %s" % revision)
         self._commit = commit
         self._tree_id = commit.tree
-        self.author = commit.committer
-        self.message = commit.message[:-1] # Always strip last eol
+        self.author = unicode(commit.committer)
+        self.message = unicode(commit.message[:-1]) # Always strip last eol
         #self.branch = None
         #self.tags =
         self.date = datetime.datetime.fromtimestamp(commit.commit_time)

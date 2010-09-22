@@ -482,6 +482,19 @@ class GitChangesetTest(unittest.TestCase):
             'vcs/nodes.py']
         self.assertEqual(set(changed), set([f.path for f in chset.changed]))
 
+    def test_commit_message_is_unicode(self):
+        for cs in self.repo:
+            self.assertEqual(type(cs.message),unicode)
+
+    def test_changeset_author_is_unicode(self):
+        for cs in self.repo:
+            self.assertEqual(type(cs.author),unicode)
+
+    def test_repo_files_content_is_unicode(self):
+        changeset = self.repo.get_changeset()
+        for node in changeset.get_node('/'):
+            if node.is_file():
+                self.assertEqual(type(node.content),unicode)
 
 if __name__ == '__main__':
     unittest.main()
