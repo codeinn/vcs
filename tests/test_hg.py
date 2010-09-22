@@ -238,7 +238,6 @@ class MercurialChangesetTest(unittest.TestCase):
         self.assertTrue('tip' in tip.tags)
 
     def _test_slices(self, limit, offset):
-        self.setUp()
         count = self.repo.count()
         changesets = self.repo.get_changesets(limit=limit, offset=offset)
         idx = 0
@@ -249,8 +248,7 @@ class MercurialChangesetTest(unittest.TestCase):
                 self.fail("Exceeded limit already (getting revision %s, "
                     "there are %s total revisions, offset=%s, limit=%s)"
                     % (rev, count, offset, limit))
-            self.assertEqual(changeset,
-                self.repo.get_changeset(rev))
+            self.assertEqual(changeset, self.repo.get_changeset(rev))
         result = list(self.repo.get_changesets(limit=limit, offset=offset))
         start = offset
         end = limit and offset + limit or None
@@ -306,6 +304,7 @@ class MercurialChangesetTest(unittest.TestCase):
                 "We assumed that %s is subset of revisions for which file %s "
                 "has been changed, and history of that node returned: %s"
                 % (revs, path, node_revs))
+
     def test_file_annotate(self):
         files = {
                  'vcs/backends/__init__.py':
@@ -427,16 +426,16 @@ class MercurialChangesetTest(unittest.TestCase):
     def test_commit_message_is_unicode(self):
         for cm in self.repo:
             self.assertEqual(type(cm.message),unicode)
-            
+
     def test_changeset_author_is_unicode(self):
         for cm in self.repo:
             self.assertEqual(type(cm.author),unicode)
-    
+
     def test_repo_files_content_is_unicode(self):
         test_changeset = self.repo.get_changeset(100)
         for node in test_changeset.get_node('/'):
             if node.is_file():
-                self.assertEqual(type(node.content),unicode)         
+                self.assertEqual(type(node.content),unicode)
 
 if __name__ == '__main__':
     unittest.main()

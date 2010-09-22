@@ -13,6 +13,9 @@ import os
 import re
 import datetime
 import time
+
+from subprocess import Popen, PIPE
+
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, ChangesetError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode
@@ -186,6 +189,7 @@ class GitChangeset(BaseChangeset):
         refs = self.repository._repo.get_refs()
         heads = [(key[len('refs/heads/'):], val) for key, val in refs.items()
             if key.startswith('refs/heads/')]
+        import pdb; pdb.set_trace()
         for name, id in heads:
             walker = self.repository._repo.object_store.get_graph_walker([id])
             while True:
@@ -252,6 +256,14 @@ class GitChangeset(BaseChangeset):
         elif isinstance(obj, objects.Tree):
             return NodeKind.DIR
 
+    @LazyProperty
+    def parents(self):
+        """
+        Returns list of parents changesets.
+        """
+        return [self.repository.get_changeset(parent)
+            for parent in self._commit.parents]
+
     def get_file_content(self, path):
         """
         Returns content of the file at given ``path``.
@@ -268,13 +280,51 @@ class GitChangeset(BaseChangeset):
         blob = self.repository._repo[hex]
         return blob.raw_length()
 
-    @LazyProperty
-    def parents(self):
+    def get_file_history(self, path):
         """
-        Returns list of parents changesets.
+        Returns history of file as reversed list of ``Changeset`` objects for
+        which file at given ``path`` has been modified.
+
+        TODO: This function now uses os underlying 'git' and 'grep' commands
+        which is generally not good. Should be replaced with algorithm
+        iterating commits.
         """
-        return [self.repository.get_changeset(parent)
-            for parent in self._commit.parents]
+        os.chdir(self.repository.path)
+        p = Popen('git log -p %s | grep "^commit"' % path, shell=True,
+            stdout=PIPE, stderr=PIPE)
+        so, se = p.communicate()
+        if p.returncode != 0:
+            raise ChangesetError("Couldn't run git command. stderr:\n%s" % se)
+        hexes = re.findall(r'\w{40}', so)
+        return [self.repository.get_changeset(hex) for hex in hexes]
+
+    def get_file_annotate(self, path):
+        """
+        Returns a list of three element tuples with lineno,changeset and line
+
+        TODO: This function now uses os underlying 'git' command which is
+        generally not good. Should be replaced with algorithm iterating
+        commits.
+        """
+        os.chdir(self.repository.path)
+        try:
+            cmd = 'git blame %s -l --root -r %s' % (path, self.id)
+            # -l     ==> outputs long shas (and we need all 40 characters)
+            # --root ==> doesn't put '^' character for bounderies
+            # -r sha ==> blames for the given revision
+            p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        except OSError, err:
+            raise ChangesetError("Couldn't run git command.\n"
+                "Original error was:%s" % err)
+        so, se = p.communicate()
+        if p.returncode != 0:
+            raise ChangesetError("Couldn't run git command. stderr:\n%s" % se)
+        annotate = []
+        for i, blame_line in enumerate(so.split('\n')[:-1]):
+            ln_no = i + 1
+            id, line = re.split(r' \(.+?\) ', blame_line)
+            annotate.append((ln_no, self.repository.get_changeset(id), line))
+        return annotate
 
     def get_nodes(self, path):
         if self._get_kind(path) != NodeKind.DIR:

@@ -24,6 +24,7 @@ class PathsTest(unittest.TestCase):
         for path, expected in paths_and_results:
             self._test_get_dirs_for_path(path, expected)
 
+
 if __name__ == '__main__':
     unittest.main()
 

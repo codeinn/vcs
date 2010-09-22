@@ -4,7 +4,7 @@ Utitlites aimed to help achieve mostly basic tasks.
 import os
 import os.path
 
-from subprocess import Popen
+from subprocess import Popen, PIPE
 from vcs.exceptions import VCSError
 from vcs.utils.paths import abspath
 
@@ -33,14 +33,14 @@ def get_scm(path, search_recursively=False):
         else:
             path = new_path
 
-def run_command(cmd, args=''):
+def run_command(cmd, *args):
     """
     Runs command on the system with given ``args``.
     """
     command = ' '.join((cmd, args))
-    p = Popen(command, shell=True)
-    status = os.waitpid(p.pid, 0)[1]
-    return status
+    p = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
+    stdout, stderr = p.communicate()
+    return p.retcode, stdout, stderr
 
 def get_highlighted_code(name, code, type='terminal'):
     """

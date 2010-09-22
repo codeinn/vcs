@@ -208,6 +208,60 @@ class GitChangesetTest(unittest.TestCase):
             .get_node('api')\
             .get_node('index.rst'))
 
+    def test_branch_and_tags(self):
+        '''
+        rev0 = self.repo.revisions[0]
+        chset0 = self.repo.get_changeset(rev0)
+        self.assertEqual(chset0.branch, 'master')
+        self.assertEqual(chset0.tags, [])
+
+        rev10 = self.repo.revisions[10]
+        chset10 = self.repo.get_changeset(rev10)
+        self.assertEqual(chset10.branch, 'master')
+        self.assertEqual(chset10.tags, [])
+
+        rev44 = self.repo.revisions[44]
+        chset44 = self.repo.get_changeset(rev44)
+        self.assertEqual(chset44.branch, 'web-branch')
+
+        tip = self.repo.get_changeset('tip')
+        self.assertTrue('tip' in tip.tags)
+        '''
+        # Those tests would fail - branches are now going
+        # to be changed at main API in order to support git backend
+        pass
+
+    def _test_slices(self, limit, offset):
+        count = self.repo.count()
+        changesets = self.repo.get_changesets(limit=limit, offset=offset)
+        idx = 0
+        for changeset in changesets:
+            idx += 1
+            rev = count - offset - idx
+            rev_id = self.repo.revisions[rev]
+            if idx > limit:
+                self.fail("Exceeded limit already (getting revision %s, "
+                    "there are %s total revisions, offset=%s, limit=%s)"
+                    % (rev_id, count, offset, limit))
+            self.assertEqual(changeset, self.repo.get_changeset(rev_id))
+        result = list(self.repo.get_changesets(limit=limit, offset=offset))
+        start = offset
+        end = limit and offset + limit or None
+        sliced = list(self.repo[start:end])
+        self.failUnlessEqual(result, sliced,
+            msg="Comparison failed for limit=%s, offset=%s"
+            "(get_changeset returned: %s and sliced: %s"
+            % (limit, offset, result, sliced))
+
+    def test_slices(self):
+        slices = (
+            # (limit, offset)
+            (2, 0), # should get 2 most recent changesets
+            (5, 2), # should get 5 most recent changesets after first 2
+        )
+        for limit, offset in slices:
+            self._test_slices(limit, offset)
+
     def _test_file_size(self, revision, path, size):
         node = self.repo.request(path, revision)
         self.assertTrue(node.is_file())
@@ -231,6 +285,161 @@ class GitChangesetTest(unittest.TestCase):
         )
         for revision, path, size in to_check:
             self._test_file_size(revision, path, size)
+
+    def test_file_history(self):
+        # we can only check if those revisions are present in the history
+        # as we cannot update this test every time file is changed
+        files = {
+            'setup.py': [
+                '54386793436c938cff89326944d4c2702340037d',
+                '51d254f0ecf5df2ce50c0b115741f4cf13985dab',
+                '998ed409c795fec2012b1c0ca054d99888b22090',
+                '5e0eb4c47f56564395f76333f319d26c79e2fb09',
+                '0115510b70c7229dbc5dc49036b32e7d91d23acd',
+                '7cb3fd1b6d8c20ba89e2264f1c8baebc8a52d36e',
+                '2a13f185e4525f9d4b59882791a2d397b90d5ddc',
+                '191caa5b2c81ed17c0794bf7bb9958f4dcb0b87e',
+                'ff7ca51e58c505fec0dd2491de52c622bb7a806b',
+            ],
+            'vcs/nodes.py': [
+                '33fa3223355104431402a888fa77a4e9956feb3e',
+                'fa014c12c26d10ba682fadb78f2a11c24c8118e1',
+                'e686b958768ee96af8029fe19c6050b1a8dd3b2b',
+                'ab5721ca0a081f26bf43d9051e615af2cc99952f',
+                'c877b68d18e792a66b7f4c529ea02c8f80801542',
+                '4313566d2e417cb382948f8d9d7c765330356054',
+                '6c2303a793671e807d1cfc70134c9ca0767d98c2',
+                '54386793436c938cff89326944d4c2702340037d',
+                '54000345d2e78b03a99d561399e8e548de3f3203',
+                '1c6b3677b37ea064cb4b51714d8f7498f93f4b2b',
+                '2d03ca750a44440fb5ea8b751176d1f36f8e8f46',
+                '2a08b128c206db48c2f0b8f70df060e6db0ae4f8',
+                '30c26513ff1eb8e5ce0e1c6b477ee5dc50e2f34b',
+                'ac71e9503c2ca95542839af0ce7b64011b72ea7c',
+                '12669288fd13adba2a9b7dd5b870cc23ffab92d2',
+                '5a0c84f3e6fe3473e4c8427199d5a6fc71a9b382',
+                '12f2f5e2b38e6ff3fbdb5d722efed9aa72ecb0d5',
+                '5eab1222a7cd4bfcbabc218ca6d04276d4e27378',
+                'f50f42baeed5af6518ef4b0cb2f1423f3851a941',
+                'd7e390a45f6aa96f04f5e7f583ad4f867431aa25',
+                'f15c21f97864b4f071cddfbf2750ec2e23859414',
+                'e906ef056cf539a4e4e5fc8003eaf7cf14dd8ade',
+                'ea2b108b48aa8f8c9c4a941f66c1a03315ca1c3b',
+                '84dec09632a4458f79f50ddbbd155506c460b4f9',
+                '0115510b70c7229dbc5dc49036b32e7d91d23acd',
+                '2a13f185e4525f9d4b59882791a2d397b90d5ddc',
+                '3bf1c5868e570e39569d094f922d33ced2fa3b2b',
+                'b8d04012574729d2c29886e53b1a43ef16dd00a1',
+                '6970b057cffe4aab0a792aa634c89f4bebf01441',
+                'dd80b0f6cf5052f17cc738c2951c4f2070200d7f',
+                'ff7ca51e58c505fec0dd2491de52c622bb7a806b',
+            ],
+            'vcs/backends/git.py': [
+                '4cf116ad5a457530381135e2f4c453e68a1b0105',
+                '9a751d84d8e9408e736329767387f41b36935153',
+                'cb681fb539c3faaedbcdf5ca71ca413425c18f01',
+                '428f81bb652bcba8d631bce926e8834ff49bdcc6',
+                '180ab15aebf26f98f714d8c68715e0f05fa6e1c7',
+                '2b8e07312a2e89e92b90426ab97f349f4bce2a3a',
+                '50e08c506174d8645a4bb517dd122ac946a0f3bf',
+                '54000345d2e78b03a99d561399e8e548de3f3203',
+            ],
+        }
+        for path, revs in files.items():
+            node = self.repo.request(path)
+            node_revs = [chset.revision for chset in node.history]
+            self.assertTrue(set(revs).issubset(set(node_revs)),
+                "We assumed that %s is subset of revisions for which file %s "
+                "has been changed, and history of that node returned: %s"
+                % (revs, path, node_revs))
+
+    def test_file_annotate(self):
+        files = {
+            'vcs/backends/__init__.py': {
+                'c1214f7e79e02fc37156ff215cd71275450cffc3': {
+                    'lines_no': 1,
+                    'changesets': [
+                        'c1214f7e79e02fc37156ff215cd71275450cffc3',
+                    ],
+                },
+                '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647': {
+                    'lines_no': 21,
+                    'changesets': [
+                        '49d3fd156b6f7db46313fac355dca1a0b94a0017',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                    ],
+                },
+                'e29b67bd158580fc90fc5e9111240b90e6e86064': {
+                    'lines_no': 32,
+                    'changesets': [
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '5eab1222a7cd4bfcbabc218ca6d04276d4e27378',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '992f38217b979d0b0987d0bae3cc26dac85d9b19',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '54000345d2e78b03a99d561399e8e548de3f3203',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '78c3f0c23b7ee935ec276acb8b8212444c33c396',
+                        '992f38217b979d0b0987d0bae3cc26dac85d9b19',
+                        '992f38217b979d0b0987d0bae3cc26dac85d9b19',
+                        '992f38217b979d0b0987d0bae3cc26dac85d9b19',
+                        '992f38217b979d0b0987d0bae3cc26dac85d9b19',
+                        '2a13f185e4525f9d4b59882791a2d397b90d5ddc',
+                        '992f38217b979d0b0987d0bae3cc26dac85d9b19',
+                        '78c3f0c23b7ee935ec276acb8b8212444c33c396',
+                        '992f38217b979d0b0987d0bae3cc26dac85d9b19',
+                        '992f38217b979d0b0987d0bae3cc26dac85d9b19',
+                        '992f38217b979d0b0987d0bae3cc26dac85d9b19',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '992f38217b979d0b0987d0bae3cc26dac85d9b19',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '992f38217b979d0b0987d0bae3cc26dac85d9b19',
+                        '992f38217b979d0b0987d0bae3cc26dac85d9b19',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                        '16fba1ae9334d79b66d7afed2c2dfbfa2ae53647',
+                    ],
+                },
+            },
+        }
+
+        for fname, revision_dict in files.items():
+            for rev, data in revision_dict.items():
+                cs = self.repo.get_changeset(rev)
+                ann = cs.get_file_annotate(fname)
+
+                l1 = [x[1].revision for x in ann]
+                l2 = files[fname][rev]['changesets']
+                self.assertTrue(l1 == l2 , "The lists of revision for %s@rev%s"
+                                "from annotation list should match each other,"
+                                "got \n%s \nvs \n%s " % (fname, rev, l1, l2))
+
+
 
 if __name__ == '__main__':
     unittest.main()
