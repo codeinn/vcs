@@ -2,7 +2,7 @@ import unittest
 
 from vcs.backends.git import GitRepository, GitChangeset
 from vcs.exceptions import ChangesetError, RepositoryError
-from vcs.nodes import NodeKind, FileNode, DirNode
+from vcs.nodes import NodeKind, FileNode, DirNode, NodeState
 
 from conf import TEST_GIT_REPO
 
@@ -439,6 +439,48 @@ class GitChangesetTest(unittest.TestCase):
                                 "from annotation list should match each other,"
                                 "got \n%s \nvs \n%s " % (fname, rev, l1, l2))
 
+    def test_files_state(self):
+        """
+        Tests state of FileNodes.
+        """
+        node = self.repo.request('vcs/utils/diffs.py',
+            'e6ea6d16e2f26250124a1f4b4fe37a912f9d86a0')
+        self.assertTrue(node.state, NodeState.ADDED)
+        self.assertTrue(node.added)
+        self.assertFalse(node.changed)
+        self.assertFalse(node.not_changed)
+        self.assertFalse(node.removed)
+
+        node = self.repo.request('.hgignore',
+            '33fa3223355104431402a888fa77a4e9956feb3e')
+        self.assertTrue(node.state, NodeState.CHANGED)
+        self.assertFalse(node.added)
+        self.assertTrue(node.changed)
+        self.assertFalse(node.not_changed)
+        self.assertFalse(node.removed)
+
+        node = self.repo.request('setup.py',
+            'e29b67bd158580fc90fc5e9111240b90e6e86064')
+        self.assertTrue(node.state, NodeState.NOT_CHANGED)
+        self.assertFalse(node.added)
+        self.assertFalse(node.changed)
+        self.assertTrue(node.not_changed)
+        self.assertFalse(node.removed)
+
+        # If node has REMOVED state then trying to fetch it would raise
+        # ChangesetError exception
+        chset = self.repo.get_changeset(
+            'fa6600f6848800641328adbf7811fd2372c02ab2')
+        path = 'vcs/backends/BaseRepository.py'
+        self.assertRaises(ChangesetError, chset.get_node, path)
+        # but it would be one of ``removed`` (changeset's attribute)
+        self.assertTrue(path in [rf.path for rf in chset.removed])
+
+        chset = self.repo.get_changeset(
+            '54386793436c938cff89326944d4c2702340037d')
+        changed = ['setup.py', 'tests/test_nodes.py', 'vcs/backends/hg.py',
+            'vcs/nodes.py']
+        self.assertEqual(set(changed), set([f.path for f in chset.changed]))
 
 
 if __name__ == '__main__':

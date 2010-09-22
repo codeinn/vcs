@@ -420,8 +420,11 @@ class MercurialChangesetTest(unittest.TestCase):
 
         # If node has REMOVED state then trying to fetch it would raise
         # ChangesetError exception
-        self.assertRaises(ChangesetError,
-            self.repo.request, 'vcs/utils/web.py', 85)
+        chset = self.repo.get_changeset(2)
+        path = 'vcs/backends/BaseRepository.py'
+        self.assertRaises(ChangesetError, chset.get_node, path)
+        # but it would be one of ``removed`` (changeset's attribute)
+        self.assertTrue(path in [rf.path for rf in chset.removed])
 
     def test_commit_message_is_unicode(self):
         for cm in self.repo:
