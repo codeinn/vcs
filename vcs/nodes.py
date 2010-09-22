@@ -349,7 +349,6 @@ class DirNode(Node):
         super(DirNode, self).__init__(path, NodeKind.DIR)
         self.changeset = changeset
         self._nodes = nodes
-        self.size = 0
 
     @LazyProperty
     def content(self):
@@ -422,6 +421,15 @@ class DirNode(Node):
     def state(self):
         raise NodeError("Cannot access state of DirNode")
 
+    @LazyProperty
+    def size(self):
+        size = 0
+        for root, dirs, files in self.changeset.repository.walk(self.path):
+            for f in files:
+                size += f.size
+                
+        return size
+        
 class RootNode(DirNode):
     """
     DirNode being the root node of the repository.
