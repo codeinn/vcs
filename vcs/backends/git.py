@@ -37,32 +37,62 @@ class GitRepository(BaseRepository):
         self.path = abspath(repo_path)
         self.changesets = {}
         self._set_repo(create)
-        self.head = self._repo.head()
+        try:
+            self.head = self._repo.head()
+        except KeyError:
+            self.head = None
         self.revisions = self._get_all_revisions()
         self.changesets = {}
 
-    def _get_all_revisions(self):
-        refs = self._repo.get_refs()
-        heads = [value for key, value in refs.items()
-                if key.startswith('refs/heads/')]
-        commits = set()
-        for head in heads:
-            commits.update(self._repo.revision_history(head))
-        commits = list(commits)
-        commits.sort(key=lambda commit: commit.commit_time)
-        revisions = [commit.id for commit in commits]
-        return revisions
+    def run_git_command(self, cmd):
+        """
+        Runs given ``cmd`` as git command and returns tuple
+        (returncode, stdout, stderr).
+
+        .. note::
+           This method exists only until log/blame functionality is implemented
+           at Dulwich (see https://bugs.launchpad.net/bugs/645142). Parsing
+           os command's output is road to hell...
+
+        :param cmd: git command
+        :param repo_path: if given, command would prefixed with
+          --git-dir=repo_path/.git (note that ".git" is always appended
+        """
+        cmd = '--git-dir=%s %s' % (os.path.join(self.path, '.git'), cmd)
+        try:
+            p = Popen('git %s' % cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        except OSError, err:
+            raise RepositoryError("Couldn't run git command (%s).\n"
+                "Original error was:%s" % (cmd, err))
+        so, se = p.communicate()
+        if not se.startswith("fatal: bad default revision 'HEAD'") and \
+            p.returncode != 0:
+            raise RepositoryError("Couldn't run git command (%s).\n"
+                "stderr:\n%s" % (cmd, se))
+        return so, se
 
     def _set_repo(self, create):
         if create and os.path.exists(self.path):
             raise RepositoryError("Location already exist")
         try:
             if create:
+                os.mkdir(self.path)
                 self._repo = Repo.init(self.path)
             else:
                 self._repo = Repo(self.path)
         except (NotGitRepository, OSError), err:
             raise RepositoryError(str(err))
+
+    def _get_all_revisions(self):
+        refs = self._repo.get_refs()
+        heads = [value for key, value in refs.items()
+                if key.startswith('refs/heads/')]
+        commits = set()
+        cmd = 'log --pretty=oneline'
+        so, se = self.run_git_command(cmd)
+        revisions = [line.split()[0] for line in so.split('\n')[:-1]]
+        revisions.reverse()
+        return revisions
 
     def _get_revision(self, revision):
         if len(self.revisions) == 0:
@@ -175,7 +205,11 @@ class GitChangeset(BaseChangeset):
         self._commit = commit
         self._tree_id = commit.tree
         self.author = unicode(commit.committer)
-        self.message = unicode(commit.message[:-1]) # Always strip last eol
+        try:
+            self.message = unicode(commit.message[:-1]) # Always strip last eol
+        except UnicodeDecodeError:
+            self.message = commit.message[:-1].decode(commit.encoding
+                or 'utf-8')
         #self.branch = None
         #self.tags =
         self.date = datetime.datetime.fromtimestamp(commit.commit_time)
@@ -301,12 +335,8 @@ class GitChangeset(BaseChangeset):
         which is generally not good. Should be replaced with algorithm
         iterating commits.
         """
-        os.chdir(self.repository.path)
-        p = Popen('git log --name-status -p %s -- %s | grep "^commit"' %
-            (self.id, path), shell=True, stdout=PIPE, stderr=PIPE)
-        so, se = p.communicate()
-        if p.returncode != 0:
-            raise ChangesetError("Couldn't run git command. stderr:\n%s" % se)
+        cmd = 'log --name-status -p %s -- %s | grep "^commit"' % (self.id, path)
+        so, se = self.repository.run_git_command(cmd)
         hexes = re.findall(r'\w{40}', so)
         return [self.repository.get_changeset(hex) for hex in hexes]
 
@@ -318,19 +348,11 @@ class GitChangeset(BaseChangeset):
         generally not good. Should be replaced with algorithm iterating
         commits.
         """
-        os.chdir(self.repository.path)
-        try:
-            cmd = 'git blame %s -l --root -r %s' % (path, self.id)
-            # -l     ==> outputs long shas (and we need all 40 characters)
-            # --root ==> doesn't put '^' character for bounderies
-            # -r sha ==> blames for the given revision
-            p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-        except OSError, err:
-            raise ChangesetError("Couldn't run git command.\n"
-                "Original error was:%s" % err)
-        so, se = p.communicate()
-        if p.returncode != 0:
-            raise ChangesetError("Couldn't run git command. stderr:\n%s" % se)
+        cmd = 'blame %s -l --root -r %s' % (path, self.id)
+        # -l     ==> outputs long shas (and we need all 40 characters)
+        # --root ==> doesn't put '^' character for bounderies
+        # -r sha ==> blames for the given revision
+        so, se = self.repository.run_git_command(cmd)
         annotate = []
         for i, blame_line in enumerate(so.split('\n')[:-1]):
             ln_no = i + 1
@@ -414,16 +436,11 @@ class GitChangeset(BaseChangeset):
         if not self.parents:
             return []
         changed_nodes = []
-        os.chdir(self.repository.path)
         not_changed_paths = [f.path for f in self.added + self.removed]
         for parent in self.parents:
             try:
-                cmd = 'git diff --stat %s %s' % (self.raw_id, parent.raw_id)
-                p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-                so, se = p.communicate()
-                if p.returncode != 0:
-                    raise ChangesetError("Couldn't run '%s'.stderr:\n%s"
-                        % (cmd, se))
+                cmd = 'diff --stat %s %s' % (self.raw_id, parent.raw_id)
+                so, se = self.repository.run_git_command(cmd)
                 for line in so.split('\n')[:-2]:
                     path = line.split()[0]
                     if path in not_changed_paths:
@@ -433,9 +450,6 @@ class GitChangeset(BaseChangeset):
             except ChangesetError:
                 # If node cannot be found, just continue
                 pass
-            except OSError, err:
-                # os errors should be propagated
-                raise ChangesetError("Unexpected error: %s" % err)
         return changed_nodes
 
     @LazyProperty
