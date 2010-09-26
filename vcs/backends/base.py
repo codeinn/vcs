@@ -101,7 +101,7 @@ class BaseRepository(object):
 
         self[2:5] == self.get_changesets(offset=2, limit=3)
         """
-        return self.get_changesets(offset=i, limit=j-i)
+        return self.get_changesets(offset=i, limit=j - i)
 
     def count(self):
         return len(self.revisions)
@@ -258,3 +258,18 @@ class BaseChangeset(object):
             for tup in self.walk(dirnode.path):
                 yield tup
 
+    def add(self, filenode, **kwargs):
+        """Commit api function that will add given FileNode 
+        into this repository"""
+        raise NotImplementedError
+        
+    
+    def remove(self, filenode, **kwargs):
+        """Commit api function that will remove given FileNode 
+        into this repository"""        
+        raise NotImplementedError
+        
+        
+    def commit(self, message, **kwargs):
+        """Persists current changes made on this changeset"""
+        raise NotImplementedError 

@@ -14,6 +14,7 @@ import time
 import urllib2
 import datetime
 import posixpath
+import errno
 
 from mercurial import ui
 from mercurial.context import short
@@ -21,6 +22,7 @@ from mercurial.error import RepoError, RepoLookupError, Abort
 from mercurial.localrepo import localrepository
 from mercurial.node import hex
 from mercurial.commands import clone, pull
+from mercurial.context import memctx, memfilectx
 
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, ChangesetError
@@ -244,7 +246,11 @@ class MercurialChangeset(BaseChangeset):
         self._dir_paths = list(set(get_dirs_for_path(*self._file_paths)))
         self._dir_paths.insert(0, '') # Needed for root node
         self.nodes = {}
-
+        self.added_ctx = None
+        self.removed_ctx = None
+        self.added_cache = {}
+        self.removed_cache = {}
+        
     @LazyProperty
     def _paths(self):
         return self._dir_paths + self._file_paths
@@ -465,3 +471,154 @@ class MercurialChangeset(BaseChangeset):
                 removed_nodes.append(node)
         return removed_nodes
 
+
+
+    def add(self, added, **kwargs):
+        def filectxfn(repo, memctx, path):
+            
+            filenode = self.added_cache[path]
+            return memfilectx(path=filenode.path,
+                              data=filenode.content,
+                              islink=False,
+                              isexec=False,
+                              copied=False)
+        do_added = False
+        if not isinstance(added, (list, tuple,)):
+            added = list([added])
+            
+        for fn in added:
+            
+            if not isinstance(fn, (FileNode,)):
+                raise Exception('You must give FileNode to added files list')
+            self.added_cache[fn.path] = fn
+            do_added = True        
+
+        if do_added:
+            user = kwargs.get('user') or self.repository.contact
+             
+            self.files_to_add = sorted([node.path for node in added])
+            parent1 = self.repository.repo[self.raw_id].node()
+            parent2 = None
+            self.added_ctx = memctx(repo=self.repository.repo,
+                                 parents=(parent1, parent2,),
+                                 text='',
+                                 files=self.files_to_add,
+                                 filectxfn=filectxfn,
+                                 user=user,
+                                 date=kwargs.get('date', None),
+                                 extra=kwargs)
+    
+    def remove(self, removed, **kwargs):
+        def fileremovectxfn(repo, memctx, path):
+            raise IOError(errno.ENOENT, '%s is deleted' % path)
+    
+        do_removed = False
+        if not isinstance(removed, (list, tuple,)):
+            removed = list([removed])
+            
+        for fn in removed:
+            
+            if not isinstance(fn, (FileNode,)):
+                raise Exception('You must give FileNode to removed files list')
+            self.removed_cache[fn.path] = fn
+            do_removed = True        
+
+        if do_removed:
+            user = kwargs.get('user') or self.repository.contact
+             
+            self.files_to_add = sorted([node.path for node in removed])
+            parent1 = self.repository.repo[self.raw_id].node()
+            parent2 = None
+            self.added_ctx = memctx(repo=self.repository.repo,
+                                 parents=(parent1, parent2,),
+                                 text='',
+                                 files=self.files_to_add,
+                                 filectxfn=fileremovectxfn,
+                                 user=user,
+                                 date=kwargs.get('date', None),
+                                 extra=kwargs)
+                
+    def commit(self, message):
+        self.added_ctx._text = message
+        self.repository.repo.commitctx(self.added_ctx)
+        
+
+    def get_state(self):
+        """gets current ctx state"""
+        print '+', self.added_cache.values()
+        print '-', self.removed_cache.values()
+        
+        
+        
+if __name__ == '__main__':
+    repo = MercurialRepository('/tmp/wiki')
+    r = repo.repo         
+        
+    tip = repo.get_changeset()
+    
+    tip.add(FileNode('wikifile.rst', content='a large file'))
+    tip.add([FileNode('wikifile1.rst', content='file1'), FileNode('wikifile2.rst', content='file2'), ])
+    
+    tip.get_state()
+    
+    tip.commit('added wikipage')
+
+#def commit(repo, message, added=[], removed=[], changed=[]):
+#    do_added = False
+#
+#            
+#        r.commitctx(ctx)
+#    
+#    
+#    do_removed = False
+#    for fn in removed:
+#        if not isinstance(fn, (FileNode,)):
+#            raise Exception('You must give FileNode to removed files list')        
+#        do_removed = True
+
+#    
+#    if do_removed:
+#        ctx = context.memctx(repo=repo,
+#                         parents=(repo['tip'].node(), None,),
+#                         text=message,
+#                         files=[node.path for node in removed],
+#                         filectxfn=fileremovectxfn,
+#                         user='marcink',
+#                         date=None,
+#                         extra=None)
+#        
+#        r.commitctx(ctx)
+#        
+#    do_changed = False
+#    
+#    for fn in changed:
+#        if not isinstance(fn, (FileNode,)):
+#            raise Exception('You must give FileNode to changed files list')        
+#        do_changed = True
+#        def filectxfn(repo, memctx, path):
+#            return context.memfilectx(path=path,
+#                              data=fn.content,
+#                              islink=False,
+#                              isexec=False,
+#                              copied=False)
+#    if do_changed:
+#        ctx = context.memctx(repo=repo,
+#                         parents=(repo['tip'].node(), None,),
+#                         text=message,
+#                         files=[node.path for node in changed],
+#                         filectxfn=filectxfn,
+#                         user='marcink',
+#                         date=None,
+#                         extra=None)
+#        
+#        r.commitctx(ctx)                
+#
+#f0 = FileNode(path='wikipage0.rst', content='Hello wiki !!!!')
+#f1 = FileNode(path='section/wikipage1.rst', content='Hello wiki !!!!')
+#f2 = FileNode(path='wikipage1.rst', content='Hello wiki !!!!')
+#f3 = FileNode(path='section/subsection/wikipage1.rst', content='Hello wiki !!!!')
+#
+#
+#commit(r, 'Added wikipage', added=[f0, f1, f2, f3])
+##commit(r, 'Removed newfile', removed=['wikipage.rst'],)
+##commit(r, 'updated file', changed=[FileNode(path='wikipage1.rst', content='Same hej hej !')],)
