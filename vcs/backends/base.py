@@ -262,14 +262,18 @@ class BaseChangeset(object):
         """Commit api function that will add given FileNode 
         into this repository"""
         raise NotImplementedError
-        
     
     def remove(self, filenode, **kwargs):
         """Commit api function that will remove given FileNode 
         into this repository"""        
         raise NotImplementedError
         
-        
     def commit(self, message, **kwargs):
         """Persists current changes made on this changeset"""
         raise NotImplementedError 
+    
+    def get_state(self):
+        """gets current ctx state returning lists of added/changed/removed
+        FileNodes
+        """
+        raise NotImplementedError

@@ -484,12 +484,17 @@ class MercurialChangeset(BaseChangeset):
                               copied=False)
         do_added = False
         if not isinstance(added, (list, tuple,)):
-            added = list([added])
+            added = [added]
             
         for fn in added:
             
             if not isinstance(fn, (FileNode,)):
                 raise Exception('You must give FileNode to added files list')
+            
+            #remove a file from removed if we set add afterwards
+            if fn.path in [removed_filenode.path 
+                            for removed_filenode in self.removed_cache.values()]:
+                del self.removed_cache[fn.path]            
             self.added_cache[fn.path] = fn
             do_added = True        
 
@@ -514,12 +519,17 @@ class MercurialChangeset(BaseChangeset):
     
         do_removed = False
         if not isinstance(removed, (list, tuple,)):
-            removed = list([removed])
+            removed = [removed]
             
         for fn in removed:
             
             if not isinstance(fn, (FileNode,)):
                 raise Exception('You must give FileNode to removed files list')
+            
+            #remove a file from added if we set remove afterwards
+            if fn.path in [added_filenode.path 
+                            for added_filenode in self.added_cache.values()]:
+                del self.added_cache[fn.path]
             self.removed_cache[fn.path] = fn
             do_removed = True        
 
@@ -556,69 +566,11 @@ if __name__ == '__main__':
         
     tip = repo.get_changeset()
     
+    tip.remove(FileNode('wikifile.rst', content='a large file'))
     tip.add(FileNode('wikifile.rst', content='a large file'))
     tip.add([FileNode('wikifile1.rst', content='file1'), FileNode('wikifile2.rst', content='file2'), ])
     
+    
     tip.get_state()
     
-    tip.commit('added wikipage')
-
-#def commit(repo, message, added=[], removed=[], changed=[]):
-#    do_added = False
-#
-#            
-#        r.commitctx(ctx)
-#    
-#    
-#    do_removed = False
-#    for fn in removed:
-#        if not isinstance(fn, (FileNode,)):
-#            raise Exception('You must give FileNode to removed files list')        
-#        do_removed = True
-
-#    
-#    if do_removed:
-#        ctx = context.memctx(repo=repo,
-#                         parents=(repo['tip'].node(), None,),
-#                         text=message,
-#                         files=[node.path for node in removed],
-#                         filectxfn=fileremovectxfn,
-#                         user='marcink',
-#                         date=None,
-#                         extra=None)
-#        
-#        r.commitctx(ctx)
-#        
-#    do_changed = False
-#    
-#    for fn in changed:
-#        if not isinstance(fn, (FileNode,)):
-#            raise Exception('You must give FileNode to changed files list')        
-#        do_changed = True
-#        def filectxfn(repo, memctx, path):
-#            return context.memfilectx(path=path,
-#                              data=fn.content,
-#                              islink=False,
-#                              isexec=False,
-#                              copied=False)
-#    if do_changed:
-#        ctx = context.memctx(repo=repo,
-#                         parents=(repo['tip'].node(), None,),
-#                         text=message,
-#                         files=[node.path for node in changed],
-#                         filectxfn=filectxfn,
-#                         user='marcink',
-#                         date=None,
-#                         extra=None)
-#        
-#        r.commitctx(ctx)                
-#
-#f0 = FileNode(path='wikipage0.rst', content='Hello wiki !!!!')
-#f1 = FileNode(path='section/wikipage1.rst', content='Hello wiki !!!!')
-#f2 = FileNode(path='wikipage1.rst', content='Hello wiki !!!!')
-#f3 = FileNode(path='section/subsection/wikipage1.rst', content='Hello wiki !!!!')
-#
-#
-#commit(r, 'Added wikipage', added=[f0, f1, f2, f3])
-##commit(r, 'Removed newfile', removed=['wikipage.rst'],)
-##commit(r, 'updated file', changed=[FileNode(path='wikipage1.rst', content='Same hej hej !')],)
+    #tip.commit('added wikipage')
