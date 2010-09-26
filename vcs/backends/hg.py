@@ -548,8 +548,11 @@ class MercurialChangeset(BaseChangeset):
                                  date=kwargs.get('date', None),
                                  extra=kwargs)
                 
-    def commit(self, message):
+    def commit(self, message, **kwargs):
+        #injecting given changes
         self.added_ctx._text = message
+        self.added_ctx._user = kwargs.get('user', None)
+        self.added_ctx._date = kwargs.get('date', None)
         self.repository.repo.commitctx(self.added_ctx)
         
 
@@ -573,4 +576,4 @@ if __name__ == '__main__':
     
     tip.get_state()
     
-    #tip.commit('added wikipage')
+    tip.commit('added wikipage', user='marcink <m@m.pl>')
