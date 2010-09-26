@@ -1,7 +1,7 @@
 import unittest
 
 from vcs.backends.git import GitRepository, GitChangeset
-from vcs.exceptions import ChangesetError, RepositoryError
+from vcs.exceptions import ChangesetError, RepositoryError, VCSError
 from vcs.nodes import NodeKind, FileNode, DirNode, NodeState
 
 from conf import TEST_GIT_REPO
@@ -495,6 +495,12 @@ class GitChangesetTest(unittest.TestCase):
         for node in changeset.get_node('/'):
             if node.is_file():
                 self.assertEqual(type(node.content),unicode)
+
+    def test_wrong_path(self):
+        # There is 'setup.py' in the root dir but not there:
+        path = 'foo/bar/setup.py'
+        self.assertRaises(VCSError, self.repo.request, path)
+
 
 if __name__ == '__main__':
     unittest.main()

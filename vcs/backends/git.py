@@ -84,10 +84,6 @@ class GitRepository(BaseRepository):
             raise RepositoryError(str(err))
 
     def _get_all_revisions(self):
-        refs = self._repo.get_refs()
-        heads = [value for key, value in refs.items()
-                if key.startswith('refs/heads/')]
-        commits = set()
         cmd = 'log --pretty=oneline'
         so, se = self.run_git_command(cmd)
         revisions = [line.split()[0] for line in so.split('\n')[:-1]]
@@ -107,8 +103,8 @@ class GitRepository(BaseRepository):
             return revision
         raise RepositoryError("Given revision %r not recognized" % revision)
 
-    def _get_tree(self, hex):
-        return self._repo[hex]
+    def _get_tree(self, id):
+        return self._repo[id]
 
     @LazyProperty
     def name(self):
@@ -187,8 +183,8 @@ class GitRepository(BaseRepository):
             rev_index = count - offset - i
             if rev_index < 0:
                 break
-            hex = self.revisions[rev_index]
-            yield self.get_changeset(hex)
+            id = self.revisions[rev_index]
+            yield self.get_changeset(id)
 
 class GitChangeset(BaseChangeset):
     """
@@ -246,38 +242,49 @@ class GitChangeset(BaseChangeset):
             path = path.rstrip('/')
         return path
 
-    def _get_hex_for_path(self, path):
+    def _get_id_for_path(self, path):
         if not path in self._paths:
+            path = path.strip('/')
+            # set root tree
             tree = self.repository._repo[self._commit.tree]
             if path == '':
                 self._paths[''] = tree.id
                 return tree.id
             splitted = path.split('/')
-            parent = None
-            spath, basename = splitted[:-1], splitted[-1]
-            parent = None
-            # Walk through the path
-            while spath:
-                dir = spath.pop(0)
-                for stat, name, hex in tree.entries():
-                    if parent is None:
-                        # Root directory
-                        self._paths[name] = hex
+            dirs, name = splitted[:-1], splitted[-1]
+            curdir = ''
+            for dir in dirs:
+                if curdir:
+                    curdir = '/'.join((curdir, dir))
+                else:
+                    curdir = dir
+                if curdir in self._paths:
+                    # This path have been already traversed
+                    # Update tree and continue
+                    tree = self.repository._repo[self._paths[curdir]]
+                    continue
+                dir_id = None
+                for item, stat, id in tree.iteritems():
+                    if curdir:
+                        item_path = '/'.join((curdir, item))
                     else:
-                        fullpath = '/'.join((parent, name))
-                        self._paths[fullpath] = hex
-                    if dir == name:
-                        tree = self.repository._repo[hex]
-                if parent:
-                    parent = '/'.join((parent, dir))
+                        item_path = item
+                    self._paths[item_path] = id
+                    if dir == item:
+                        dir_id = id
+                if dir_id:
+                    # Update tree
+                    tree = self.repository._repo[dir_id]
+                    if not isinstance(tree, objects.Tree):
+                        raise ChangesetError('%s is not a directory' % curdir)
                 else:
-                    parent = dir
-            for stat, name, hex in tree.entries():
-                if parent is None:
-                    self._paths[name] = hex
+                    raise ChangesetError('%s have not been found' % curdir)
+            for item, stat, id in tree.iteritems():
+                if curdir:
+                    name = '/'.join((curdir, item))
                 else:
-                    fullpath = '/'.join((parent, name))
-                    self._paths[fullpath] = hex
+                    name = item
+                self._paths[name] = id
             if not path in self._paths:
                 raise ChangesetError("There is no file nor directory "
                     "at the given path %r at revision %r"
@@ -285,8 +292,8 @@ class GitChangeset(BaseChangeset):
         return self._paths[path]
 
     def _get_kind(self, path):
-        hex = self._get_hex_for_path(path)
-        obj = self.repository._repo[hex]
+        id = self._get_id_for_path(path)
+        obj = self.repository._repo[id]
         if isinstance(obj, objects.Blob):
             return NodeKind.FILE
         elif isinstance(obj, objects.Tree):
@@ -307,16 +314,16 @@ class GitChangeset(BaseChangeset):
         """
         Returns content of the file at given ``path``.
         """
-        hex = self._get_hex_for_path(path)
-        blob = self.repository._repo[hex]
+        id = self._get_id_for_path(path)
+        blob = self.repository._repo[id]
         return blob.as_pretty_string()
 
     def get_file_size(self, path):
         """
         Returns size of the file at given ``path``.
         """
-        hex = self._get_hex_for_path(path)
-        blob = self.repository._repo[hex]
+        id = self._get_id_for_path(path)
+        blob = self.repository._repo[id]
         return blob.raw_length()
 
     def get_file_changeset(self, path):
@@ -337,8 +344,8 @@ class GitChangeset(BaseChangeset):
         """
         cmd = 'log --name-status -p %s -- %s | grep "^commit"' % (self.id, path)
         so, se = self.repository.run_git_command(cmd)
-        hexes = re.findall(r'\w{40}', so)
-        return [self.repository.get_changeset(hex) for hex in hexes]
+        ids = re.findall(r'\w{40}', so)
+        return [self.repository.get_changeset(id) for id in ids]
 
     def get_file_annotate(self, path):
         """
@@ -365,12 +372,12 @@ class GitChangeset(BaseChangeset):
             raise ChangesetError("Directory does not exist for revision %r at "
                 " %r" % (self.revision, path))
         path = self._fix_path(path)
-        hex = self._get_hex_for_path(path)
-        tree = self.repository._repo[hex]
+        id = self._get_id_for_path(path)
+        tree = self.repository._repo[id]
         dirnodes = []
         filenodes = []
-        for stat, name, hex in tree.entries():
-            obj = self.repository._repo.get_object(hex)
+        for stat, name, id in tree.entries():
+            obj = self.repository._repo.get_object(id)
             if path != '':
                 obj_path = '/'.join((path, name))
             else:
@@ -392,8 +399,8 @@ class GitChangeset(BaseChangeset):
     def get_node(self, path):
         path = self._fix_path(path)
         if not path in self.nodes:
-            hex = self._get_hex_for_path(path)
-            obj = self.repository._repo.get_object(hex)
+            id = self._get_id_for_path(path)
+            obj = self.repository._repo.get_object(id)
             if isinstance(obj, objects.Tree):
                 if path == '':
                     node = RootNode(changeset=self)

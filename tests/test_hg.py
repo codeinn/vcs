@@ -2,7 +2,7 @@ import os
 import unittest
 
 from vcs.backends.hg import MercurialRepository, MercurialChangeset
-from vcs.exceptions import ChangesetError, RepositoryError
+from vcs.exceptions import ChangesetError, RepositoryError, VCSError
 from vcs.nodes import NodeKind, NodeState
 from tests.conf import PACKAGE_DIR, TEST_HG_REPO, TEST_HG_REPO_CLONE,\
     TEST_HG_REPO_PULL
@@ -439,6 +439,12 @@ class MercurialChangesetTest(unittest.TestCase):
         for node in test_changeset.get_node('/'):
             if node.is_file():
                 self.assertEqual(type(node.content),unicode)
+
+    def test_wrong_path(self):
+        # There is 'setup.py' in the root dir but not there:
+        path = 'foo/bar/setup.py'
+        self.assertRaises(VCSError, self.repo.request, path)
+
 
 if __name__ == '__main__':
     unittest.main()
