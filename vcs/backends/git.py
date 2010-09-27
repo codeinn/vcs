@@ -355,7 +355,7 @@ class GitChangeset(BaseChangeset):
         generally not good. Should be replaced with algorithm iterating
         commits.
         """
-        cmd = 'blame %s -l --root -r %s' % (path, self.id)
+        cmd = 'blame -l --root -r %s -- %s' % (self.id, path)
         # -l     ==> outputs long shas (and we need all 40 characters)
         # --root ==> doesn't put '^' character for bounderies
         # -r sha ==> blames for the given revision
@@ -363,7 +363,7 @@ class GitChangeset(BaseChangeset):
         annotate = []
         for i, blame_line in enumerate(so.split('\n')[:-1]):
             ln_no = i + 1
-            id, line = re.split(r' \(.+?\) ', blame_line)
+            id, line = re.split(r' \(.+?\) ', blame_line, 1)
             annotate.append((ln_no, self.repository.get_changeset(id), line))
         return annotate
 
