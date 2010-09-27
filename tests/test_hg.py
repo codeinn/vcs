@@ -1,13 +1,13 @@
 import os
-import unittest
+import unittest2
 
 from vcs.backends.hg import MercurialRepository, MercurialChangeset
 from vcs.exceptions import ChangesetError, RepositoryError, VCSError
 from vcs.nodes import NodeKind, NodeState
-from tests.conf import PACKAGE_DIR, TEST_HG_REPO, TEST_HG_REPO_CLONE,\
+from conf import PACKAGE_DIR, TEST_HG_REPO, TEST_HG_REPO_CLONE,\
     TEST_HG_REPO_PULL
 
-class MercurialRepositoryTest(unittest.TestCase):
+class MercurialRepositoryTest(unittest2.TestCase):
 
     def setUp(self):
         self.repo = MercurialRepository(TEST_HG_REPO)
@@ -151,7 +151,7 @@ TODO: To be written...
         self.assertEqual(node.kind, NodeKind.FILE)
         self.assertEqual(node.content, README)
 
-class MercurialChangesetTest(unittest.TestCase):
+class MercurialChangesetTest(unittest2.TestCase):
 
     def setUp(self):
         self.repo = MercurialRepository(TEST_HG_REPO)
@@ -444,8 +444,4 @@ class MercurialChangesetTest(unittest.TestCase):
         # There is 'setup.py' in the root dir but not there:
         path = 'foo/bar/setup.py'
         self.assertRaises(VCSError, self.repo.request, path)
-
-
-if __name__ == '__main__':
-    unittest.main()
 

@@ -1,4 +1,4 @@
-import unittest
+import unittest2
 
 from vcs.backends.git import GitRepository, GitChangeset
 from vcs.exceptions import ChangesetError, RepositoryError, VCSError
@@ -6,7 +6,7 @@ from vcs.nodes import NodeKind, FileNode, DirNode, NodeState
 
 from conf import TEST_GIT_REPO
 
-class GitRepositoryTest(unittest.TestCase):
+class GitRepositoryTest(unittest2.TestCase):
 
     def setUp(self):
         self.repo = GitRepository(TEST_GIT_REPO)
@@ -141,7 +141,7 @@ TODO: To be written...
         self.assertEqual(node.content, README)
 
 
-class GitChangesetTest(unittest.TestCase):
+class GitChangesetTest(unittest2.TestCase):
 
     def setUp(self):
         self.repo = GitRepository(TEST_GIT_REPO)
@@ -500,8 +500,4 @@ class GitChangesetTest(unittest.TestCase):
         # There is 'setup.py' in the root dir but not there:
         path = 'foo/bar/setup.py'
         self.assertRaises(VCSError, self.repo.request, path)
-
-
-if __name__ == '__main__':
-    unittest.main()
 

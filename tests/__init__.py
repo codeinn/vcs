@@ -12,14 +12,23 @@ certain location exists, if not we would try to fetch them. At ``test_vcs`` or
 ``test_common`` we run unit tests common for each repository type and for
 example specific mercurial tests are located at ``test_hg`` module.
 
-Oh, and tests are run with nose_ test runner.
+Oh, and tests are run with ``unittest2.collector`` wrapped by ``collector``
+function at ``tests/__init__.py``.
 
 .. _vcs: http://bitbucket.org/marcinkuzminski/vcs
-.. _nose: http://code.google.com/p/python-nose/
+.. _unittest2: http://pypi.python.org/pypi/unittest2
 
 """
 from conf import *
 from utils import VCSTestError, SCMFetcher
+from unittest2 import collector as unittest2_collector, main
+
+# Import Test Cases
+from test_git import *
+from test_hg import *
+from test_nodes import *
+from test_utils import *
+from test_vcs import *
 
 def setup_package():
     """
@@ -47,3 +56,11 @@ def setup_package():
     except VCSTestError, err:
         raise RuntimeError(str(err))
 
+
+def collector():
+    setup_package()
+    return unittest2_collector()
+
+if __name__ == '__main__':
+    collector()
+    main()

@@ -26,8 +26,8 @@ setup(
     zip_safe = False,
     packages = find_packages(),
     scripts = ['bin/vcs'],
-    test_suite = 'nose.collector',
-    install_requires = ['nose', 'Pygments'],
+    test_suite = 'tests.collector',
+    install_requires = ['unittest2', 'Pygments'],
     include_package_data = True,
     classifiers = [
         'Development Status :: 4 - Beta',

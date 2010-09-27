@@ -24,5 +24,5 @@ TEST_HG_REPO_PULL = os.environ.get('VCS_TEST_HG_REPO_PULL',
 
 
 PACKAGE_DIR = os.path.abspath(os.path.join(
-    os.path.basename(__file__), '..'))
+    os.path.dirname(__file__), '..'))
 
