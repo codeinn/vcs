@@ -66,7 +66,7 @@ class MercurialRepository(BaseRepository):
         s_branches = sorted([(name, self.get_changeset(short(head))) for
             name, head in self.repo.branchtags().items()], key=sortkey,
             reverse=True)
-        return OrderedDict((name, cs.raw_id) for name, cs in s_branches)
+        return OrderedDict((name, cs.short_id) for name, cs in s_branches)
 
     @LazyProperty
     def tags(self):
@@ -76,7 +76,7 @@ class MercurialRepository(BaseRepository):
         sortkey = lambda ctx: ctx[1]._ctx.rev()
         s_tags = sorted([(name, self.get_changeset(short(head))) for
             name, head in self.repo.tags().items()], key=sortkey, reverse=True)
-        return OrderedDict((name, cs.raw_id) for name, cs in s_tags)
+        return OrderedDict((name, cs.short_id) for name, cs in s_tags)
 
     def _set_repo(self, create, clone_url=None):
         """
