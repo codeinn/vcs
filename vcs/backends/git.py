@@ -106,6 +106,16 @@ class GitRepository(BaseRepository):
     def _get_tree(self, id):
         return self._repo[id]
 
+    def _get_url(self, url):
+        """
+        Returns normalized url. If schema is not given, would fall to filesystem
+        (``file://``) schema.
+        """
+        url = str(url)
+        if url != 'default' and not '://' in url:
+            url = '://'.join(('file', url))
+        return url
+
     @LazyProperty
     def name(self):
         return os.path.basename(self.path)
@@ -185,6 +195,16 @@ class GitRepository(BaseRepository):
                 break
             id = self.revisions[rev_index]
             yield self.get_changeset(id)
+
+    def pull(self, url):
+        """
+        Tries to pull changes from external location.
+        """
+        url = self._get_url(url)
+        cmd = 'pull %s master' % url
+        # If error occurs run_git_command raises RepositoryError already
+        self.run_git_command(cmd)
+
 
 class GitChangeset(BaseChangeset):
     """
