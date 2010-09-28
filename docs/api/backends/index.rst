@@ -5,17 +5,18 @@ Backends
 
 .. module:: vcs.backends
 
-Base Backend
-------------
-
-.. automodule:: vcs.backends.base
-   :members:
-
 Implemented Backends
 --------------------
 
 .. toctree::
    :maxdepth: 1
 
+   git
    hg
+
+Base Backend
+------------
+
+.. automodule:: vcs.backends.base
+   :members:
 

@@ -347,7 +347,7 @@ class GitChangesetTest(unittest2.TestCase):
         }
         for path, revs in files.items():
             node = self.repo.request(path)
-            node_revs = [chset.revision for chset in node.history]
+            node_revs = [chset.raw_id for chset in node.history]
             self.assertTrue(set(revs).issubset(set(node_revs)),
                 "We assumed that %s is subset of revisions for which file %s "
                 "has been changed, and history of that node returned: %s"
@@ -433,10 +433,10 @@ class GitChangesetTest(unittest2.TestCase):
                 cs = self.repo.get_changeset(rev)
                 ann = cs.get_file_annotate(fname)
 
-                l1 = [x[1].revision for x in ann]
+                l1 = [x[1].raw_id for x in ann]
                 l2 = files[fname][rev]['changesets']
-                self.assertTrue(l1 == l2 , "The lists of revision for %s@rev%s"
-                                "from annotation list should match each other,"
+                self.assertTrue(l1 == l2 , "The lists of revision for %s@rev %s"
+                                "from annotation list should match each other, "
                                 "got \n%s \nvs \n%s " % (fname, rev, l1, l2))
 
     def test_files_state(self):

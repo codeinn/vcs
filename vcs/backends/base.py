@@ -6,7 +6,7 @@
 """
 Created on Apr 8, 2010
 
-@author: marcink,lukaszb
+:author: marcink,lukaszb
 """
 from vcs.utils.lazy import LazyProperty
 from vcs.exceptions import ChangesetError
@@ -16,7 +16,8 @@ class BaseRepository(object):
     Base Repository for final backends
 
     :attribute: ``repo`` object from external api
-    :attribute: revisions: list of all available revisions' ids
+    :attribute: revisions: list of all available revisions' ids, in ascending
+      order
     :attribute: changesets: storage dict caching returned changesets
     :attribute: path: absolute local path to the repository
     :attribute: branches: branches as list of changesets
@@ -120,6 +121,11 @@ class BaseChangeset(object):
     """
     Each backend should implement it's changeset representation.
 
+    :attribute: id: may be raw_id or i.e. for mercurial's tip just ``tip``
+    :attribute: raw_id: raw changeset representation (i.e. full 40 length sha
+      for git backend) as string
+    :attribute: short_id: shortened (if needed) version of raw_id; it would be
+      simple shortcut for ``raw_id[:12]``
     :attribute: revision: revision number as integer
     :attribute: files: list of ``Node`` objects with NodeKind.FILE
     :attribute: dirs: list of ``Node`` objects with NodeKind.DIR
@@ -133,10 +139,14 @@ class BaseChangeset(object):
     """
 
     def __str__(self):
-        return u'<%s at %s>' % (self.__class__.__name__, self.revision)
+        return '<%s at %s:%s>' % (self.__class__.__name__, self.revision,
+            self.raw_id)
 
     def __repr__(self):
         return self.__str__()
+
+    def __unicode__(self):
+        return u'%s:%s' % (self.revision, self.short_id)
 
     @LazyProperty
     def last(self):
@@ -166,8 +176,22 @@ class BaseChangeset(object):
     @LazyProperty
     def raw_id(self):
         """
-        Returns raw string identifing this changeset, useful for web
-        representation.
+        Returns raw string identifing this changeset.
+        """
+        raise NotImplementedError
+
+    @LazyProperty
+    def short_id(self):
+        """
+        Returns shortened version of ``raw_id`` attribute, as string,
+        identifing this changeset, useful for web representation.
+        """
+        raise NotImplementedError
+
+    @LazyProperty
+    def revision(self):
+        """
+        Returns integer identifing this changeset.
         """
         raise NotImplementedError
 
@@ -249,7 +273,7 @@ class BaseChangeset(object):
     def walk(self, topurl=''):
         """
         Similar to os.walk method. Insted of filesystem it walks through
-        changeset starting at given ``topurl``.  Returns list of tuples
+        changeset starting at given ``topurl``.  Returns generator of tuples
         (topnode, dirnodes, filenodes).
         """
         topnode = self.get_node(topurl)

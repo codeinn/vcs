@@ -55,7 +55,7 @@ class GitRepository(BaseRepository):
            os command's output is road to hell...
 
         :param cmd: git command
-        :param repo_path: if given, command would prefixed with
+        :param repo_path: if given, command would be prefixed with
           --git-dir=repo_path/.git (note that ".git" is always appended
         """
         cmd = '--git-dir=%s %s' % (os.path.join(self.path, '.git'), cmd)
@@ -91,17 +91,36 @@ class GitRepository(BaseRepository):
         return revisions
 
     def _get_revision(self, revision):
+        """
+        For git backend we always return integer here. This way we ensure
+        that changset's revision attribute would become integer.
+        """
         if len(self.revisions) == 0:
             raise RepositoryError("There are no changesets yet")
         if revision in (None, 'tip', 'HEAD', 'head', -1):
-            return self.revisions[-1]
-        if isinstance(revision, (str, unicode)):
+            #return self.revisions[-1]
+            revision = len(self.revisions) - 1
+        if isinstance(revision, (str, unicode)) and revision.isdigit() \
+            and len(revision) < 12:
+            revision = int(revision)
+        if isinstance(revision, int) and (
+            revision < 0 or revision >= len(self.revisions)):
+                raise RepositoryError("Revision %r does not exist for this "
+                    "repository %s" % (revision, self))
+        elif isinstance(revision, (str, unicode)):
             pattern = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
             if not pattern.match(revision):
                 raise RepositoryError("Revision %r does not exist for this "
                     "repository %s" % (revision, self))
-            return revision
-        raise RepositoryError("Given revision %r not recognized" % revision)
+            try:
+                revision = self.revisions.index(revision)
+            except ValueError:
+                raise RepositoryError("Revision %r does not exist for this "
+                    "repository %s" % (revision, self))
+        # Ensure we return integer
+        if not isinstance(revision, int):
+            raise RepositoryError("Given revision %r not recognized" % revision)
+        return revision
 
     def _get_tree(self, id):
         return self._repo[id]
@@ -174,6 +193,8 @@ class GitRepository(BaseRepository):
         if not self.changesets.has_key(revision):
             changeset = GitChangeset(repository=self, revision=revision)
             self.changesets[changeset.revision] = changeset
+            self.changesets[changeset.raw_id] = changeset
+            self.changesets[changeset.short_id] = changeset
         return self.changesets[revision]
 
     def get_changesets(self, limit=10, offset=None):
@@ -214,10 +235,13 @@ class GitChangeset(BaseChangeset):
     def __init__(self, repository, revision):
         self.repository = repository
         self.revision = repository._get_revision(revision)
+        self.raw_id = self.repository.revisions[revision]
+        self.short_id = self.raw_id[:12]
+        self.id = self.raw_id
         try:
-            commit = self.repository._repo.get_object(revision)
+            commit = self.repository._repo.get_object(self.raw_id)
         except KeyError:
-            raise RepositoryError("Cannot get object with id %s" % revision)
+            raise RepositoryError("Cannot get object with id %s" % self.raw_id)
         self._commit = commit
         self._tree_id = commit.tree
         self.author = unicode(commit.committer)
@@ -231,8 +255,6 @@ class GitChangeset(BaseChangeset):
         self.date = datetime.datetime.fromtimestamp(commit.commit_time)
         #tree = self.repository.get_object(self._tree_id)
         self.nodes = {}
-        self.id = revision
-        self.raw_id = revision
         self._paths = {}
 
     @LazyProperty
