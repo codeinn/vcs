@@ -32,11 +32,11 @@ class GitRepository(BaseRepository):
     Git repository backend
     """
 
-    def __init__(self, repo_path, create=False):
+    def __init__(self, repo_path, create=False, clone_url=None):
 
         self.path = abspath(repo_path)
         self.changesets = {}
-        self._set_repo(create)
+        self._set_repo(create, clone_url)
         try:
             self.head = self._repo.head()
         except KeyError:
@@ -71,7 +71,7 @@ class GitRepository(BaseRepository):
                 "stderr:\n%s" % (cmd, se))
         return so, se
 
-    def _set_repo(self, create):
+    def _set_repo(self, create, clone_url=None):
         if create and os.path.exists(self.path):
             raise RepositoryError("Location already exist")
         try:
@@ -80,6 +80,8 @@ class GitRepository(BaseRepository):
                 self._repo = Repo.init(self.path)
             else:
                 self._repo = Repo(self.path)
+            if clone_url:
+                self.pull(clone_url)
         except (NotGitRepository, OSError), err:
             raise RepositoryError(str(err))
 

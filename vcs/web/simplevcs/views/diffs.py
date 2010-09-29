@@ -18,7 +18,7 @@ def diff_file(request, file_path, template_name, repository=None,
     **Required arguments:**
 
     - Either ``repository`` or (``repository_path`` *and* ``repository_alias``
-      is required
+      is required)
 
     - ``file_path``: relative location of the file node in the repository.
 
