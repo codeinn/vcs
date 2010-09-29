@@ -58,9 +58,9 @@ class GitRepository(BaseRepository):
         :param repo_path: if given, command would be prefixed with
           --git-dir=repo_path/.git (note that ".git" is always appended
         """
-        cmd = '--git-dir=%s %s' % (os.path.join(self.path, '.git'), cmd)
+        cmd = '(cd %s && git %s)' % (self.path, cmd)
         try:
-            p = Popen('git %s' % cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         except OSError, err:
             raise RepositoryError("Couldn't run git command (%s).\n"
                 "Original error was:%s" % (cmd, err))
