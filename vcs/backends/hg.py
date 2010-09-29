@@ -62,7 +62,9 @@ class MercurialRepository(BaseRepository):
     def branches(self):
         if not self.revisions:
             return {}
-        sortkey = lambda ctx: ctx[1]._ctx.rev()
+        
+        sortkey = lambda ctx: ('close' not in ctx[1]._ctx.extra(),
+                               ctx[1]._ctx.rev())
         s_branches = sorted([(name, self.get_changeset(short(head))) for
             name, head in self.repo.branchtags().items()], key=sortkey,
             reverse=True)
