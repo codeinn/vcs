@@ -42,8 +42,14 @@ class GitRepository(BaseRepository):
             self.head = self._repo.head()
         except KeyError:
             self.head = None
-        self.revisions = self._get_all_revisions()
         self.changesets = {}
+
+    @LazyProperty
+    def revisions(self):
+        """
+        Being lazy attribute allows external tools to inject shas from cache.
+        """
+        return self._get_all_revisions()
 
     def run_git_command(self, cmd):
         """
