@@ -23,6 +23,7 @@ from vcs.exceptions import RepositoryError, ChangesetError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.paths import abspath
 from vcs.utils.lazy import LazyProperty
+from vcs.utils import safe_unicode
 
 from dulwich.repo import Repo, NotGitRepository
 from dulwich import objects
@@ -246,9 +247,9 @@ class GitChangeset(BaseChangeset):
             raise RepositoryError("Cannot get object with id %s" % self.raw_id)
         self._commit = commit
         self._tree_id = commit.tree
-        self.author = unicode(commit.committer)
+        self.author = safe_unicode(commit.committer)
         try:
-            self.message = unicode(commit.message[:-1]) # Always strip last eol
+            self.message = safe_unicode(commit.message[:-1]) # Always strip last eol
         except UnicodeDecodeError:
             self.message = commit.message[:-1].decode(commit.encoding
                 or 'utf-8')
