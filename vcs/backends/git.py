@@ -170,7 +170,7 @@ class GitRepository(BaseRepository):
         """
         Return last n number of ``MercurialChangeset`` specified by limit
         attribute if None is given whole list of revisions is returned
-        @param limit: int limit or None
+        :param limit: int limit or None
         """
         count = self.count()
         offset = offset or 0

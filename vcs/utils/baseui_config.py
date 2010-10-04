@@ -4,7 +4,7 @@ def make_ui(self, path='hgwebdir.config'):
     """
     A funcion that will read python rc files and make an ui from read options
     
-    @param path: path to mercurial config file
+    :param path: path to mercurial config file
     """
     #propagated from mercurial documentation
     sections = [

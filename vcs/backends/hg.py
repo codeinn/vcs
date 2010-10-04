@@ -203,8 +203,8 @@ class MercurialRepository(BaseRepository):
         Return last n number of ``MercurialChangeset`` specified by limit
         attribute if None is given whole list of revisions is returned
 
-        @param limit: int limit or None
-        @param offset: int offset
+        :param limit: int limit or None
+        :param offset: int offset
         """
         count = self.count()
         offset = offset or 0
