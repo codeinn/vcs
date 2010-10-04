@@ -115,6 +115,37 @@ class BaseRepository(object):
         chset = self.get_changeset(revision)
         return chset.walk(topurl)
 
+    def add(self, filenode, **kwargs):
+        """
+        Commit api function that will add given ``FileNode`` into this
+        repository. If there is a file with same path already in repository,
+        ``NodeAlreadyExistsError`` is raised.
+        """
+        raise NotImplementedError
+
+    def remove(self, filenode, **kwargs):
+        """
+        Commit api function that will remove given ``FileNode`` into this
+        repository. If there is no file with given path,
+        ``NodeDoesNotExistError`` is raised.
+        """
+        raise NotImplementedError
+
+    def commit(self, message, **kwargs):
+        """
+        Persists current changes made on this repository and returns newly
+        created changeset. If no changed has been made, ``NothingChangedError``
+        is raised.
+        """
+        raise NotImplementedError
+
+    def get_state(self):
+        """
+        Returns dictionary with ``added``, ``changed`` and ``removed`` lists
+        containing ``FileNode`` objects.
+        """
+        raise NotImplementedError
+
 
 class BaseChangeset(object):
     """
@@ -258,22 +289,3 @@ class BaseChangeset(object):
             for tup in self.walk(dirnode.path):
                 yield tup
 
-    def add(self, filenode, **kwargs):
-        """Commit api function that will add given FileNode 
-        into this repository"""
-        raise NotImplementedError
-    
-    def remove(self, filenode, **kwargs):
-        """Commit api function that will remove given FileNode 
-        into this repository"""        
-        raise NotImplementedError
-        
-    def commit(self, message, **kwargs):
-        """Persists current changes made on this changeset"""
-        raise NotImplementedError 
-    
-    def get_state(self):
-        """gets current ctx state returning lists of added/changed/removed
-        FileNodes
-        """
-        raise NotImplementedError
