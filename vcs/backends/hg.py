@@ -55,7 +55,11 @@ class MercurialRepository(BaseRepository):
         self._set_repo(create, clone_url)
         self.revisions = list(self.repo)
         self.changesets = {}
-
+        self.added_ctx = None
+        self.removed_ctx = None
+        self.added_cache = {}
+        self.removed_cache = {}
+        
     @LazyProperty
     def name(self):
         return os.path.basename(self.path)
@@ -222,6 +226,121 @@ class MercurialRepository(BaseRepository):
             # Propagate error but with vcs's type
             raise RepositoryError(str(err))
 
+
+    def add(self, added, **kwargs):
+        try:
+            tip = self.get_changeset()
+        except RepositoryError:
+            tip = None
+        
+        def filectxfn(repo, memctx, path):
+            
+            filenode = self.added_cache[path]
+            return memfilectx(path=filenode.path,
+                              data=filenode.content,
+                              islink=False,
+                              isexec=False,
+                              copied=False)
+        
+        do_added = False
+        if not isinstance(added, (list, tuple,)):
+            added = [added]
+            
+        for fn in added:
+            if tip != None:
+                try:
+                    if tip.get_node(fn.path):
+                        raise Exception('There is such a file in repository')
+                except ChangesetError:
+                    pass
+            
+            if not isinstance(fn, (FileNode,)):
+                raise Exception('You must give FileNode to added files list')
+            
+            #remove a file from removed if we set add afterwards
+            if fn.path in [removed_filenode.path 
+                            for removed_filenode in self.removed_cache.values()]:
+                del self.removed_cache[fn.path]            
+            self.added_cache[fn.path] = fn
+            do_added = True        
+
+        if do_added:
+            user = kwargs.get('user') or self.contact
+             
+            self.files_to_add = sorted([node.path for node in added])
+            parent1 = tip._ctx.node() if tip else None
+            parent2 = None
+            self.added_ctx = memctx(repo=self.repo,
+                                 parents=(parent1, parent2,),
+                                 text='',
+                                 files=self.files_to_add,
+                                 filectxfn=filectxfn,
+                                 user=user,
+                                 date=kwargs.get('date', None),
+                                 extra=kwargs)
+    
+    def remove(self, removed, **kwargs):
+        try:
+            tip = self.get_changeset()
+        except RepositoryError:
+            tip = None
+                
+        def fileremovectxfn(repo, memctx, path):
+            raise IOError(errno.ENOENT, '%s is deleted' % path)
+    
+        do_removed = False
+        if not isinstance(removed, (list, tuple,)):
+            removed = [removed]
+            
+        for fn in removed:
+            if tip != None:
+                try:
+                    if tip.get_node(fn.path):
+                        raise Exception('There is such a file in repository')
+                except ChangesetError:
+                    pass
+                            
+            if not isinstance(fn, (FileNode,)):
+                raise Exception('You must give FileNode to removed files list')
+            
+            #remove a file from added if we set remove afterwards
+            if fn.path in [added_filenode.path 
+                            for added_filenode in self.added_cache.values()]:
+                del self.added_cache[fn.path]
+            self.removed_cache[fn.path] = fn
+            do_removed = True        
+
+        if do_removed:
+            user = kwargs.get('user') or self.contact
+             
+            self.files_to_add = sorted([node.path for node in removed])
+            parent1 = tip._ctx.node() if tip else None
+            parent2 = None
+            self.added_ctx = memctx(repo=self.repo,
+                                 parents=(parent1, parent2,),
+                                 text='',
+                                 files=self.files_to_add,
+                                 filectxfn=fileremovectxfn,
+                                 user=user,
+                                 date=kwargs.get('date', None),
+                                 extra=kwargs)
+                
+    def commit(self, message, **kwargs):
+        #injecting given changes
+        self.added_ctx._text = message
+        self.added_ctx._user = kwargs.get('user', None)
+        self.added_ctx._date = kwargs.get('date', None)
+        self.repo.commitctx(self.added_ctx)
+        
+
+    def get_state(self):
+        """gets current ctx state"""
+        print '+', self.added_cache.values()
+        print '-', self.removed_cache.values()
+        
+        
+        
+
 class MercurialChangeset(BaseChangeset):
     """
     Represents state of the repository at the single revision.
@@ -246,10 +365,6 @@ class MercurialChangeset(BaseChangeset):
         self._dir_paths = list(set(get_dirs_for_path(*self._file_paths)))
         self._dir_paths.insert(0, '') # Needed for root node
         self.nodes = {}
-        self.added_ctx = None
-        self.removed_ctx = None
-        self.added_cache = {}
-        self.removed_cache = {}
         
     @LazyProperty
     def _paths(self):
@@ -470,110 +585,17 @@ class MercurialChangeset(BaseChangeset):
                 node = RemovedFileNode(path=path)
                 removed_nodes.append(node)
         return removed_nodes
-
-
-
-    def add(self, added, **kwargs):
-        def filectxfn(repo, memctx, path):
-            
-            filenode = self.added_cache[path]
-            return memfilectx(path=filenode.path,
-                              data=filenode.content,
-                              islink=False,
-                              isexec=False,
-                              copied=False)
-        do_added = False
-        if not isinstance(added, (list, tuple,)):
-            added = [added]
-            
-        for fn in added:
-            
-            if not isinstance(fn, (FileNode,)):
-                raise Exception('You must give FileNode to added files list')
-            
-            #remove a file from removed if we set add afterwards
-            if fn.path in [removed_filenode.path 
-                            for removed_filenode in self.removed_cache.values()]:
-                del self.removed_cache[fn.path]            
-            self.added_cache[fn.path] = fn
-            do_added = True        
-
-        if do_added:
-            user = kwargs.get('user') or self.repository.contact
-             
-            self.files_to_add = sorted([node.path for node in added])
-            parent1 = self.repository.repo[self.raw_id].node()
-            parent2 = None
-            self.added_ctx = memctx(repo=self.repository.repo,
-                                 parents=(parent1, parent2,),
-                                 text='',
-                                 files=self.files_to_add,
-                                 filectxfn=filectxfn,
-                                 user=user,
-                                 date=kwargs.get('date', None),
-                                 extra=kwargs)
     
-    def remove(self, removed, **kwargs):
-        def fileremovectxfn(repo, memctx, path):
-            raise IOError(errno.ENOENT, '%s is deleted' % path)
     
-        do_removed = False
-        if not isinstance(removed, (list, tuple,)):
-            removed = [removed]
-            
-        for fn in removed:
-            
-            if not isinstance(fn, (FileNode,)):
-                raise Exception('You must give FileNode to removed files list')
-            
-            #remove a file from added if we set remove afterwards
-            if fn.path in [added_filenode.path 
-                            for added_filenode in self.added_cache.values()]:
-                del self.added_cache[fn.path]
-            self.removed_cache[fn.path] = fn
-            do_removed = True        
-
-        if do_removed:
-            user = kwargs.get('user') or self.repository.contact
-             
-            self.files_to_add = sorted([node.path for node in removed])
-            parent1 = self.repository.repo[self.raw_id].node()
-            parent2 = None
-            self.added_ctx = memctx(repo=self.repository.repo,
-                                 parents=(parent1, parent2,),
-                                 text='',
-                                 files=self.files_to_add,
-                                 filectxfn=fileremovectxfn,
-                                 user=user,
-                                 date=kwargs.get('date', None),
-                                 extra=kwargs)
-                
-    def commit(self, message, **kwargs):
-        #injecting given changes
-        self.added_ctx._text = message
-        self.added_ctx._user = kwargs.get('user', None)
-        self.added_ctx._date = kwargs.get('date', None)
-        self.repository.repo.commitctx(self.added_ctx)
-        
-
-    def get_state(self):
-        """gets current ctx state"""
-        print '+', self.added_cache.values()
-        print '-', self.removed_cache.values()
-        
-        
-        
+    
 if __name__ == '__main__':
     repo = MercurialRepository('/tmp/wiki')
-    r = repo.repo         
         
-    tip = repo.get_changeset()
-    
-    tip.remove(FileNode('wikifile.rst', content='a large file'))
-    tip.add(FileNode('wikifile.rst', content='a large file'))
-    tip.add([FileNode('wikifile1.rst', content='file1'), FileNode('wikifile2.rst', content='file2'), ])
+    repo.remove(FileNode('wikifile.rst', content='a large file'))
+    repo.add(FileNode('wikifile.rst', content='a large file'))
+    repo.add([FileNode('wikifile1.rst', content='file1'), FileNode('wikifile2.rst', content='file2'), ])
     
     
-    tip.get_state()
+    repo.get_state()
     
-    tip.commit('added wikipage', user='marcink <m@m.pl>')
+    repo.commit('added wikipage', user='marcink <m@m.pl>')    
