@@ -243,7 +243,7 @@ class MercurialRepository(BaseRepository):
             
         for fn in added:
             try:
-                if tip != None and tip.get_node(fn.path):
+                if tip is not None and tip.get_node(fn.path):
                     raise NodeAlreadyExistsError('There is such a file %s in '
                                                  'repository',fn.path)
             except ChangesetError:
@@ -281,7 +281,7 @@ class MercurialRepository(BaseRepository):
             removed = [removed]
             
         for fn in removed:
-            if tip != None:
+            if tip is not None:
                 try:
                     tip.get_node(fn.path)
                 except ChangesetError:

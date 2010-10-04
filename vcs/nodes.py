@@ -264,7 +264,7 @@ class FileNode(Node):
         """
         Returns a list of changeset for this file in which the file was changed
         """
-        if self.changeset == None:
+        if self.changeset is None:
             raise NodeError('Unable to get changeset for this FileNode')
         return self.changeset.get_file_history(self.path)
 
@@ -273,7 +273,7 @@ class FileNode(Node):
         """
         Returns a list of three element tuples with lineno,changeset and line
         """
-        if self.changeset == None:
+        if self.changeset is None:
             raise NodeError('Unable to get changeset for this FileNode')
         return self.changeset.get_file_annotate(self.path)
 
