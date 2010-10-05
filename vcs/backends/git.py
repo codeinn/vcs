@@ -548,6 +548,7 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         self.repository._repo = Repo(self.repository.path)
         self.repository.changesets.pop(None, None)
         tip = self.repository.get_changeset()
+        self.reset()
         return tip
 
     def reset(self):

@@ -49,6 +49,16 @@ class InMemoryChangesetTestMixin(object):
         self.assertEqual(rev_count + 1, len(self.repo.revisions))
         self.assertEqual(newtip.message, message)
         self.assertEqual(newtip.author, author)
+        self.assertTrue(not any((self.imc.added, self.imc.changed,
+            self.imc.removed)))
+
+    def test_reset(self):
+        self.imc.add(FileNode('foo', content='bar'))
+        self.imc.change(FileNode('baz', content='new'))
+        self.imc.remove(FileNode('qwe'))
+        self.imc.reset()
+        self.assertTrue(not any((self.imc.added, self.imc.changed,
+            self.imc.removed)))
 
 
 # For each backend create test case class
