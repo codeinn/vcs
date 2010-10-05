@@ -119,6 +119,13 @@ class BaseRepository(object):
     # COMMIT API #
     # ========== #
 
+    @LazyProperty
+    def in_memory_changeset(self):
+        """
+        Returns ``InMemoryChangeset`` object for this repository.
+        """
+        raise NotImplementedError
+
     def add(self, filenode, **kwargs):
         """
         Commit api function that will add given ``FileNode`` into this
@@ -155,7 +162,8 @@ class BaseRepository(object):
     # WORKDIR API #
     # =========== #
 
-    def get_workdir(self):
+    @LazyProperty
+    def workdir(self):
         """
         Returns ``Workdir`` instance for this repository.
         """
