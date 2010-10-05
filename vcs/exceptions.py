@@ -31,8 +31,8 @@ class NodeDoesNotExistError(CommitError):
 class NodeNotChangedError(CommitError):
     pass
 
-class NodeAlreadyAdded(CommitError):
+class NodeAlreadyAddedError(CommitError):
     pass
 
-class NodeAlreadyRemoved(CommitError):
+class NodeAlreadyRemovedError(CommitError):
     pass

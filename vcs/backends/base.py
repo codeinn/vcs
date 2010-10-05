@@ -115,6 +115,10 @@ class BaseRepository(object):
         chset = self.get_changeset(revision)
         return chset.walk(topurl)
 
+    # ========== #
+    # COMMIT API #
+    # ========== #
+
     def add(self, filenode, **kwargs):
         """
         Commit api function that will add given ``FileNode`` into this
@@ -147,10 +151,22 @@ class BaseRepository(object):
         raise NotImplementedError
 
 
+    # =========== #
+    # WORKDIR API #
+    # =========== #
+
+    def get_workdir(self):
+        """
+        Returns ``Workdir`` instance for this repository.
+        """
+        raise NotImplementedError
+
+
 class BaseChangeset(object):
     """
     Each backend should implement it's changeset representation.
 
+    :attribute: repository: repository object within which changeset exists
     :attribute: revision: revision number as integer
     :attribute: files: list of ``Node`` objects with NodeKind.FILE
     :attribute: dirs: list of ``Node`` objects with NodeKind.DIR
@@ -288,4 +304,118 @@ class BaseChangeset(object):
         for dirnode in topnode.dirs:
             for tup in self.walk(dirnode.path):
                 yield tup
+
+
+class BaseWorkdir(object):
+    """
+    Working directory representation of single repository.
+
+    :attribute: repository: repository object of working directory
+    """
+
+    def __init__(self, repository):
+        self.repository = repository
+
+    def get_added(self):
+        """
+        Returns list of ``FileNode`` objects marked as *new* in working
+        directory.
+        """
+        raise NotImplementedError
+
+    def get_changed(self):
+        """
+        Returns list of ``FileNode`` objects *changed* in working directory.
+        """
+        raise NotImplementedError
+
+    def get_removed(self):
+        """
+        Returns list of ``RemovedFileNode`` objects marked as *removed* in
+        working directory.
+        """
+        raise NotImplementedError
+
+    def get_untracked(self):
+        """
+        Returns list of ``FileNode`` objects which are present within working
+        directory however are not tracked by repository.
+        """
+        raise NotImplementedError
+
+    def commit(self, message, **kwargs):
+        """
+        Commits local (from working directory) changes and returns newly created
+        ``Changeset``. Updates repository's ``revisions`` list.
+
+        :raises ``CommitError``: if any error occurs while committing
+        """
+        raise NotImplementedError
+
+    def update(self, revision=None):
+        """
+        Fetches content of the given revision and populates it within working
+        directory.
+        """
+        raise NotImplementedError
+
+
+class BaseInMemoryChangeset(object):
+    """
+    Represents differences between repository's state (most recent head) and
+    changes made *in place*.
+
+    :attribute: repository: repository object of working directory
+    :attribute: added: list of new ``FileNode`` objects going to be committed
+    :attribute: changed: list of changed ``FileNode`` objects going to be
+      committed
+    :attribute: removed: list of ``RemovedFileNode`` objects marked to be
+      removed
+    """
+
+    def __init__(self, repository):
+        self.repository = repository
+        self.added = []
+        self.changed = []
+        self.removed = []
+
+    def add(self, *filenodes):
+        """
+        Marks given ``FileNode`` objects as *to be committed*.
+
+        :raises ``NodeAlreadyExistsError``: if node with same path exists at
+          latest changeset
+        :raises ``NodeAlreadyAddedError``: if node with same path is already
+          marked as *new*
+        """
+        raise NotImplementedError
+
+    def change(self, *filenodes):
+        """
+        Marks given ``FileNode`` objects to be *changed* in next commit.
+
+        :raises ``ChangesetError``: if node doesn't exist in latest changeset or
+          node with same path is already marked as *changed*.
+        """
+        raise NotImplementedError
+
+    def remove(self, *filenodes):
+        """
+        Marks given ``FileNode`` (or ``RemovedFileNode``) objects to be *removed*
+        in next commit. If ``FileNode`` doesn't exists
+
+        :raises ``ChangesetError``: if node does not exist in latest changeset
+        :raises ``NodeAlreadyRemovedError``: if node has been already marked to
+         be *removed*
+        """
+
+
+    def commit(self, message, **kwargs):
+        """
+        Commits local (from working directory) changes and returns newly created
+        ``Changeset``. Updates repository's ``revisions`` list.
+
+        :raises ``CommitError``: if any error occurs while committing
+        """
+        raise NotImplementedError
 
