@@ -59,8 +59,12 @@ class MercurialRepository(BaseRepository):
         self.revisions = list(self.repo)
         self.changesets = {}
 
-        self.workdir = MercurialWorkdir(self)
+        
         self.in_memory_changeset = MercurialInMemoryChangeset(self)
+        # not sure if we should pass imc to workdir instead of repository ?
+        # and then work on reference of repository in imc ?
+        self.workdir = MercurialWorkdir(self)
+        self.in_memory_changeset.set_workdir(self.workdir)
 
     @LazyProperty
     def name(self):
@@ -481,8 +485,12 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
     
     def __init__(self,repository):
         self.repository = repository
+        self.workdir = None    
         self.files_to_add = []
         self.files_to_remove = []        
+    
+    def set_workdir(self,workdir):
+        self.workdir = workdir
     
     def add(self, *filenodes):
         try:
@@ -504,17 +512,17 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
                                 ' files list got %s instead',type(fn))
 
             #remove a file from removed if we set add afterwards
-            if fn.path in [added_filenode.path
-                            for added_filenode in self.repository.workdir.added_cache.values()]:
-                raise NodeAlreadyAddedError('Such FileNode %s is already marked'
-                                       ' for addition',fn.path)
+            if fn.path in [added_filenode.path for added_filenode 
+                           in self.workdir.added_cache.values()]:
+                raise NodeAlreadyAddedError('Such FileNode %s is already'
+                                            ' marked for addition',fn.path)
 
-            if fn.path in [removed_filenode.path
-                           for removed_filenode in self.repository.workdir.removed_cache.values()]:
-                raise NodeAlreadyRemovedError('Such FileNode %s is already marked'
-                                         ' for removal',fn.path)
+            if fn.path in [removed_filenode.path for removed_filenode 
+                           in self.workdir.removed_cache.values()]:
+                raise NodeAlreadyRemovedError('Such FileNode %s is already'
+                                              ' marked for removal',fn.path)
 
-            self.repository.workdir.added_cache[fn.path] = fn
+            self.workdir.added_cache[fn.path] = fn
 
         self.files_to_add = sorted([node.path for node in filenodes])
 
@@ -538,17 +546,17 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
                 raise Exception('You must pass FileNode instance to removed '
                                 ' files list got %s instead',type(fn))
 
-            if fn.path in [removed_filenode.path
-                           for removed_filenode in self.repository.workdir.removed_cache.values()]:
+            if fn.path in [removed_filenode.path for removed_filenode 
+                           in self.workdir.removed_cache.values()]:
                 raise NodeAlreadyRemovedError('Such FileNode %s is already marked'
                                          ' for removal',fn.path)
 
-            if fn.path in [added_filenode.path
-                            for added_filenode in self.repository.workdir.added_cache.values()]:
+            if fn.path in [added_filenode.path for added_filenode 
+                           in self.workdir.added_cache.values()]:
                 raise NodeAlreadyAddedError('Such FileNode %s is already marked'
                                        ' for addition',fn.path)
 
-            self.repository.workdir.removed_cache[fn.path] = fn
+            self.workdir.removed_cache[fn.path] = fn
 
         self.files_to_remove = sorted([node.path for node in filenodes])
         
@@ -558,6 +566,7 @@ class MercurialWorkdir(BaseWorkdir):
 
     def __init__(self, repository):
         self.repository = repository
+        self.imc = self.repository.in_memory_changeset
         self.added_cache = {}
         self.removed_cache = {}
         self.changed_cache = {}
@@ -582,11 +591,11 @@ class MercurialWorkdir(BaseWorkdir):
         def filectxfn(repo, memctx, path):
 
             #check if this path is removed
-            if path in [node_path for node_path in self.repository.in_memory_changeset.files_to_remove]:
+            if path in [node_path for node_path in self.imc.files_to_remove]:
                 raise IOError(errno.ENOENT, '%s is deleted' % path)
 
             #check if this path is added
-            elif path in [node_path for node_path in self.repository.in_memory_changeset.files_to_add]:
+            elif path in [node_path for node_path in self.imc.files_to_add]:
                 filenode = self.added_cache[path]
                 return memfilectx(path=filenode.path,
                               data=filenode.content,
@@ -604,8 +613,8 @@ class MercurialWorkdir(BaseWorkdir):
         self.commit_ctx = memctx(repo=self.repository.repo,
                                  parents=(parent1, parent2,),
                                  text='',
-                                 files=self.repository.in_memory_changeset.files_to_add\
-                                 +self.repository.in_memory_changeset.files_to_remove,
+                                 files=self.imc.files_to_add\
+                                 +self.imc.files_to_remove,
                                  filectxfn=filectxfn,
                                  user=user,
                                  date=kwargs.get('date', None),
