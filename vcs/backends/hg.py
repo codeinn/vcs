@@ -24,10 +24,11 @@ from mercurial.node import hex
 from mercurial.commands import clone, pull
 from mercurial.context import memctx, memfilectx
 
-from vcs.backends.base import BaseRepository, BaseChangeset
+from vcs.backends.base import BaseRepository, BaseChangeset, BaseWorkdir,\
+    BaseInMemoryChangeset
 from vcs.exceptions import RepositoryError, ChangesetError, \
     NodeDoesNotExistError,NodeAlreadyExistsError,\
-    NodeAlreadyAdded, NodeAlreadyRemoved
+    NodeAlreadyAddedError, NodeAlreadyRemovedError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
@@ -58,12 +59,8 @@ class MercurialRepository(BaseRepository):
         self.revisions = list(self.repo)
         self.changesets = {}
 
-        ###MOVE OUT TO CLASS###
-        self.added_cache = {}
-        self.removed_cache = {}
-
-        self.files_to_add = []
-        self.files_to_remove = []
+        self.workdir = MercurialWorkdir(self)
+        self.in_memory_changeset = MercurialInMemoryChangeset(self)
 
     @LazyProperty
     def name(self):
@@ -230,135 +227,6 @@ class MercurialRepository(BaseRepository):
         except Abort, err:
             # Propagate error but with vcs's type
             raise RepositoryError(str(err))
-
-
-    def add(self, added, **kwargs):
-
-        try:
-            tip = self.get_changeset()
-        except RepositoryError:
-            tip = None
-
-        if not isinstance(added, (list, tuple,)):
-            added = [added]
-
-        for fn in added:
-            try:
-                if tip is not None and tip.get_node(fn.path):
-                    raise NodeAlreadyExistsError('There is such a file %s in '
-                                                 'repository',fn.path)
-            except ChangesetError:
-                pass
-
-
-            if not isinstance(fn, (FileNode,)):
-                raise Exception('You must pass FileNode instance to added '
-                                ' files list got %s instead',type(fn))
-
-            #remove a file from removed if we set add afterwards
-            if fn.path in [added_filenode.path
-                            for added_filenode in self.added_cache.values()]:
-                raise NodeAlreadyAdded('Such FileNode %s is already marked'
-                                       ' for addition',fn.path)
-
-            if fn.path in [removed_filenode.path
-                           for removed_filenode in self.removed_cache.values()]:
-                raise NodeAlreadyRemoved('Such FileNode %s is already marked'
-                                         ' for removal',fn.path)
-
-            self.added_cache[fn.path] = fn
-
-        self.files_to_add = sorted([node.path for node in added])
-
-
-    def remove(self, removed, **kwargs):
-
-        try:
-            tip = self.get_changeset()
-        except RepositoryError:
-            raise
-
-        if not isinstance(removed, (list, tuple,)):
-            removed = [removed]
-
-        for fn in removed:
-            if tip is not None:
-                try:
-                    tip.get_node(fn.path)
-                except ChangesetError:
-                    raise NodeDoesNotExistError('There is no such %s a file in '
-                                                ' repository',fn.path)
-
-            if not isinstance(fn, (FileNode,)):
-                raise Exception('You must pass FileNode instance to removed '
-                                ' files list got %s instead',type(fn))
-
-            if fn.path in [removed_filenode.path
-                           for removed_filenode in self.removed_cache.values()]:
-                raise NodeAlreadyRemoved('Such FileNode %s is already marked'
-                                         ' for removal',fn.path)
-
-            if fn.path in [added_filenode.path
-                            for added_filenode in self.added_cache.values()]:
-                raise NodeAlreadyAdded('Such FileNode %s is already marked'
-                                       ' for addition',fn.path)
-
-            self.removed_cache[fn.path] = fn
-
-        self.files_to_remove = sorted([node.path for node in removed])
-
-
-    def commit(self, message, **kwargs):
-
-        try:
-            tip = self.get_changeset()
-        except RepositoryError:
-            tip = None
-
-        def filectxfn(repo, memctx, path):
-
-            #check if this path is removed
-            if path in [node_path for node_path in self.files_to_remove]:
-                raise IOError(errno.ENOENT, '%s is deleted' % path)
-
-            #check if this path is added
-            elif path in [node_path for node_path in self.files_to_add]:
-                filenode = self.added_cache[path]
-                return memfilectx(path=filenode.path,
-                              data=filenode.content,
-                              islink=False,
-                              isexec=False,
-                              copied=False)
-
-
-
-
-        parent1 = tip._ctx.node() if tip else None
-        parent2 = None
-        user = kwargs.get('user') or self.contact
-
-        self.commit_ctx = memctx(repo=self.repo,
-                                 parents=(parent1, parent2,),
-                                 text='',
-                                 files=self.files_to_add+self.files_to_remove,
-                                 filectxfn=filectxfn,
-                                 user=user,
-                                 date=kwargs.get('date', None),
-                                 extra=kwargs)
-        #injecting given repo params
-        self.commit_ctx._text = message
-        self.commit_ctx._user = kwargs.get('user', None)
-        self.commit_ctx._date = kwargs.get('date', None)
-
-        self.repo.commitctx(self.commit_ctx)
-
-
-    def get_state(self):
-        """gets current ctx state"""
-        print '+', self.added_cache.values()
-        print '-', self.removed_cache.values()
-
-
 
 
 class MercurialChangeset(BaseChangeset):
@@ -608,22 +476,166 @@ class MercurialChangeset(BaseChangeset):
 
 
 
+class MercurialInMemoryChangeset(BaseInMemoryChangeset):
+    
+    
+    def __init__(self,repository):
+        self.repository = repository
+        self.files_to_add = []
+        self.files_to_remove = []        
+    
+    def add(self, *filenodes):
+        try:
+            tip = self.repository.get_changeset()
+        except RepositoryError:
+            tip = None
+
+        for fn in filenodes:
+            try:
+                if tip is not None and tip.get_node(fn.path):
+                    raise NodeAlreadyExistsError('There is such a file %s in '
+                                                 'repository',fn.path)
+            except ChangesetError:
+                pass
+
+
+            if not isinstance(fn, (FileNode,)):
+                raise Exception('You must pass FileNode instance to added '
+                                ' files list got %s instead',type(fn))
+
+            #remove a file from removed if we set add afterwards
+            if fn.path in [added_filenode.path
+                            for added_filenode in self.repository.workdir.added_cache.values()]:
+                raise NodeAlreadyAddedError('Such FileNode %s is already marked'
+                                       ' for addition',fn.path)
+
+            if fn.path in [removed_filenode.path
+                           for removed_filenode in self.repository.workdir.removed_cache.values()]:
+                raise NodeAlreadyRemovedError('Such FileNode %s is already marked'
+                                         ' for removal',fn.path)
+
+            self.repository.workdir.added_cache[fn.path] = fn
+
+        self.files_to_add = sorted([node.path for node in filenodes])
+
+
+    def remove(self, *filenodes):
+
+        try:
+            tip = self.repository.get_changeset()
+        except RepositoryError:
+            raise
+
+        for fn in filenodes:
+            if tip is not None:
+                try:
+                    tip.get_node(fn.path)
+                except ChangesetError:
+                    raise NodeDoesNotExistError('There is no such %s a file in '
+                                                ' repository',fn.path)
+
+            if not isinstance(fn, (FileNode,)):
+                raise Exception('You must pass FileNode instance to removed '
+                                ' files list got %s instead',type(fn))
+
+            if fn.path in [removed_filenode.path
+                           for removed_filenode in self.repository.workdir.removed_cache.values()]:
+                raise NodeAlreadyRemovedError('Such FileNode %s is already marked'
+                                         ' for removal',fn.path)
+
+            if fn.path in [added_filenode.path
+                            for added_filenode in self.repository.workdir.added_cache.values()]:
+                raise NodeAlreadyAddedError('Such FileNode %s is already marked'
+                                       ' for addition',fn.path)
+
+            self.repository.workdir.removed_cache[fn.path] = fn
+
+        self.files_to_remove = sorted([node.path for node in filenodes])
+        
+
+class MercurialWorkdir(BaseWorkdir):
+
+
+    def __init__(self, repository):
+        self.repository = repository
+        self.added_cache = {}
+        self.removed_cache = {}
+        self.changed_cache = {}
+        
+
+    def get_added(self):
+        return self.added_cache
+    
+    def get_removed(self):
+        return self.removed_cache
+    
+    def get_changed(self):
+        return self.changed_cache
+
+    def commit(self, message, **kwargs):
+
+        try:
+            tip = self.repository.get_changeset()
+        except RepositoryError:
+            tip = None
+
+        def filectxfn(repo, memctx, path):
+
+            #check if this path is removed
+            if path in [node_path for node_path in self.repository.in_memory_changeset.files_to_remove]:
+                raise IOError(errno.ENOENT, '%s is deleted' % path)
+
+            #check if this path is added
+            elif path in [node_path for node_path in self.repository.in_memory_changeset.files_to_add]:
+                filenode = self.added_cache[path]
+                return memfilectx(path=filenode.path,
+                              data=filenode.content,
+                              islink=False,
+                              isexec=False,
+                              copied=False)
+
+
+
+
+        parent1 = tip._ctx.node() if tip else None
+        parent2 = None
+        user = kwargs.get('user') or self.contact
+
+        self.commit_ctx = memctx(repo=self.repository.repo,
+                                 parents=(parent1, parent2,),
+                                 text='',
+                                 files=self.repository.in_memory_changeset.files_to_add\
+                                 +self.repository.in_memory_changeset.files_to_remove,
+                                 filectxfn=filectxfn,
+                                 user=user,
+                                 date=kwargs.get('date', None),
+                                 extra=kwargs)
+        #injecting given repo params
+        self.commit_ctx._text = message
+        self.commit_ctx._user = kwargs.get('user', None)
+        self.commit_ctx._date = kwargs.get('date', None)
+
+        self.repository.repo.commitctx(self.commit_ctx)
+
+
+
 if __name__ == '__main__':
-    c = True
+    c = False
     if c:
         import shutil
         shutil.rmtree('/tmp/wiki')
     repo = MercurialRepository('/tmp/wiki',create=c)
 
-    repo.add(FileNode('wikifile.rst', content='a large file'))
-    #repo.remove(FileNode('wikifile.rst', content='a large file'))
+    #repo.in_memory_changeset.add(FileNode('wikifile.rst', content='a large file'))
+    repo.in_memory_changeset.remove(FileNode('wikifile.rst', content='a large file'))
     #repo.add(FileNode('wikifile.rst', content='a large file'))
-    #repo.add([FileNode('wikifile1.rst', content='file1'),
-    #          FileNode('wikifile2.rst', content='file2'),
-    #          FileNode('wikifile3.rst', content='file2'),
-    #        ])
+    repo.in_memory_changeset.add(FileNode('wikifile1.rst', content='file1'),
+              FileNode('wikifile2.rst', content='file2'),
+              FileNode('wikifile3.rst', content='file2'),
+            )
 
 
-    repo.get_state()
+    print repo.workdir.get_added()
+    print repo.workdir.get_changed()
 
-    repo.commit('added wikipage', user='marcink <m@m.pl>')
+    #repo.workdir.commit('added wikipage', user='marcink <m@m.pl>')
