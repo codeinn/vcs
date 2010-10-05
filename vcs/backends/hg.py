@@ -59,7 +59,7 @@ class MercurialRepository(BaseRepository):
         self.revisions = list(self.repo)
         self.changesets = {}
 
-        
+
         self.in_memory_changeset = MercurialInMemoryChangeset(self)
         # not sure if we should pass imc to workdir instead of repository ?
         # and then work on reference of repository in imc ?
@@ -117,6 +117,10 @@ class MercurialRepository(BaseRepository):
                 msg = "Not valid repository at %s. Original error was %s"\
                     % (self.path, err)
             raise RepositoryError(msg)
+
+    @LazyProperty
+    def in_memory_changeset(self):
+        return MercurialInMemoryChangeset(self)
 
     @LazyProperty
     def description(self):
@@ -481,17 +485,17 @@ class MercurialChangeset(BaseChangeset):
 
 
 class MercurialInMemoryChangeset(BaseInMemoryChangeset):
-    
-    
+
+
     def __init__(self,repository):
         self.repository = repository
-        self.workdir = None    
+        self.workdir = None
         self.files_to_add = []
-        self.files_to_remove = []        
-    
+        self.files_to_remove = []
+
     def set_workdir(self,workdir):
         self.workdir = workdir
-    
+
     def add(self, *filenodes):
         try:
             tip = self.repository.get_changeset()
@@ -512,12 +516,12 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
                                 ' files list got %s instead',type(fn))
 
             #remove a file from removed if we set add afterwards
-            if fn.path in [added_filenode.path for added_filenode 
+            if fn.path in [added_filenode.path for added_filenode
                            in self.workdir.added_cache.values()]:
                 raise NodeAlreadyAddedError('Such FileNode %s is already'
                                             ' marked for addition',fn.path)
 
-            if fn.path in [removed_filenode.path for removed_filenode 
+            if fn.path in [removed_filenode.path for removed_filenode
                            in self.workdir.removed_cache.values()]:
                 raise NodeAlreadyRemovedError('Such FileNode %s is already'
                                               ' marked for removal',fn.path)
@@ -546,12 +550,12 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
                 raise Exception('You must pass FileNode instance to removed '
                                 ' files list got %s instead',type(fn))
 
-            if fn.path in [removed_filenode.path for removed_filenode 
+            if fn.path in [removed_filenode.path for removed_filenode
                            in self.workdir.removed_cache.values()]:
                 raise NodeAlreadyRemovedError('Such FileNode %s is already marked'
                                          ' for removal',fn.path)
 
-            if fn.path in [added_filenode.path for added_filenode 
+            if fn.path in [added_filenode.path for added_filenode
                            in self.workdir.added_cache.values()]:
                 raise NodeAlreadyAddedError('Such FileNode %s is already marked'
                                        ' for addition',fn.path)
@@ -559,7 +563,7 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
             self.workdir.removed_cache[fn.path] = fn
 
         self.files_to_remove = sorted([node.path for node in filenodes])
-        
+
 
 class MercurialWorkdir(BaseWorkdir):
 
@@ -570,14 +574,14 @@ class MercurialWorkdir(BaseWorkdir):
         self.added_cache = {}
         self.removed_cache = {}
         self.changed_cache = {}
-        
+
 
     def get_added(self):
         return self.added_cache
-    
+
     def get_removed(self):
         return self.removed_cache
-    
+
     def get_changed(self):
         return self.changed_cache
 
@@ -608,7 +612,7 @@ class MercurialWorkdir(BaseWorkdir):
 
         parent1 = tip._ctx.node() if tip else None
         parent2 = None
-        user = kwargs.get('user') or self.contact
+        user = kwargs.get('user') or kwargs.get('author') or self.contact
 
         self.commit_ctx = memctx(repo=self.repository.repo,
                                  parents=(parent1, parent2,),

@@ -4,21 +4,20 @@
 # Copyright (c) 2010 Marcin Kuzminski,Lukasz Balcerzak.  All rights reserved.
 #
 """
-Created on May 21, 2010
-
-:author: marcink,lukaszb
+Git backend implementation.
 """
-
 import os
 import re
-import datetime
 import time
+import datetime
 
 from subprocess import Popen, PIPE
 
 from itertools import chain
 
-from vcs.backends.base import BaseRepository, BaseChangeset
+from vcs.backends.base import BaseRepository
+from vcs.backends.base import BaseChangeset
+from vcs.backends.base import BaseInMemoryChangeset
 from vcs.exceptions import RepositoryError, ChangesetError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.paths import abspath
@@ -185,6 +184,14 @@ class GitRepository(BaseRepository):
                 break
             id = self.revisions[rev_index]
             yield self.get_changeset(id)
+
+    @LazyProperty
+    def in_memory_changeset(self):
+        """
+        Returns ``GitInMemoryChangeset`` object for this repository.
+        """
+        return GitInMemoryChangeset(self)
+
 
 class GitChangeset(BaseChangeset):
     """
@@ -478,4 +485,71 @@ class GitChangeset(BaseChangeset):
             removed_nodes.append(node)
 
         return removed_nodes
+
+
+class GitInMemoryChangeset(BaseInMemoryChangeset):
+
+    def add(self, *filenodes):
+        #tip = self.get_changeset()
+        for node in filenodes:
+            self.added.append(node)
+
+    def change(self, *filenodes):
+        for node in filenodes:
+            self.changed.append(node)
+
+    def remove(self, *filenodes):
+        for node in filenodes:
+            self.removed.append(node)
+
+    def commit(self, message, author, **kwargs):
+
+        repo = self.repository._repo
+        object_store = repo.object_store
+        try:
+            tip = self.repository.get_changeset()
+        except RepositoryError:
+            tip = None
+
+        ENCODING = "UTF-8"
+        # Create tree and populates it with blobs
+        tree = tip and repo[tip._commit.tree] or objects.Tree()
+        for node in self.added:
+            blob = objects.Blob.from_string(node.content.encode(ENCODING))
+            tree.add(0100644, node.path, blob.id)
+            object_store.add_object(blob)
+        for node in self.changed:
+            blob = objects.Blob.from_string(node.content.encode(ENCODING))
+            tree[node.path] = blob.id
+            object_store.add_object(blob)
+        for node in self.removed:
+            del tree[node.path]
+        object_store.add_object(tree)
+
+        # Create commit
+        commit = objects.Commit()
+        commit.tree = tree.id
+        commit.parents = tip and [tip] or []
+        commit.author = commit.committer = author
+        commit.commit_time = commit.author_time = int(time.time())
+        tz = time.timezone
+        commit.commit_timezone = commit.author_timezone = tz
+        commit.encoding = 'UTF-8'
+        commit.message = message + ' '
+
+        object_store.add_object(commit)
+
+        ref = 'refs/heads/master'
+        repo.refs[ref] = commit.id
+        repo.refs['HEAD'] = commit.id
+
+        # Update vcs repository object & recreate dulwich repo
+        self.repository.revisions.append(commit.id)
+        self.repository._repo = Repo(self.repository.path)
+        self.repository.changesets.pop(None, None)
+        tip = self.repository.get_changeset()
+        return tip
+
+    def reset(self):
+        super(GitInMemoryChangeset, self).reset()
 
