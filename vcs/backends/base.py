@@ -427,3 +427,12 @@ class BaseInMemoryChangeset(object):
         """
         raise NotImplementedError
 
+    def reset(self):
+        """
+        Resets this instance to initial state (cleans ``added``, ``changed`` and
+        ``removed`` lists).
+        """
+        self.added = []
+        self.changed = []
+        self.removed = []
+
