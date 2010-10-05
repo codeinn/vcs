@@ -27,7 +27,7 @@ from mercurial.context import memctx, memfilectx
 from vcs.backends.base import BaseRepository, BaseChangeset
 from vcs.exceptions import RepositoryError, ChangesetError, \
     NodeDoesNotExistError,NodeAlreadyExistsError,\
-    NodeAlreadyAdded, NodeAlreadyRemoved
+    NodeAlreadyAddedError, NodeAlreadyRemovedError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
