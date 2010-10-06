@@ -10,6 +10,13 @@ Created on Apr 8, 2010
 """
 from vcs.utils.lazy import LazyProperty
 from vcs.exceptions import ChangesetError
+from vcs.exceptions import RepositoryError
+from vcs.exceptions import NodeAlreadyAddedError
+from vcs.exceptions import NodeAlreadyExistsError
+from vcs.exceptions import NodeAlreadyRemovedError
+from vcs.exceptions import NodeDoesNotExistError
+from vcs.exceptions import NodeNotChangedError
+
 
 class BaseRepository(object):
     """
@@ -396,7 +403,21 @@ class BaseInMemoryChangeset(object):
         :raises ``NodeAlreadyAddedError``: if node with same path is already
           marked as *new*
         """
-        raise NotImplementedError
+        try:
+            tip = self.repository.get_changeset()
+        except RepositoryError:
+            tip = None
+        for node in filenodes:
+            if node.path in (n.path for n in self.added):
+                raise NodeAlreadyAddedError(str(node.path))
+            if tip:
+                try:
+                    tip.get_node(node.path)
+                except ChangesetError:
+                    pass
+                else:
+                    raise NodeAlreadyExistsError(str(node.path))
+            self.added.append(node)
 
     def change(self, *filenodes):
         """
@@ -404,28 +425,40 @@ class BaseInMemoryChangeset(object):
 
         :raises ``ChangesetError``: if node doesn't exist in latest changeset or
           node with same path is already marked as *changed*.
+        :raises ``RepositoryError``: if there are no changesets yet
         """
-        raise NotImplementedError
+        tip = self.repository.get_changeset()
+        for node in filenodes:
+            try:
+                old = tip.get_node(node.path)
+                if old.content == node.content:
+                    raise NodeNotChangedError(str(node.path))
+            except ChangesetError:
+                raise NodeDoesNotExistError(str(node.path))
+            self.changed.append(node)
 
     def remove(self, *filenodes):
         """
-        Marks given ``FileNode`` (or ``RemovedFileNode``) objects to be *removed*
-        in next commit. If ``FileNode`` doesn't exists
+        Marks given ``FileNode`` (or ``RemovedFileNode``) objects to be
+        *removed* in next commit. If ``FileNode`` doesn't exists
 
         :raises ``ChangesetError``: if node does not exist in latest changeset
+        :raises ``RepositoryError``: if there are no changesets yet
         :raises ``NodeAlreadyRemovedError``: if node has been already marked to
-         be *removed*
+          be *removed*
         """
-
-
-    def commit(self, message, **kwargs):
-        """
-        Commits local (from working directory) changes and returns newly created
-        ``Changeset``. Updates repository's ``revisions`` list.
-
-        :raises ``CommitError``: if any error occurs while committing
-        """
-        raise NotImplementedError
+        tip = self.repository.get_changeset()
+        for node in filenodes:
+            try:
+                tip.get_node(node.path)
+            except ChangesetError:
+                raise NodeDoesNotExistError(str(node.path))
+            if node.path in (n.path for n in self.removed):
+                raise NodeAlreadyRemovedError("Node is already marked to "
+                    "be removed %s" % node.path)
+            # We only mark node as *removed* - real removal is done by
+            # commit method
+            self.removed.append(node)
 
     def reset(self):
         """
@@ -435,4 +468,13 @@ class BaseInMemoryChangeset(object):
         self.added = []
         self.changed = []
         self.removed = []
+
+    def commit(self, message, **kwargs):
+        """
+        Commits local (from working directory) changes and returns newly created
+        ``Changeset``. Updates repository's ``revisions`` list.
+
+        :raises ``CommitError``: if any error occurs while committing
+        """
+        raise NotImplementedError
 

@@ -54,8 +54,8 @@ class InMemoryChangesetTestMixin(object):
 
     def test_reset(self):
         self.imc.add(FileNode('foo', content='bar'))
-        self.imc.change(FileNode('baz', content='new'))
-        self.imc.remove(FileNode('qwe'))
+        #self.imc.change(FileNode('baz', content='new'))
+        #self.imc.remove(FileNode('qwe'))
         self.imc.reset()
         self.assertTrue(not any((self.imc.added, self.imc.changed,
             self.imc.removed)))

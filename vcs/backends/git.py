@@ -489,20 +489,10 @@ class GitChangeset(BaseChangeset):
 
 class GitInMemoryChangeset(BaseInMemoryChangeset):
 
-    def add(self, *filenodes):
-        #tip = self.get_changeset()
-        for node in filenodes:
-            self.added.append(node)
-
-    def change(self, *filenodes):
-        for node in filenodes:
-            self.changed.append(node)
-
-    def remove(self, *filenodes):
-        for node in filenodes:
-            self.removed.append(node)
-
     def commit(self, message, author, **kwargs):
+        """
+        Performs in-memory commit.
+        """
 
         repo = self.repository._repo
         object_store = repo.object_store
@@ -512,6 +502,7 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
             tip = None
 
         ENCODING = "UTF-8"
+
         # Create tree and populates it with blobs
         tree = tip and repo[tip._commit.tree] or objects.Tree()
         for node in self.added:
@@ -534,7 +525,7 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         commit.commit_time = commit.author_time = int(time.time())
         tz = time.timezone
         commit.commit_timezone = commit.author_timezone = tz
-        commit.encoding = 'UTF-8'
+        commit.encoding = ENCODING
         commit.message = message + ' '
 
         object_store.add_object(commit)
@@ -550,7 +541,4 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         tip = self.repository.get_changeset()
         self.reset()
         return tip
-
-    def reset(self):
-        super(GitInMemoryChangeset, self).reset()
 
