@@ -24,11 +24,9 @@ from mercurial.node import hex
 from mercurial.commands import clone, pull
 from mercurial.context import memctx, memfilectx
 
-from vcs.backends.base import BaseRepository, BaseChangeset, BaseWorkdir,\
+from vcs.backends.base import BaseRepository, BaseChangeset,\
     BaseInMemoryChangeset
-from vcs.exceptions import RepositoryError, ChangesetError, \
-    NodeDoesNotExistError,NodeAlreadyExistsError,\
-    NodeAlreadyAddedError, NodeAlreadyRemovedError
+from vcs.exceptions import RepositoryError, ChangesetError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
@@ -58,13 +56,6 @@ class MercurialRepository(BaseRepository):
         self._set_repo(create, clone_url)
         self.revisions = list(self.repo)
         self.changesets = {}
-
-
-        self.in_memory_changeset = MercurialInMemoryChangeset(self)
-        # not sure if we should pass imc to workdir instead of repository ?
-        # and then work on reference of repository in imc ?
-        self.workdir = MercurialWorkdir(self)
-        self.in_memory_changeset.set_workdir(self.workdir)
 
     @LazyProperty
     def name(self):
@@ -486,150 +477,75 @@ class MercurialChangeset(BaseChangeset):
 
 class MercurialInMemoryChangeset(BaseInMemoryChangeset):
 
-
-    def __init__(self,repository):
-        self.repository = repository
-        self.workdir = None
-        self.files_to_add = []
-        self.files_to_remove = []
-
-    def set_workdir(self,workdir):
-        self.workdir = workdir
-
-    def add(self, *filenodes):
-        try:
-            tip = self.repository.get_changeset()
-        except RepositoryError:
-            tip = None
-
-        for fn in filenodes:
-            try:
-                if tip is not None and tip.get_node(fn.path):
-                    raise NodeAlreadyExistsError('There is such a file %s in '
-                                                 'repository',fn.path)
-            except ChangesetError:
-                pass
-
-
-            if not isinstance(fn, (FileNode,)):
-                raise Exception('You must pass FileNode instance to added '
-                                ' files list got %s instead',type(fn))
-
-            #remove a file from removed if we set add afterwards
-            if fn.path in [added_filenode.path for added_filenode
-                           in self.workdir.added_cache.values()]:
-                raise NodeAlreadyAddedError('Such FileNode %s is already'
-                                            ' marked for addition',fn.path)
-
-            if fn.path in [removed_filenode.path for removed_filenode
-                           in self.workdir.removed_cache.values()]:
-                raise NodeAlreadyRemovedError('Such FileNode %s is already'
-                                              ' marked for removal',fn.path)
-
-            self.workdir.added_cache[fn.path] = fn
-
-        self.files_to_add = sorted([node.path for node in filenodes])
-
-
-    def remove(self, *filenodes):
-
-        try:
-            tip = self.repository.get_changeset()
-        except RepositoryError:
-            raise
-
-        for fn in filenodes:
-            if tip is not None:
-                try:
-                    tip.get_node(fn.path)
-                except ChangesetError:
-                    raise NodeDoesNotExistError('There is no such %s a file in '
-                                                ' repository',fn.path)
-
-            if not isinstance(fn, (FileNode,)):
-                raise Exception('You must pass FileNode instance to removed '
-                                ' files list got %s instead',type(fn))
-
-            if fn.path in [removed_filenode.path for removed_filenode
-                           in self.workdir.removed_cache.values()]:
-                raise NodeAlreadyRemovedError('Such FileNode %s is already marked'
-                                         ' for removal',fn.path)
-
-            if fn.path in [added_filenode.path for added_filenode
-                           in self.workdir.added_cache.values()]:
-                raise NodeAlreadyAddedError('Such FileNode %s is already marked'
-                                       ' for addition',fn.path)
-
-            self.workdir.removed_cache[fn.path] = fn
-
-        self.files_to_remove = sorted([node.path for node in filenodes])
-
-
-class MercurialWorkdir(BaseWorkdir):
-
-
-    def __init__(self, repository):
-        self.repository = repository
-        self.imc = self.repository.in_memory_changeset
-        self.added_cache = {}
-        self.removed_cache = {}
-        self.changed_cache = {}
-
-
-    def get_added(self):
-        return self.added_cache
-
-    def get_removed(self):
-        return self.removed_cache
-
-    def get_changed(self):
-        return self.changed_cache
-
-    def commit(self, message, **kwargs):
-
+    def commit(self, message, author, **kwargs):
+        author = safe_unicode(author)
         try:
             tip = self.repository.get_changeset()
         except RepositoryError:
             tip = None
 
         def filectxfn(repo, memctx, path):
+            """
+            Marks given path as added/changed/removed in a given repo. This is
+            for internal mercurial commit function.
+            """
 
-            #check if this path is removed
-            if path in [node_path for node_path in self.imc.files_to_remove]:
+            # check if this path is removed
+            if path in (node.path for node in self.removed):
+                # Raising exception is a way to mark node for removal
                 raise IOError(errno.ENOENT, '%s is deleted' % path)
 
-            #check if this path is added
-            elif path in [node_path for node_path in self.imc.files_to_add]:
-                filenode = self.added_cache[path]
-                return memfilectx(path=filenode.path,
-                              data=filenode.content,
-                              islink=False,
-                              isexec=False,
-                              copied=False)
+            # check if this path is added
+            for node in self.added:
+                if node.path == path:
+                    return memfilectx(path=node.path,
+                        data=node.content,
+                        islink=False,
+                        isexec=False,
+                        copied=False)
 
+            # or changed
+            for node in self.changed:
+                if node.path == path:
+                    return memfilectx(path=node.path,
+                        data=node.content,
+                        islink=False,
+                        isexec=False,
+                        copied=False)
 
+            raise RepositoryError("Given path haven't been marked as added,"
+                "changed or removed (%s)" % path)
 
-
-        parent1 = tip._ctx.node() if tip else None
+        parent1 = tip and tip._ctx.node() or None
         parent2 = None
-        user = kwargs.get('user') or kwargs.get('author') or self.contact
 
-        self.commit_ctx = memctx(repo=self.repository.repo,
-                                 parents=(parent1, parent2,),
-                                 text='',
-                                 files=self.imc.files_to_add\
-                                 +self.imc.files_to_remove,
-                                 filectxfn=filectxfn,
-                                 user=user,
-                                 date=kwargs.get('date', None),
-                                 extra=kwargs)
-        #injecting given repo params
-        self.commit_ctx._text = message
-        self.commit_ctx._user = kwargs.get('user', None)
-        self.commit_ctx._date = kwargs.get('date', None)
+        commit_ctx = memctx(repo=self.repository.repo,
+            parents=(parent1, parent2),
+            text='',
+            files=self.get_paths(),
+            filectxfn=filectxfn,
+            user=author,
+            date=kwargs.get('date', None),
+            extra=kwargs)
 
-        self.repository.repo.commitctx(self.commit_ctx)
+        # injecting given repo params
+        commit_ctx._text = message
+        commit_ctx._user = author
+        commit_ctx._date = kwargs.get('date', None)
 
+        # TODO: Catch exceptions!
+        self.repository.repo.commitctx(commit_ctx) # Returns mercurial node
+        self._commit_ctx = commit_ctx # For reference
+
+        # Update vcs repository object & recreate mercurial repo
+        new_id = tip and self.repository.revisions[-1] + 1 or 0
+        self.repository.revisions.append(new_id)
+        self.repository._set_repo(create=False)
+        self.repository.changesets.pop(None, None)
+        self.repository.changesets.pop('tip', None)
+        tip = self.repository.get_changeset()
+        self.reset()
+        return tip
 
 
 if __name__ == '__main__':

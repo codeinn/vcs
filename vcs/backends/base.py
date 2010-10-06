@@ -8,6 +8,8 @@ Created on Apr 8, 2010
 
 @author: marcink,lukaszb
 """
+from itertools import chain
+
 from vcs.utils.lazy import LazyProperty
 from vcs.exceptions import ChangesetError
 from vcs.exceptions import RepositoryError
@@ -409,7 +411,8 @@ class BaseInMemoryChangeset(object):
             tip = None
         for node in filenodes:
             if node.path in (n.path for n in self.added):
-                raise NodeAlreadyAddedError(str(node.path))
+                raise NodeAlreadyAddedError("Such FileNode %s is already "
+                    "marked for addition" % node.path)
             if tip:
                 try:
                     tip.get_node(node.path)
@@ -429,6 +432,9 @@ class BaseInMemoryChangeset(object):
         """
         tip = self.repository.get_changeset()
         for node in filenodes:
+            if node.path in (n.path for n in self.changed):
+                raise NodeAlreadyExistsError("Such FileNode %s is already "
+                    "marked as changed" % node.path)
             try:
                 old = tip.get_node(node.path)
                 if old.content == node.content:
@@ -455,7 +461,7 @@ class BaseInMemoryChangeset(object):
                 raise NodeDoesNotExistError(str(node.path))
             if node.path in (n.path for n in self.removed):
                 raise NodeAlreadyRemovedError("Node is already marked to "
-                    "be removed %s" % node.path)
+                    "for removal %s" % node.path)
             # We only mark node as *removed* - real removal is done by
             # commit method
             self.removed.append(node)
@@ -468,6 +474,20 @@ class BaseInMemoryChangeset(object):
         self.added = []
         self.changed = []
         self.removed = []
+
+    def get_ipaths(self):
+        """
+        Returns generator of paths from nodes marked as added, changed or
+        removed.
+        """
+        for node in chain(self.added, self.changed, self.removed):
+            yield node.path
+
+    def get_paths(self):
+        """
+        Returns list of paths from nodes marked as added, changed or removed.
+        """
+        return list(self.get_ipaths())
 
     def commit(self, message, **kwargs):
         """

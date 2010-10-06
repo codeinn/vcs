@@ -295,13 +295,13 @@ class FileNode(Node):
         Returns True if file has binary content.
         """
         return bool(self.content and '\0' in self.content)
-    
+
     @LazyProperty
     def extension(self):
         """Returns filenode extension"""
         return self.name.split('.')[-1]
-        
-    
+
+
 class RemovedFileNode(FileNode):
     """
     Dummy FileNode class - trying to access any public attribute except path,
@@ -427,9 +427,9 @@ class DirNode(Node):
         for root, dirs, files in self.changeset.repository.walk(self.path):
             for f in files:
                 size += f.size
-                
+
         return size
-        
+
 class RootNode(DirNode):
     """
     DirNode being the root node of the repository.
