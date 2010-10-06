@@ -264,7 +264,7 @@ class FileNode(Node):
         """
         Returns a list of changeset for this file in which the file was changed
         """
-        if self.changeset == None:
+        if self.changeset is None:
             raise NodeError('Unable to get changeset for this FileNode')
         return self.changeset.get_file_history(self.path)
 
@@ -273,7 +273,7 @@ class FileNode(Node):
         """
         Returns a list of three element tuples with lineno,changeset and line
         """
-        if self.changeset == None:
+        if self.changeset is None:
             raise NodeError('Unable to get changeset for this FileNode')
         return self.changeset.get_file_annotate(self.path)
 
@@ -295,13 +295,13 @@ class FileNode(Node):
         Returns True if file has binary content.
         """
         return bool(self.content and '\0' in self.content)
-    
+
     @LazyProperty
     def extension(self):
         """Returns filenode extension"""
         return self.name.split('.')[-1]
-        
-    
+
+
 class RemovedFileNode(FileNode):
     """
     Dummy FileNode class - trying to access any public attribute except path,
@@ -427,9 +427,9 @@ class DirNode(Node):
         for root, dirs, files in self.changeset.repository.walk(self.path):
             for f in files:
                 size += f.size
-                
+
         return size
-        
+
 class RootNode(DirNode):
     """
     DirNode being the root node of the repository.

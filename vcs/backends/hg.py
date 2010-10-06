@@ -14,6 +14,7 @@ import time
 import urllib2
 import datetime
 import posixpath
+import errno
 
 from mercurial import ui
 from mercurial.context import short
@@ -21,8 +22,10 @@ from mercurial.error import RepoError, RepoLookupError, Abort
 from mercurial.localrepo import localrepository
 from mercurial.node import hex
 from mercurial.commands import clone, pull
+from mercurial.context import memctx, memfilectx
 
-from vcs.backends.base import BaseRepository, BaseChangeset
+from vcs.backends.base import BaseRepository, BaseChangeset,\
+    BaseInMemoryChangeset
 from vcs.exceptions import RepositoryError, ChangesetError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.lazy import LazyProperty
@@ -107,6 +110,10 @@ class MercurialRepository(BaseRepository):
                 msg = "Not valid repository at %s. Original error was %s"\
                     % (self.path, err)
             raise RepositoryError(msg)
+
+    @LazyProperty
+    def in_memory_changeset(self):
+        return MercurialInMemoryChangeset(self)
 
     @LazyProperty
     def description(self):
@@ -195,8 +202,8 @@ class MercurialRepository(BaseRepository):
         Return last n number of ``MercurialChangeset`` specified by limit
         attribute if None is given whole list of revisions is returned
 
-        @param limit: int limit or None
-        @param offset: int offset
+        :param limit: int limit or None
+        :param offset: int offset
         """
         count = self.count()
         offset = offset or 0
@@ -221,6 +228,7 @@ class MercurialRepository(BaseRepository):
         except Abort, err:
             # Propagate error but with vcs's type
             raise RepositoryError(str(err))
+
 
 class MercurialChangeset(BaseChangeset):
     """
@@ -462,4 +470,78 @@ class MercurialChangeset(BaseChangeset):
                 node = RemovedFileNode(path=path)
                 removed_nodes.append(node)
         return removed_nodes
+
+
+
+class MercurialInMemoryChangeset(BaseInMemoryChangeset):
+
+    def commit(self, message, author, **kwargs):
+        author = safe_unicode(author)
+        try:
+            tip = self.repository.get_changeset()
+        except RepositoryError:
+            tip = None
+
+        def filectxfn(repo, memctx, path):
+            """
+            Marks given path as added/changed/removed in a given repo. This is
+            for internal mercurial commit function.
+            """
+
+            # check if this path is removed
+            if path in (node.path for node in self.removed):
+                # Raising exception is a way to mark node for removal
+                raise IOError(errno.ENOENT, '%s is deleted' % path)
+
+            # check if this path is added
+            for node in self.added:
+                if node.path == path:
+                    return memfilectx(path=node.path,
+                        data=node.content,
+                        islink=False,
+                        isexec=False,
+                        copied=False)
+
+            # or changed
+            for node in self.changed:
+                if node.path == path:
+                    return memfilectx(path=node.path,
+                        data=node.content,
+                        islink=False,
+                        isexec=False,
+                        copied=False)
+
+            raise RepositoryError("Given path haven't been marked as added,"
+                "changed or removed (%s)" % path)
+
+        parent1 = tip and tip._ctx.node() or None
+        parent2 = None
+
+        commit_ctx = memctx(repo=self.repository.repo,
+            parents=(parent1, parent2),
+            text='',
+            files=self.get_paths(),
+            filectxfn=filectxfn,
+            user=author,
+            date=kwargs.get('date', None),
+            extra=kwargs)
+
+        # injecting given repo params
+        commit_ctx._text = message
+        commit_ctx._user = author
+        commit_ctx._date = kwargs.get('date', None)
+
+        # TODO: Catch exceptions!
+        self.repository.repo.commitctx(commit_ctx) # Returns mercurial node
+        self._commit_ctx = commit_ctx # For reference
+
+        # Update vcs repository object & recreate mercurial repo
+        new_id = tip and self.repository.revisions[-1] + 1 or 0
+        self.repository.revisions.append(new_id)
+        self.repository._set_repo(create=False)
+        self.repository.changesets.pop(None, None)
+        self.repository.changesets.pop('tip', None)
+        tip = self.repository.get_changeset()
+        self.reset()
+        return tip
 

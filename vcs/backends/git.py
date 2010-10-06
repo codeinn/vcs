@@ -4,21 +4,20 @@
 # Copyright (c) 2010 Marcin Kuzminski,Lukasz Balcerzak.  All rights reserved.
 #
 """
-Created on May 21, 2010
-
-:author: marcink,lukaszb
+Git backend implementation.
 """
-
 import os
 import re
-import datetime
 import time
+import datetime
 
 from subprocess import Popen, PIPE
 
 from itertools import chain
 
-from vcs.backends.base import BaseRepository, BaseChangeset
+from vcs.backends.base import BaseRepository
+from vcs.backends.base import BaseChangeset
+from vcs.backends.base import BaseInMemoryChangeset
 from vcs.exceptions import RepositoryError, ChangesetError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.paths import abspath
@@ -42,6 +41,7 @@ class GitRepository(BaseRepository):
             self.head = self._repo.head()
         except KeyError:
             self.head = None
+        self.revisions = self._get_all_revisions()
         self.changesets = {}
 
     @LazyProperty
@@ -210,7 +210,7 @@ class GitRepository(BaseRepository):
         """
         Return last n number of ``MercurialChangeset`` specified by limit
         attribute if None is given whole list of revisions is returned
-        @param limit: int limit or None
+        :param limit: int limit or None
         """
         count = self.count()
         offset = offset or 0
@@ -226,12 +226,19 @@ class GitRepository(BaseRepository):
             id = self.revisions[rev_index]
             yield self.get_changeset(id)
 
+    @LazyProperty
+    def in_memory_changeset(self):
+        """
+        Returns ``GitInMemoryChangeset`` object for this repository.
+        """
+        return GitInMemoryChangeset(self)
+
     def pull(self, url):
         """
         Tries to pull changes from external location.
         """
         url = self._get_url(url)
-        cmd = 'pull %s master' % url
+        cmd = 'pull "%s" master' % url
         # If error occurs run_git_command raises RepositoryError already
         self.run_git_command(cmd)
 
@@ -393,7 +400,7 @@ class GitChangeset(BaseChangeset):
         which is generally not good. Should be replaced with algorithm
         iterating commits.
         """
-        cmd = 'log --name-status -p %s -- %s | grep "^commit"' % (self.id, path)
+        cmd = 'log --name-status -p %s -- "%s" | grep "^commit"' % (self.id, path)
         so, se = self.repository.run_git_command(cmd)
         ids = re.findall(r'\w{40}', so)
         return [self.repository.get_changeset(id) for id in ids]
@@ -406,7 +413,7 @@ class GitChangeset(BaseChangeset):
         generally not good. Should be replaced with algorithm iterating
         commits.
         """
-        cmd = 'blame -l --root -r %s -- %s' % (self.id, path)
+        cmd = 'blame -l --root -r %s -- "%s"' % (self.id, path)
         # -l     ==> outputs long shas (and we need all 40 characters)
         # --root ==> doesn't put '^' character for bounderies
         # -r sha ==> blames for the given revision
@@ -529,4 +536,60 @@ class GitChangeset(BaseChangeset):
             removed_nodes.append(node)
 
         return removed_nodes
+
+
+class GitInMemoryChangeset(BaseInMemoryChangeset):
+
+    def commit(self, message, author, **kwargs):
+        """
+        Performs in-memory commit.
+        """
+
+        repo = self.repository._repo
+        object_store = repo.object_store
+        try:
+            tip = self.repository.get_changeset()
+        except RepositoryError:
+            tip = None
+
+        ENCODING = "UTF-8"
+
+        # Create tree and populates it with blobs
+        tree = tip and repo[tip._commit.tree] or objects.Tree()
+        for node in self.added:
+            blob = objects.Blob.from_string(node.content.encode(ENCODING))
+            tree.add(0100644, node.path, blob.id)
+            object_store.add_object(blob)
+        for node in self.changed:
+            blob = objects.Blob.from_string(node.content.encode(ENCODING))
+            tree[node.path] = blob.id
+            object_store.add_object(blob)
+        for node in self.removed:
+            del tree[node.path]
+        object_store.add_object(tree)
+
+        # Create commit
+        commit = objects.Commit()
+        commit.tree = tree.id
+        commit.parents = tip and [tip] or []
+        commit.author = commit.committer = author
+        commit.commit_time = commit.author_time = int(time.time())
+        tz = time.timezone
+        commit.commit_timezone = commit.author_timezone = tz
+        commit.encoding = ENCODING
+        commit.message = message + ' '
+
+        object_store.add_object(commit)
+
+        ref = 'refs/heads/master'
+        repo.refs[ref] = commit.id
+        repo.refs['HEAD'] = commit.id
+
+        # Update vcs repository object & recreate dulwich repo
+        self.repository.revisions.append(commit.id)
+        self.repository._repo = Repo(self.repository.path)
+        self.repository.changesets.pop(None, None)
+        tip = self.repository.get_changeset()
+        self.reset()
+        return tip
 

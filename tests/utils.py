@@ -3,7 +3,7 @@ Utilities for tests only. These are not or should not be used normally -
 functions here are crafted as we don't want to use ``vcs`` to verify tests.
 """
 import os
-import os.path
+import re
 import sys
 
 from subprocess import Popen
@@ -72,4 +72,40 @@ class SCMFetcher(object):
         remote = self.remote_repo
         eprint("Fetching repository %s into %s" % (remote, self.test_repo_path))
         run_command(self.clone_cmd,  '%s %s' % (remote, self.test_repo_path))
+
+def get_normalized_path(path):
+    """
+    If given path exists, new path would be generated and returned. Otherwise
+    same whats given is returned. Assumes that there would be no more than
+    10000 same named files.
+    """
+    if os.path.exists(path):
+        dir, basename = os.path.split(path)
+        splitted_name = basename.split('.')
+        if len(splitted_name) > 1:
+            ext = splitted_name[-1]
+        else:
+            ext = None
+        name = '.'.join(splitted_name[:-1])
+        matcher = re.compile(r'^.*-(\d{5})$')
+        start = 0
+        m = matcher.match(name)
+        if not m:
+            # Haven't append number yet so return first
+            newname = '%s-00000' % name
+            newpath = os.path.join(dir, newname)
+            if ext:
+                newpath = '.'.join((newpath, ext))
+            return get_normalized_path(newpath)
+        else:
+            start = int(m.group(1)[-5:]) + 1
+            for x in xrange(start, 10000):
+                newname = name[:-5] + str(x).rjust(5, '0')
+                newpath = os.path.join(dir, newname)
+                if ext:
+                    newpath = '.'.join((newpath, ext))
+                if not os.path.exists(newpath):
+                    return newpath
+        raise VCSTestError("Couldn't compute new path for %s" % path)
+    return path
 
