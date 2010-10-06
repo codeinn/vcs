@@ -6,20 +6,21 @@ Welcome to vcs's documentation!
 ``vcs`` is abstraction layer over various version control systems. It is
 designed as feature-rich Python_ library with clear :ref:`API`. 
 
-.. note::
-   Currently only Mercurial_ backend is being developed. Git_ is going to be
-   second backend.
+vcs uses `Semantic Versioning <http://semver.org/>`_
 
 **Features**
 
-- Common :ref:`API` for SCM backends
+- Common :ref:`API <API>` for SCM :ref:`backends <api-backends>`
 - Fetching repositories data lazily
 - Simple caching mechanism so we don't hit repo too often
+- Command line client (still basic)
 
 **Incoming**
 
 - Django_ app for mercurial_ hgserve replacement
-- Command line client
+- Simple commit api
+- Smart and powerfull in memory Workdirs
+- VCS based wiki
 
 Documentation
 =============

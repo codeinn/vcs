@@ -22,6 +22,7 @@ from vcs.exceptions import RepositoryError, ChangesetError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.paths import abspath
 from vcs.utils.lazy import LazyProperty
+from vcs.utils import safe_unicode
 
 from dulwich.repo import Repo, NotGitRepository
 from dulwich import objects
@@ -31,17 +32,24 @@ class GitRepository(BaseRepository):
     Git repository backend
     """
 
-    def __init__(self, repo_path, create=False):
+    def __init__(self, repo_path, create=False, clone_url=None):
 
         self.path = abspath(repo_path)
         self.changesets = {}
-        self._set_repo(create)
+        self._set_repo(create, clone_url)
         try:
             self.head = self._repo.head()
         except KeyError:
             self.head = None
         self.revisions = self._get_all_revisions()
         self.changesets = {}
+
+    @LazyProperty
+    def revisions(self):
+        """
+        Being lazy attribute allows external tools to inject shas from cache.
+        """
+        return self._get_all_revisions()
 
     def run_git_command(self, cmd):
         """
@@ -54,12 +62,12 @@ class GitRepository(BaseRepository):
            os command's output is road to hell...
 
         :param cmd: git command
-        :param repo_path: if given, command would prefixed with
+        :param repo_path: if given, command would be prefixed with
           --git-dir=repo_path/.git (note that ".git" is always appended
         """
-        cmd = '--git-dir=%s %s' % (os.path.join(self.path, '.git'), cmd)
+        cmd = '(cd %s && git %s)' % (self.path, cmd)
         try:
-            p = Popen('git %s' % cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         except OSError, err:
             raise RepositoryError("Couldn't run git command (%s).\n"
                 "Original error was:%s" % (cmd, err))
@@ -70,7 +78,7 @@ class GitRepository(BaseRepository):
                 "stderr:\n%s" % (cmd, se))
         return so, se
 
-    def _set_repo(self, create):
+    def _set_repo(self, create, clone_url=None):
         if create and os.path.exists(self.path):
             raise RepositoryError("Location already exist")
         try:
@@ -79,6 +87,8 @@ class GitRepository(BaseRepository):
                 self._repo = Repo.init(self.path)
             else:
                 self._repo = Repo(self.path)
+            if clone_url:
+                self.pull(clone_url)
         except (NotGitRepository, OSError), err:
             raise RepositoryError(str(err))
 
@@ -90,20 +100,49 @@ class GitRepository(BaseRepository):
         return revisions
 
     def _get_revision(self, revision):
+        """
+        For git backend we always return integer here. This way we ensure
+        that changset's revision attribute would become integer.
+        """
         if len(self.revisions) == 0:
             raise RepositoryError("There are no changesets yet")
         if revision in (None, 'tip', 'HEAD', 'head', -1):
-            return self.revisions[-1]
-        if isinstance(revision, (str, unicode)):
+            #return self.revisions[-1]
+            revision = len(self.revisions) - 1
+        if isinstance(revision, (str, unicode)) and revision.isdigit() \
+            and len(revision) < 12:
+            revision = int(revision)
+        if isinstance(revision, int) and (
+            revision < 0 or revision >= len(self.revisions)):
+                raise RepositoryError("Revision %r does not exist for this "
+                    "repository %s" % (revision, self))
+        elif isinstance(revision, (str, unicode)):
             pattern = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
             if not pattern.match(revision):
                 raise RepositoryError("Revision %r does not exist for this "
                     "repository %s" % (revision, self))
-            return revision
-        raise RepositoryError("Given revision %r not recognized" % revision)
+            try:
+                revision = self.revisions.index(revision)
+            except ValueError:
+                raise RepositoryError("Revision %r does not exist for this "
+                    "repository %s" % (revision, self))
+        # Ensure we return integer
+        if not isinstance(revision, int):
+            raise RepositoryError("Given revision %r not recognized" % revision)
+        return revision
 
     def _get_tree(self, id):
         return self._repo[id]
+
+    def _get_url(self, url):
+        """
+        Returns normalized url. If schema is not given, would fall to filesystem
+        (``file://``) schema.
+        """
+        url = str(url)
+        if url != 'default' and not '://' in url:
+            url = '://'.join(('file', url))
+        return url
 
     @LazyProperty
     def name(self):
@@ -163,6 +202,8 @@ class GitRepository(BaseRepository):
         if not self.changesets.has_key(revision):
             changeset = GitChangeset(repository=self, revision=revision)
             self.changesets[changeset.revision] = changeset
+            self.changesets[changeset.raw_id] = changeset
+            self.changesets[changeset.short_id] = changeset
         return self.changesets[revision]
 
     def get_changesets(self, limit=10, offset=None):
@@ -192,6 +233,15 @@ class GitRepository(BaseRepository):
         """
         return GitInMemoryChangeset(self)
 
+    def pull(self, url):
+        """
+        Tries to pull changes from external location.
+        """
+        url = self._get_url(url)
+        cmd = 'pull "%s" master' % url
+        # If error occurs run_git_command raises RepositoryError already
+        self.run_git_command(cmd)
+
 
 class GitChangeset(BaseChangeset):
     """
@@ -201,15 +251,18 @@ class GitChangeset(BaseChangeset):
     def __init__(self, repository, revision):
         self.repository = repository
         self.revision = repository._get_revision(revision)
+        self.raw_id = self.repository.revisions[revision]
+        self.short_id = self.raw_id[:12]
+        self.id = self.raw_id
         try:
-            commit = self.repository._repo.get_object(revision)
+            commit = self.repository._repo.get_object(self.raw_id)
         except KeyError:
-            raise RepositoryError("Cannot get object with id %s" % revision)
+            raise RepositoryError("Cannot get object with id %s" % self.raw_id)
         self._commit = commit
         self._tree_id = commit.tree
-        self.author = unicode(commit.committer)
+        self.author = safe_unicode(commit.committer)
         try:
-            self.message = unicode(commit.message[:-1]) # Always strip last eol
+            self.message = safe_unicode(commit.message[:-1]) # Always strip last eol
         except UnicodeDecodeError:
             self.message = commit.message[:-1].decode(commit.encoding
                 or 'utf-8')
@@ -218,8 +271,6 @@ class GitChangeset(BaseChangeset):
         self.date = datetime.datetime.fromtimestamp(commit.commit_time)
         #tree = self.repository.get_object(self._tree_id)
         self.nodes = {}
-        self.id = revision
-        self.raw_id = revision
         self._paths = {}
 
     @LazyProperty
@@ -349,7 +400,7 @@ class GitChangeset(BaseChangeset):
         which is generally not good. Should be replaced with algorithm
         iterating commits.
         """
-        cmd = 'log --name-status -p %s -- %s | grep "^commit"' % (self.id, path)
+        cmd = 'log --name-status -p %s -- "%s" | grep "^commit"' % (self.id, path)
         so, se = self.repository.run_git_command(cmd)
         ids = re.findall(r'\w{40}', so)
         return [self.repository.get_changeset(id) for id in ids]
@@ -362,7 +413,7 @@ class GitChangeset(BaseChangeset):
         generally not good. Should be replaced with algorithm iterating
         commits.
         """
-        cmd = 'blame %s -l --root -r %s' % (path, self.id)
+        cmd = 'blame -l --root -r %s -- "%s"' % (self.id, path)
         # -l     ==> outputs long shas (and we need all 40 characters)
         # --root ==> doesn't put '^' character for bounderies
         # -r sha ==> blames for the given revision
@@ -370,7 +421,7 @@ class GitChangeset(BaseChangeset):
         annotate = []
         for i, blame_line in enumerate(so.split('\n')[:-1]):
             ln_no = i + 1
-            id, line = re.split(r' \(.+?\) ', blame_line)
+            id, line = re.split(r' \(.+?\) ', blame_line, 1)
             annotate.append((ln_no, self.repository.get_changeset(id), line))
         return annotate
 

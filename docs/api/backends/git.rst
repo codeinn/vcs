@@ -1,20 +1,20 @@
-.. _api-backends-hg:
+.. _api-backends-git:
 
-Mercurial Backend
-=================
+Git Backend
+===========
 
-.. automodule:: vcs.backends.hg
+.. automodule:: vcs.backends.git
 
-MercurialRepository
--------------------
+GitRepository
+-------------
 
-.. autoclass:: vcs.backends.hg.MercurialRepository
+.. autoclass:: vcs.backends.git.GitRepository
    :members:
 
-MercurialChangeset
-------------------
+GitChangeset
+------------
 
-.. autoclass:: vcs.backends.hg.MercurialChangeset
+.. autoclass:: vcs.backends.git.GitChangeset
    :members:
    :inherited-members:
    :undoc-members:
@@ -22,11 +22,11 @@ MercurialChangeset
 
    .. autoattribute:: id
 
-      Returns shorter version of mercurial's changeset hexes.
+      Returns same as ``raw_id`` attribute.
 
    .. autoattribute:: raw_id
 
-      Returns raw string identifing this changeset (40-length hex)
+      Returns raw string identifing this changeset (40-length sha)
 
    .. autoattribute:: short_id
 

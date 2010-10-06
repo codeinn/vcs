@@ -12,13 +12,14 @@ Requirements
 
 Below is a table which shows requirements for each backend.
 
-+------------+--------------------+--------+-------------------+
-| SCM        | Backend            | Alias  | Requirements      |
-+============+====================+========+===================+
-| Mercurial_ | ``vcs.backend.hg`` | ``hg`` | mercurial_ >= 1.5 |
-+------------+--------------------+--------+-------------------+
-
-.. _mercurial: http://mercurial.selenic.com/
++------------+---------------------+---------+---------------------+
+| SCM        | Backend             | Alias   | Requirements        |
++============+=====================+=========+=====================+
+| Mercurial_ | ``vcs.backend.hg``  | ``hg``  | - mercurial_ >= 1.6 |
++------------+---------------------+---------+---------------------+
+| Git_       | ``vcs.backend.git`` | ``git`` | - git_ >= 1.7       |
+|            |                     |         | - Dulwich_ >= 0.6   |
++------------+---------------------+---------+---------------------+
 
 Install from Cheese Shop
 ------------------------
@@ -39,23 +40,25 @@ http://pypi.python.org/pypi/vcs, decompress archive and run::
 Development
 -----------
 
-In order to test the package you'd need all backends underlying libraries (see
-table above) and nose_ as we use it to run test suites. Moreover, as ``vcs``
-comes with some extra packages (i.e. ``vcs.web.simplevcs``) which relies on
-external packages you'd need them too.
+In order to test the package you'd need all backends' underlying libraries (see
+table above) and unittest2_ as we use it to run test suites.
 
 Here is a full list of packages needed to run test suite:
 
 +-----------+---------------------------------------+
 | Package   | Homepage                              |
 +===========+=======================================+
-| nose      | http://code.google.com/p/python-nose/ |
+| unittest2 | http://pypi.python.org/pypi/unittest2 |
 +-----------+---------------------------------------+
 | mercurial | http://mercurial.selenic.com/         |
 +-----------+---------------------------------------+
-| django    | http://www.djangoproject.com/         |
+| git       | http://git-scm.com                    |
++-----------+---------------------------------------+
+| dulwich   | http://pypi.python.org/pypi/dulwich   |
 +-----------+---------------------------------------+
 
-
-.. _nose: http://code.google.com/p/python-nose/
+.. _unittest2: http://pypi.python.org/pypi/unittest2
+.. _git: http://git-scm.com
+.. _dulwich: http://pypi.python.org/pypi/dulwich
+.. _mercurial: http://mercurial.selenic.com/
 

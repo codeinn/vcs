@@ -97,7 +97,7 @@ Now let's ask for nodes at revision 44
    If you have to check this to believe, you may get raw id of the changeset and
    open browser on same changeset at bitbucket::
 
-      >>> print root.changeset.raw_id
+      >>> print root.changeset.short_id
       a0eada0b9e4e
 
    This show us that 44 revision has hex of (shorter version): ``a0eada0b9e4e``

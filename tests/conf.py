@@ -41,5 +41,5 @@ def get_new_dir(title):
 
 
 PACKAGE_DIR = os.path.abspath(os.path.join(
-    os.path.basename(__file__), '..'))
+    os.path.dirname(__file__), '..'))
 

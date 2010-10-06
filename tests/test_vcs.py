@@ -1,10 +1,10 @@
-import unittest
+import unittest2
 
 from vcs import VCSError, get_repo, get_backend
 from vcs.backends.hg import MercurialRepository
-from tests.conf import TEST_HG_REPO
+from conf import TEST_HG_REPO
 
-class VCSTest(unittest.TestCase):
+class VCSTest(unittest2.TestCase):
     """
     Tests for main module's methods.
     """
@@ -25,7 +25,4 @@ class VCSTest(unittest.TestCase):
 
         self.assertEqual(repo.__class__, get_repo(alias, path).__class__)
         self.assertEqual(repo.path, get_repo(alias, path).path)
-
-if __name__ == '__main__':
-    unittest.main()
 

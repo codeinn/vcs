@@ -10,7 +10,7 @@ if not set(AVAILABLE_BACKENDS).issubset(set(BACKENDS.keys())):
         "VCS_AVAILABLE_BACKENDS setting.\nAvailable aliases:\n%s"
         % pformat(BACKENDS.keys()))
 
-PUSH_SSL = getattr(settings, 'DEBUG', False) and 'false' or 'true'
+PUSH_SSL = getattr(settings, 'VCS_HG_PUSH_SSL', False) and 'true' or 'false'
 
 BASIC_AUTH_REALM = getattr(settings, 'VCS_BASIC_AUTH_REALM', 'Basic Auth Realm')
 

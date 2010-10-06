@@ -65,11 +65,13 @@ class MercurialRepository(BaseRepository):
     def branches(self):
         if not self.revisions:
             return {}
-        sortkey = lambda ctx: ctx[1]._ctx.rev()
+        
+        sortkey = lambda ctx: ('close' not in ctx[1]._ctx.extra(),
+                               ctx[1]._ctx.rev())
         s_branches = sorted([(name, self.get_changeset(short(head))) for
             name, head in self.repo.branchtags().items()], key=sortkey,
             reverse=True)
-        return OrderedDict((name, cs.raw_id) for name, cs in s_branches)
+        return OrderedDict((name, cs.short_id) for name, cs in s_branches)
 
     @LazyProperty
     def tags(self):
@@ -79,7 +81,7 @@ class MercurialRepository(BaseRepository):
         sortkey = lambda ctx: ctx[1]._ctx.rev()
         s_tags = sorted([(name, self.get_changeset(short(head))) for
             name, head in self.repo.tags().items()], key=sortkey, reverse=True)
-        return OrderedDict((name, cs.raw_id) for name, cs in s_tags)
+        return OrderedDict((name, cs.short_id) for name, cs in s_tags)
 
     def _set_repo(self, create, clone_url=None):
         """
@@ -191,8 +193,8 @@ class MercurialRepository(BaseRepository):
         if not self.changesets.has_key(revision):
             changeset = MercurialChangeset(repository=self, revision=revision)
             self.changesets[changeset.revision] = changeset
-            self.changesets[changeset._hex] = changeset
-            self.changesets[changeset._short] = changeset
+            self.changesets[changeset.raw_id] = changeset
+            self.changesets[changeset.short_id] = changeset
         return self.changesets[revision]
 
     def get_changesets(self, limit=10, offset=None):
@@ -258,18 +260,10 @@ class MercurialChangeset(BaseChangeset):
         return self._dir_paths + self._file_paths
 
     @LazyProperty
-    def _hex(self):
-        return self._ctx.hex()
-
-    @LazyProperty
-    def _short(self):
-        return safe_unicode(short(self._ctx.node()))
-
-    @LazyProperty
     def id(self):
         if self.last:
             return u'tip'
-        return self._short
+        return self.short_id
 
     @LazyProperty
     def raw_id(self):
@@ -277,7 +271,11 @@ class MercurialChangeset(BaseChangeset):
         Returns raw string identifing this changeset, useful for web
         representation.
         """
-        return self._short
+        return self._ctx.hex()
+
+    @LazyProperty
+    def short_id(self):
+        return self.raw_id[:12]
 
     @LazyProperty
     def parents(self):
