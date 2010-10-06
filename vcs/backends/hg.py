@@ -547,24 +547,3 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         self.reset()
         return tip
 
-
-if __name__ == '__main__':
-    c = False
-    if c:
-        import shutil
-        shutil.rmtree('/tmp/wiki')
-    repo = MercurialRepository('/tmp/wiki',create=c)
-
-    #repo.in_memory_changeset.add(FileNode('wikifile.rst', content='a large file'))
-    repo.in_memory_changeset.remove(FileNode('wikifile.rst', content='a large file'))
-    #repo.add(FileNode('wikifile.rst', content='a large file'))
-    repo.in_memory_changeset.add(FileNode('wikifile1.rst', content='file1'),
-              FileNode('wikifile2.rst', content='file2'),
-              FileNode('wikifile3.rst', content='file2'),
-            )
-
-
-    print repo.workdir.get_added()
-    print repo.workdir.get_changed()
-
-    #repo.workdir.commit('added wikipage', user='marcink <m@m.pl>')
