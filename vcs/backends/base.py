@@ -432,6 +432,13 @@ class BaseWorkdir(object):
         """
         raise NotImplementedError
 
+    def get_status(self):
+        """
+        Returns dict with ``added``, ``changed``, ``removed`` and ``untracked``
+        lists.
+        """
+        raise NotImplementedError
+
     def commit(self, message, **kwargs):
         """
         Commits local (from working directory) changes and returns newly created
