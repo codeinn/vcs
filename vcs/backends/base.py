@@ -11,11 +11,12 @@ Created on Apr 8, 2010
 from itertools import chain
 
 from vcs.utils.lazy import LazyProperty
+from vcs.exceptions import EmptyRepositoryError
 from vcs.exceptions import ChangesetError
-from vcs.exceptions import RepositoryError
 from vcs.exceptions import NodeAlreadyAddedError
 from vcs.exceptions import NodeAlreadyExistsError
 from vcs.exceptions import NodeAlreadyRemovedError
+from vcs.exceptions import NodeAlreadyChangedError
 from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import NodeNotChangedError
 
@@ -24,13 +25,25 @@ class BaseRepository(object):
     """
     Base Repository for final backends
 
-    :attribute: ``repo`` object from external api
-    :attribute: revisions: list of all available revisions' ids, in ascending
-      order
-    :attribute: changesets: storage dict caching returned changesets
-    :attribute: path: absolute local path to the repository
-    :attribute: branches: branches as list of changesets
-    :attribute: tags: tags as list of changesets
+    **Attributes**
+
+        ``repo``
+            object from external api
+
+        ``revisions``
+            list of all available revisions' ids, in ascending order
+
+        ``changesets``
+            storage dict caching returned changesets
+
+        ``path``
+            absolute path to the repository
+
+        ``branches``
+            branches as list of changesets
+
+        ``tags``
+            tags as list of changesets
     """
 
     def __init__(self, repo_path, create=False, **kwargs):
@@ -55,7 +68,6 @@ class BaseRepository(object):
 
     @LazyProperty
     def name(self):
-        """ This is name attribute """
         raise NotImplementedError
 
     @LazyProperty
@@ -83,6 +95,8 @@ class BaseRepository(object):
         """
         Returns instance of ``Changeset`` class. If ``revision`` is None, most
         recenent changeset is returned.
+
+        :raises ``EmptyRepositoryError``: if there are no revisions
         """
         raise NotImplementedError
 
@@ -100,16 +114,17 @@ class BaseRepository(object):
         Return last n number of ``Changeset`` objects specified by limit
         attribute if None is given whole list of revisions is returned
 
-        @param limit: int limit or None
-        @param offset: int offset
+        :param: ``limit``: int limit or None
+        :param: ``offset``: int offset
         """
         raise NotImplementedError
 
     def __getslice__(self, i, j):
         """
-        Convenient wrapper for ``get_changesets`` method. Those two are same:
+        Convenient wrapper for ``get_changesets`` method. Those two are same::
 
-        self[2:5] == self.get_changesets(offset=2, limit=3)
+            >>> repo[2:5] == repo.get_changesets(offset=2, limit=3)
+
         """
         return self.get_changesets(offset=i, limit=j - i)
 
@@ -139,24 +154,31 @@ class BaseRepository(object):
     def add(self, filenode, **kwargs):
         """
         Commit api function that will add given ``FileNode`` into this
-        repository. If there is a file with same path already in repository,
-        ``NodeAlreadyExistsError`` is raised.
+        repository.
+
+        :raises ``NodeAlreadyExistsError``: if there is a file with same path
+          already in repository
+        :raises ``NodeAlreadyAddedError``: if given node is already marked as
+          *added*
         """
         raise NotImplementedError
 
     def remove(self, filenode, **kwargs):
         """
         Commit api function that will remove given ``FileNode`` into this
-        repository. If there is no file with given path,
-        ``NodeDoesNotExistError`` is raised.
+        repository.
+
+        :raises ``EmptyRepositoryError``: if there are no changesets yet
+        :raises ``NodeDoesNotExistError``: if there is no file with given path
         """
         raise NotImplementedError
 
     def commit(self, message, **kwargs):
         """
         Persists current changes made on this repository and returns newly
-        created changeset. If no changed has been made, ``NothingChangedError``
-        is raised.
+        created changeset.
+
+        :raises ``NothingChangedError``: if no changes has been made
         """
         raise NotImplementedError
 
@@ -184,22 +206,48 @@ class BaseChangeset(object):
     """
     Each backend should implement it's changeset representation.
 
-    :attribute: repository: repository object within which changeset exists
-    :attribute: id: may be raw_id or i.e. for mercurial's tip just ``tip``
-    :attribute: raw_id: raw changeset representation (i.e. full 40 length sha
-      for git backend) as string
-    :attribute: short_id: shortened (if needed) version of raw_id; it would be
-      simple shortcut for ``raw_id[:12]``
-    :attribute: revision: revision number as integer
-    :attribute: files: list of ``Node`` objects with NodeKind.FILE
-    :attribute: dirs: list of ``Node`` objects with NodeKind.DIR
-    :attribute: nodes: combined list of ``Node`` objects
-    :attribute: author: author of the changeset
-    :attribute: message: message of the changeset
-    :attribute: size: integer size in bytes
-    :attribute: last: True if this is last changeset in repository, False
-      otherwise; ``ChangesetError`` is raised if not related with repository
-      object
+    **Attributes**
+
+        ``repository``
+            repository object within which changeset exists
+
+        ``id``
+            may be ``raw_id`` or i.e. for mercurial's tip just ``tip``
+
+        ``raw_id``
+            raw changeset representation (i.e. full 40 length sha for git
+            backend)
+
+        ``short_id``
+            shortened (if apply) version of ``raw_id``; it would be simple
+            shortcut for ``raw_id[:12]`` for git/mercurial backends or same
+            as ``raw_id`` for subversion
+
+        ``revision``
+            revision number as integer
+
+        ``files``
+            list of ``FileNode`` (``Node`` with NodeKind.FILE) objects
+
+        ``dirs``
+            list of ``DirNode`` (``Node`` with NodeKind.DIR) objects
+
+        ``nodes``
+            combined list of ``Node`` objects
+
+        ``author``
+            author of the changeset, as unicode
+
+        ``message``
+            message of the changeset, as unicode
+
+        ``parents``
+            list of parent changesets
+
+        ``last``
+            ``True`` if this is last changeset in repository, ``False``
+            otherwise; trying to access this attribute while there is no
+            changesets would raise ``EmptyRepositoryError``
     """
 
     def __str__(self):
@@ -214,11 +262,6 @@ class BaseChangeset(object):
 
     @LazyProperty
     def last(self):
-        """
-        Returns True if this is last changeset in repository, False otherwise.
-        Note that ChangesetError would be raised if object is not related with
-        repository object.
-        """
         if self.repository is None:
             raise ChangesetError("Cannot check if it's most recent revision")
         return self.revision == self.repository.revisions[-1]
@@ -295,15 +338,19 @@ class BaseChangeset(object):
     def get_nodes(self, path):
         """
         Returns combined ``DirNode`` and ``FileNode`` objects list representing
-        state of changeset at the given ``path``. If node at the given ``path``
-        is not instance of ``DirNode``, ChangesetError would be raised.
+        state of changeset at the given ``path``.
+
+        :raises ``ChangesetError``: if node at the given ``path`` is not
+          instance of ``DirNode``
         """
         raise NotImplementedError
 
     def get_node(self, path):
         """
-        Returns ``Node`` object from the given ``path``. If there is no node at
-        the given ``path``, ``ChangesetError`` would be raised.
+        Returns ``Node`` object from the given ``path``.
+
+        :raises ``NodeDoesNotExistError``: if there is no node at the given
+          ``path``
         """
         raise NotImplementedError
 
@@ -407,12 +454,21 @@ class BaseInMemoryChangeset(object):
     Represents differences between repository's state (most recent head) and
     changes made *in place*.
 
-    :attribute: repository: repository object of working directory
-    :attribute: added: list of new ``FileNode`` objects going to be committed
-    :attribute: changed: list of changed ``FileNode`` objects going to be
-      committed
-    :attribute: removed: list of ``RemovedFileNode`` objects marked to be
-      removed
+    **Attributes**
+
+        ``repository``
+            repository object for this in-memory-changeset
+
+        ``added``
+            list of ``FileNode`` objects marked as *added*
+
+        ``changed``
+            list of ``FileNode`` objects marked as *changed*
+
+        ``removed``
+            list of ``FileNode`` or ``RemovedFileNode`` objects marked to be
+            *removed*
+
     """
 
     def __init__(self, repository):
@@ -428,37 +484,53 @@ class BaseInMemoryChangeset(object):
         :raises ``NodeAlreadyExistsError``: if node with same path exists at
           latest changeset
         :raises ``NodeAlreadyAddedError``: if node with same path is already
-          marked as *new*
+          marked as *added*
         """
-        try:
-            tip = self.repository.get_changeset()
-        except RepositoryError:
-            tip = None
+        # Check if not already marked as *added* first
         for node in filenodes:
             if node.path in (n.path for n in self.added):
                 raise NodeAlreadyAddedError("Such FileNode %s is already "
                     "marked for addition" % node.path)
+        try:
+            tip = self.repository.get_changeset()
+        except EmptyRepositoryError:
+            tip = None
+        for node in filenodes:
             if tip:
                 try:
                     tip.get_node(node.path)
-                except ChangesetError:
+                except NodeDoesNotExistError:
                     pass
                 else:
-                    raise NodeAlreadyExistsError(str(node.path))
+                    raise NodeAlreadyExistsError("Node at %s exists at "
+                        "latest changeset" % node.path)
             self.added.append(node)
 
     def change(self, *filenodes):
         """
         Marks given ``FileNode`` objects to be *changed* in next commit.
 
-        :raises ``ChangesetError``: if node doesn't exist in latest changeset or
-          node with same path is already marked as *changed*.
-        :raises ``RepositoryError``: if there are no changesets yet
+        :raises ``EmptyRepositoryError``: if there are no changesets yet
+        :raises ``NodeAlreadyExistsError``: if node with same path is already
+          marked to be *changed*
+        :raises ``NodeAlreadyRemovedError``: if node with same path is already
+          marked to be *removed*
+        :raises ``NodeDoesNotExistError``: if node doesn't exist in latest
+          changeset
+        :raises ``NodeNotChangedError``: if node hasn't really be changed
         """
-        tip = self.repository.get_changeset()
+        for node in filenodes:
+            if node.path in (n.path for n in self.removed):
+                raise NodeAlreadyRemovedError("Node at %s is already marked "
+                    "as removed" % node.path)
+        try:
+            tip = self.repository.get_changeset()
+        except EmptyRepositoryError:
+            raise EmptyRepositoryError("Nothing to change - try to *add* new "
+                "nodes rather than changing them")
         for node in filenodes:
             if node.path in (n.path for n in self.changed):
-                raise NodeAlreadyExistsError("Such FileNode %s is already "
+                raise NodeAlreadyChangedError("Node at '%s' is already "
                     "marked as changed" % node.path)
             try:
                 old = tip.get_node(node.path)
@@ -471,12 +543,15 @@ class BaseInMemoryChangeset(object):
     def remove(self, *filenodes):
         """
         Marks given ``FileNode`` (or ``RemovedFileNode``) objects to be
-        *removed* in next commit. If ``FileNode`` doesn't exists
+        *removed* in next commit.
 
-        :raises ``ChangesetError``: if node does not exist in latest changeset
-        :raises ``RepositoryError``: if there are no changesets yet
+        :raises ``EmptyRepositoryError``: if there are no changesets yet
+        :raises ``NodeDoesNotExistError``: if node does not exist in latest
+          changeset
         :raises ``NodeAlreadyRemovedError``: if node has been already marked to
           be *removed*
+        :raises ``NodeAlreadyChangedError``: if node has been already marked to
+          be *changed*
         """
         tip = self.repository.get_changeset()
         for node in filenodes:
@@ -486,7 +561,10 @@ class BaseInMemoryChangeset(object):
                 raise NodeDoesNotExistError(str(node.path))
             if node.path in (n.path for n in self.removed):
                 raise NodeAlreadyRemovedError("Node is already marked to "
-                    "for removal %s" % node.path)
+                    "for removal at %s" % node.path)
+            if node.path in (n.path for n in self.changed):
+                raise NodeAlreadyChangedError("Node is already marked to "
+                    "be changed at %s" % node.path)
             # We only mark node as *removed* - real removal is done by
             # commit method
             self.removed.append(node)

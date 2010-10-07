@@ -57,3 +57,12 @@ MercurialChangeset
          ``FileNode`` objects and trying to access most of it's attributes or
          methods would raise ``NodeError`` exception.
 
+MercurialInMemoryChangeset
+--------------------------
+
+.. autoclass:: MercurialInMemoryChangeset
+   :members:
+   :inherited-members:
+   :undoc-members:
+   :show-inheritance:
+

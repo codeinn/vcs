@@ -57,3 +57,12 @@ GitChangeset
          ``FileNode`` objects and trying to access most of it's attributes or
          methods would raise ``NodeError`` exception.
 
+GitInMemoryChangeset
+--------------------
+
+.. autoclass:: vcs.backends.git.GitInMemoryChangeset
+   :members:
+   :inherited-members:
+   :undoc-members:
+   :show-inheritance:
+      

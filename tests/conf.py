@@ -7,6 +7,8 @@ import hashlib
 import tempfile
 import datetime
 
+from utils import get_normalized_path
+
 __all__ = (
     'TEST_HG_REPO', 'TEST_GIT_REPO', 'HG_REMOTE_REPO', 'GIT_REMOTE_REPO',
     'SCM_TESTS',
@@ -37,7 +39,8 @@ def get_new_dir(title):
         name = '-'.join((name, title))
     hex = hashlib.sha1(str(time.time())).hexdigest()
     name = '-'.join((name, hex))
-    return os.path.join(TEST_DIR, name)
+    path = os.path.join(TEST_DIR, name)
+    return get_normalized_path(path)
 
 
 PACKAGE_DIR = os.path.abspath(os.path.join(

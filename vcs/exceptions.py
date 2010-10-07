@@ -13,7 +13,13 @@ class VCSError(Exception):
 class RepositoryError(VCSError):
     pass
 
-class ChangesetError(VCSError):
+class EmptyRepositoryError(RepositoryError):
+    pass
+
+class ChangesetError(RepositoryError):
+    pass
+
+class ChangesetDoesNotExistError(ChangesetError):
     pass
 
 class CommitError(RepositoryError):
@@ -23,6 +29,9 @@ class NothingChangedError(CommitError):
     pass
 
 class NodeAlreadyExistsError(CommitError):
+    pass
+
+class NodeAlreadyChangedError(CommitError):
     pass
 
 class NodeDoesNotExistError(CommitError):
