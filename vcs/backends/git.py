@@ -41,7 +41,6 @@ class GitRepository(BaseRepository):
             self.head = self._repo.head()
         except KeyError:
             self.head = None
-        self.revisions = self._get_all_revisions()
         self.changesets = {}
 
     @LazyProperty
