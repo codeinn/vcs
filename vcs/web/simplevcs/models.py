@@ -28,7 +28,13 @@ class Repository(models.Model):
         return self._repo.revisions
 
     def __unicode__(self):
+        return self.alias
+
+    def __str__(self):
         return self.path
+
+    def __bool__(self):
+        return self._repo is not None
 
     def __len__(self):
         return len(self._repo)
