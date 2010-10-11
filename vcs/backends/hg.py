@@ -26,7 +26,11 @@ from mercurial.context import memctx, memfilectx
 
 from vcs.backends.base import BaseRepository, BaseChangeset, \
     BaseInMemoryChangeset
-from vcs.exceptions import RepositoryError, ChangesetError
+from vcs.exceptions import RepositoryError
+from vcs.exceptions import EmptyRepositoryError
+from vcs.exceptions import ChangesetError
+from vcs.exceptions import ChangesetDoesNotExistError
+from vcs.exceptions import NodeDoesNotExistError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
@@ -70,7 +74,7 @@ class MercurialRepository(BaseRepository):
     def branches(self):
         if not self.revisions:
             return {}
-        
+
         sortkey = lambda ctx: ('close' not in ctx[1]._ctx.extra(),
                                ctx[1]._ctx.rev())
         s_branches = sorted([(name, self.get_changeset(short(head))) for
@@ -161,20 +165,20 @@ class MercurialRepository(BaseRepository):
 
     def _get_revision(self, revision):
         if len(self.revisions) == 0:
-            raise RepositoryError("There are no changesets yet")
+            raise EmptyRepositoryError("There are no changesets yet")
         if revision in (None, 'tip', -1):
             revision = self.revisions[-1]
         if isinstance(revision, int) and revision not in self.revisions:
-            raise RepositoryError("Revision %r does not exist for this "
-                "repository %s" % (revision, self))
+            raise ChangesetDoesNotExistError("Revision %r does not exist "
+                "for this repository %s" % (revision, self))
         elif isinstance(revision, (str, unicode)) and revision.isdigit() \
                                                     and len(revision) < 12:
             revision = int(revision)
         elif isinstance(revision, (str, unicode)):
             pattern = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
             if not pattern.match(revision):
-                raise RepositoryError("Revision %r does not exist for this "
-                    "repository %s" % (revision, self))
+                raise ChangesetDoesNotExistError("Revision %r does not exist "
+                    "for this repository %s" % (revision, self))
         return revision
 
     def _get_archives(self, archive_name='tip'):
@@ -423,7 +427,7 @@ class MercurialChangeset(BaseChangeset):
                 else:
                     node = DirNode(path, changeset=self)
             else:
-                raise ChangesetError("There is no file nor directory "
+                raise NodeDoesNotExistError("There is no file nor directory "
                     "at the given path: %r at revision %r"
                     % (path, '%s:%s' % (self.revision, self.id)))
             # cache node
