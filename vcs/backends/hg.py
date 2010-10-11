@@ -24,7 +24,7 @@ from mercurial.node import hex
 from mercurial.commands import clone, pull
 from mercurial.context import memctx, memfilectx
 
-from vcs.backends.base import BaseRepository, BaseChangeset,\
+from vcs.backends.base import BaseRepository, BaseChangeset, \
     BaseInMemoryChangeset
 from vcs.exceptions import RepositoryError, ChangesetError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
@@ -38,7 +38,8 @@ class MercurialRepository(BaseRepository):
     Mercurial repository backend
     """
 
-    def __init__(self, repo_path, create=False, baseui=None, clone_url=None):
+    def __init__(self, repo_path, create=False, baseui=None, src_url=None,
+                 clone_point=None, update_after_clone=False):
         """
         Raises RepositoryError if repository could not be find at the given
         ``repo_path``.
@@ -47,13 +48,17 @@ class MercurialRepository(BaseRepository):
         :param create=False: if set to True, would try to craete repository if
            it does not exist rather than raising exception
         :param baseui=None: user data
-        :param clone_url=None: would try to clone repository from given location
+        :param src_url=None: would try to clone repository from given location
+        :param clone_point=None: clone from this revision, when empty, this
+          means the latest revision
+        :param update_after_clone=False: sets update of working copy after
+          making a clone
         """
 
         self.path = abspath(repo_path)
         self.baseui = baseui or ui.ui()
         # We've set path and ui, now we can set repo itself
-        self._set_repo(create, clone_url)
+        self._set_repo(create, src_url, clone_point, update_after_clone)
         self.revisions = list(self.repo)
         self.changesets = {}
 
@@ -83,20 +88,25 @@ class MercurialRepository(BaseRepository):
             name, head in self.repo.tags().items()], key=sortkey, reverse=True)
         return OrderedDict((name, cs.short_id) for name, cs in s_tags)
 
-    def _set_repo(self, create, clone_url=None):
+    def _set_repo(self, create, src_url=None, clone_point=None,
+                  update_after_clone=False):
         """
         Function will check for mercurial repository in given path and return
         a localrepo object. If there is no repository in that path it will raise
         an exception unless ``create`` parameter is set to True - in that case
         repository would be created and returned.
-        If ``clone_url`` is given, would try to clone repository from the
-        location.
+        If ``src_url`` is given, would try to clone repository from the
+        location at given clone_point. Additionally it'll make update to 
+        working copy accordingly to ``update_after_clone`` flag
         """
         try:
-            if clone_url:
-                url = self._get_url(clone_url)
+            if src_url:
+                url = self._get_url(src_url)
+                opts = {'rev':[clone_point or 'tip', ]}
+                if not update_after_clone:
+                    opts.update({'noupdate':True})                                
                 try:
-                    clone(self.baseui, url, self.path)
+                    clone(self.baseui, url, self.path, **opts)
                 except urllib2.URLError:
                     raise Abort("Got HTTP 404 error")
                 # Don't try to create if we've already cloned repo
@@ -544,4 +554,7 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         tip = self.repository.get_changeset()
         self.reset()
         return tip
+    
+
+
 
