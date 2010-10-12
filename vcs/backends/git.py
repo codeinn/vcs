@@ -38,7 +38,7 @@ class GitRepository(BaseRepository):
     """
 
     def __init__(self, repo_path, create=False, src_url=None,
-                 update_after_clone=False):        
+                 update_after_clone=False):
 
         self.path = abspath(repo_path)
         self.changesets = {}
@@ -72,7 +72,13 @@ class GitRepository(BaseRepository):
         #cmd = '(cd %s && git %s)' % (self.path, cmd)
         cmd = 'git %s' % cmd
         try:
-            p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, cwd=self.path)
+            opts = dict(
+                shell=True,
+                stdout=PIPE,
+                stderr=PIPE)
+            if os.path.isdir(self.path):
+                opts['cwd'] = self.path
+            p = Popen(cmd, **opts)
         except OSError, err:
             raise RepositoryError("Couldn't run git command (%s).\n"
                 "Original error was:%s" % (cmd, err))
@@ -86,14 +92,18 @@ class GitRepository(BaseRepository):
     def _set_repo(self, create, src_url=None, update_after_clone=False):
         if create and os.path.exists(self.path):
             raise RepositoryError("Location already exist")
+        if src_url and not create:
+            raise RepositoryError("Create should be set to True if src_url is "
+                                  "given (clone operation creates repository)")
         try:
-            if create:
+            if create and src_url:
+                self.clone(src_url, update_after_clone)
+                self._repo = Repo(self.path)
+            elif create:
                 os.mkdir(self.path)
                 self._repo = Repo.init(self.path)
             else:
                 self._repo = Repo(self.path)
-            if src_url:
-                self.clone(src_url, update_after_clone)
         except (NotGitRepository, OSError), err:
             raise RepositoryError(str(err))
 
@@ -248,10 +258,10 @@ class GitRepository(BaseRepository):
         on workdir
         """
         url = self._get_url(url)
-        t = ''
+        cmd = 'clone '
         if not update_after_clone:
-            t = '--no-checkout'
-        cmd = 'clone %s "%s" ' % (url, t)
+            cmd += '--no-checkout '
+        cmd += '-- "%s" "%s"' % (url, self.path)
         # If error occurs run_git_command raises RepositoryError already
         self.run_git_command(cmd)
 

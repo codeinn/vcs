@@ -49,11 +49,14 @@ class BaseRepository(object):
     def __init__(self, repo_path, create=False, **kwargs):
         """
         Initializes repository. Raises RepositoryError if repository could
-        not be find at the given ``repo_path``.
+        not be find at the given ``repo_path`` or directory at ``repo_path``
+        exists and ``create`` is set to True.
 
         :param repo_path: local path of the repository
-        :param create=False: if set to True, would try to craete repository if
-           it does not exist rather than raising exception
+        :param create=False: if set to True, would try to craete repository.
+        :param src_url=None: if set, should be proper url from which repository
+          would be cloned; requires ``create`` parameter to be set to True -
+          raises RepositoryError if src_url is set and create evaluates to False
         """
         raise NotImplementedError
 

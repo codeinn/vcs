@@ -2,21 +2,19 @@ import os
 import unittest2
 
 from vcs.backends.git import GitRepository, GitChangeset
-from vcs.exceptions import ChangesetError, RepositoryError, VCSError, \
-     NodeDoesNotExistError
+from vcs.exceptions import RepositoryError, VCSError, NodeDoesNotExistError
 from vcs.nodes import NodeKind, FileNode, DirNode, NodeState
 
-from conf import TEST_GIT_REPO, TEST_GIT_REPO_CLONE, TEST_GIT_REPO_PULL, \
-    PACKAGE_DIR
+from conf import TEST_GIT_REPO, TEST_GIT_REPO_CLONE
 
 class GitRepositoryTest(unittest2.TestCase):
-    
+
     def __check_for_existing_repo(self):
         if os.path.exists(TEST_GIT_REPO_CLONE):
             self.fail('Cannot test git clone repo as location %s already '
                       'exists. You should manually remove it first.'
-                      % TEST_GIT_REPO_CLONE)     
-            
+                      % TEST_GIT_REPO_CLONE)
+
     def setUp(self):
         self.repo = GitRepository(TEST_GIT_REPO)
 
@@ -28,35 +26,41 @@ class GitRepositoryTest(unittest2.TestCase):
         self.__check_for_existing_repo()
         repo = GitRepository(TEST_GIT_REPO)
         repo_clone = GitRepository(TEST_GIT_REPO_CLONE,
-            src_url=PACKAGE_DIR, update_after_clone=True)
+            src_url=TEST_GIT_REPO, create=True, update_after_clone=True)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
         # Checking hashes of changesets should be enough
         for changeset in repo.get_changesets(limit=None):
             raw_id = changeset.raw_id
             self.assertEqual(raw_id, repo_clone.get_changeset(raw_id).raw_id)
 
+    def test_repo_clone_without_create(self):
+        self.assertRaises(RepositoryError, GitRepository,
+            TEST_GIT_REPO_CLONE + '_wo_create', src_url=TEST_GIT_REPO)
+
     def test_repo_clone_with_update(self):
         repo = GitRepository(TEST_GIT_REPO)
-        repo_clone = GitRepository(TEST_GIT_REPO_CLONE + '_w_update',
-            src_url=PACKAGE_DIR, update_after_clone=True)
+        clone_path = TEST_GIT_REPO_CLONE + '_with_update'
+        repo_clone = GitRepository(clone_path,
+            create=True, src_url=TEST_GIT_REPO, update_after_clone=True)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
-        
+
         #check if current workdir was updated
-        self.assertEqual(os.path.isfile(os.path.join(TEST_GIT_REPO_CLONE \
-                                                    + '_w_update',
-                                                    'MANIFEST.in')), True,)
-        
-        
+        fpath = os.path.join(clone_path, 'MANIFEST.in')
+        self.assertEqual(True, os.path.isfile(fpath),
+            'Repo was cloned and updated but file %s could not be found'
+            % fpath)
+
     def test_repo_clone_without_update(self):
         repo = GitRepository(TEST_GIT_REPO)
-        repo_clone = GitRepository(TEST_GIT_REPO_CLONE + '_wo_update',
-            src_url=PACKAGE_DIR, update_after_clone=False)    
+        clone_path = TEST_GIT_REPO_CLONE + '_without_update'
+        repo_clone = GitRepository(clone_path,
+            create=True, src_url=TEST_GIT_REPO, update_after_clone=False)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
-        self.assertEqual(os.path.isfile(os.path.join(TEST_GIT_REPO_CLONE \
-                                                    + '_wo_update',
-                                                    'MANIFEST.in')), False,)
-
-
+        #check if current workdir was *NOT* updated
+        fpath = os.path.join(clone_path, 'MANIFEST.in')
+        self.assertEqual(False, os.path.isfile(fpath),
+            'Repo was cloned and updated but file %s was found'
+            % fpath)
 
     def test_revisions(self):
         # there are 112 revisions (by now)
