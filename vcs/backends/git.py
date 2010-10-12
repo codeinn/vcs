@@ -180,9 +180,11 @@ class GitRepository(BaseRepository):
     def branches(self):
         if not self.revisions:
             return {}
+        refs = self._repo.refs.as_dict()
         return dict((ref.split('/')[-1], id)
-            for ref, id in self._repo.get_refs().items()
-            if ref.startswith('refs/remotes/') and not ref.endswith('/HEAD'))
+            for ref, id in refs.items()
+            if ref.startswith('refs/heads/') and not ref.endswith('/HEAD'))
+
 
     @LazyProperty
     def tags(self):
