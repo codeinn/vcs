@@ -477,7 +477,7 @@ class MercurialChangeset(BaseChangeset):
         for path in paths:
             try:
                 self.get_node(path)
-            except ChangesetError:
+            except NodeDoesNotExistError:
                 node = RemovedFileNode(path=path)
                 removed_nodes.append(node)
         return removed_nodes
