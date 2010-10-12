@@ -91,9 +91,10 @@ class GitRepositoryTest(unittest2.TestCase):
 
     def test_branches(self):
         # TODO: Need more tests here
-        self.assertTrue('master' in self.repo.branches)
-        self.assertTrue('gittree' in self.repo.branches)
-        self.assertTrue('web-branch' in self.repo.branches)
+        # Removed (those are 'remotes' branches for cloned repo)
+        #self.assertTrue('master' in self.repo.branches)
+        #self.assertTrue('gittree' in self.repo.branches)
+        #self.assertTrue('web-branch' in self.repo.branches)
         for name, id in self.repo.branches.items():
             self.assertTrue(isinstance(
                 self.repo.get_changeset(id), GitChangeset))
