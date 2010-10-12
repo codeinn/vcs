@@ -43,7 +43,7 @@ class MercurialRepository(BaseRepository):
     """
 
     def __init__(self, repo_path, create=False, baseui=None, src_url=None,
-                 clone_point=None, update_after_clone=False):
+                 update_after_clone=False):
         """
         Raises RepositoryError if repository could not be find at the given
         ``repo_path``.
@@ -53,8 +53,6 @@ class MercurialRepository(BaseRepository):
            it does not exist rather than raising exception
         :param baseui=None: user data
         :param src_url=None: would try to clone repository from given location
-        :param clone_point=None: clone from this revision, when empty, this
-          means the latest revision
         :param update_after_clone=False: sets update of working copy after
           making a clone
         """
@@ -62,7 +60,7 @@ class MercurialRepository(BaseRepository):
         self.path = abspath(repo_path)
         self.baseui = baseui or ui.ui()
         # We've set path and ui, now we can set repo itself
-        self._set_repo(create, src_url, clone_point, update_after_clone)
+        self._set_repo(create, src_url, update_after_clone)
         self.revisions = list(self.repo)
         self.changesets = {}
 
@@ -92,8 +90,7 @@ class MercurialRepository(BaseRepository):
             name, head in self.repo.tags().items()], key=sortkey, reverse=True)
         return OrderedDict((name, cs.short_id) for name, cs in s_tags)
 
-    def _set_repo(self, create, src_url=None, clone_point=None,
-                  update_after_clone=False):
+    def _set_repo(self, create, src_url=None, update_after_clone=False):
         """
         Function will check for mercurial repository in given path and return
         a localrepo object. If there is no repository in that path it will raise
@@ -106,7 +103,7 @@ class MercurialRepository(BaseRepository):
         try:
             if src_url:
                 url = self._get_url(src_url)
-                opts = {'rev':[clone_point or 'tip', ]}
+                opts = {}
                 if not update_after_clone:
                     opts.update({'noupdate':True})                                
                 try:

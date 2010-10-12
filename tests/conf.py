@@ -16,12 +16,18 @@ __all__ = (
 
 SCM_TESTS = ['hg', 'git']
 uniq_suffix = str(int(time.mktime(datetime.datetime.now().timetuple())))
-TEST_GIT_REPO = os.environ.get('VCS_TEST_GIT_REPO', '/tmp/vcs-git')
-GIT_REMOTE_REPO = 'git://github.com/lukaszb/vcs.git'
-HG_REMOTE_REPO = 'http://bitbucket.org/marcinkuzminski/vcs'
 
+GIT_REMOTE_REPO = 'git://github.com/lukaszb/vcs.git'
+TEST_GIT_REPO = os.environ.get('VCS_TEST_GIT_REPO',
+                              '/tmp/vcs-git%s' % uniq_suffix)
+TEST_GIT_REPO_CLONE = os.environ.get('VCS_TEST_GIT_REPO_CLONE',
+                                    '/tmp/vcsgitclone%s' % uniq_suffix)
+TEST_GIT_REPO_PULL = os.environ.get('VCS_TEST_GIT_REPO_PULL',
+                                   '/tmp/vcsgitpull%s' % uniq_suffix)
+
+HG_REMOTE_REPO = 'http://bitbucket.org/marcinkuzminski/vcs'
 TEST_HG_REPO = os.environ.get('VCS_TEST_HG_REPO',
-                              '/tmp/vcs%s' % uniq_suffix)
+                              '/tmp/vcs-hg%s' % uniq_suffix)
 TEST_HG_REPO_CLONE = os.environ.get('VCS_TEST_HG_REPO_CLONE',
                                     '/tmp/vcshgclone%s' % uniq_suffix)
 TEST_HG_REPO_PULL = os.environ.get('VCS_TEST_HG_REPO_PULL',

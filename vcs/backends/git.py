@@ -37,11 +37,12 @@ class GitRepository(BaseRepository):
     Git repository backend.
     """
 
-    def __init__(self, repo_path, create=False, clone_url=None):
+    def __init__(self, repo_path, create=False, src_url=None,
+                 update_after_clone=False):        
 
         self.path = abspath(repo_path)
         self.changesets = {}
-        self._set_repo(create, clone_url)
+        self._set_repo(create, src_url, update_after_clone)
         try:
             self.head = self._repo.head()
         except KeyError:
@@ -82,7 +83,7 @@ class GitRepository(BaseRepository):
                 "stderr:\n%s" % (cmd, se))
         return so, se
 
-    def _set_repo(self, create, clone_url=None):
+    def _set_repo(self, create, src_url=None, update_after_clone=False):
         if create and os.path.exists(self.path):
             raise RepositoryError("Location already exist")
         try:
@@ -91,8 +92,8 @@ class GitRepository(BaseRepository):
                 self._repo = Repo.init(self.path)
             else:
                 self._repo = Repo(self.path)
-            if clone_url:
-                self.pull(clone_url)
+            if src_url:
+                self.clone(src_url, update_after_clone)
         except (NotGitRepository, OSError), err:
             raise RepositoryError(str(err))
 
@@ -238,12 +239,17 @@ class GitRepository(BaseRepository):
         """
         return GitInMemoryChangeset(self)
 
-    def pull(self, url):
+    def clone(self, url, update_after_clone):
         """
-        Tries to pull changes from external location.
+        Tries to clone changes from external location.
+        if update_after_clone is set To false it'll prevent the runing update
+        on workdir
         """
         url = self._get_url(url)
-        cmd = 'pull "%s" master' % url
+        t = ''
+        if not update_after_clone:
+            t = '--no-checkout'
+        cmd = 'clone %s "%s" ' % (url, t)
         # If error occurs run_git_command raises RepositoryError already
         self.run_git_command(cmd)
 

@@ -2,7 +2,8 @@ import os
 import unittest2
 
 from vcs.backends.hg import MercurialRepository, MercurialChangeset
-from vcs.exceptions import ChangesetError, RepositoryError, VCSError
+from vcs.exceptions import ChangesetError, RepositoryError, VCSError, \
+    NodeDoesNotExistError
 from vcs.nodes import NodeKind, NodeState
 from conf import PACKAGE_DIR, TEST_HG_REPO, TEST_HG_REPO_CLONE, \
     TEST_HG_REPO_PULL
@@ -18,7 +19,7 @@ class MercurialRepositoryTest(unittest2.TestCase):
     def setUp(self):
         self.repo = MercurialRepository(TEST_HG_REPO)
 
-    def test_repo_init(self):
+    def test_wrong_repo_path(self):
         wrong_repo_path = '/tmp/errorrepo'
         self.assertRaises(RepositoryError, MercurialRepository, wrong_repo_path)
 
@@ -26,7 +27,7 @@ class MercurialRepositoryTest(unittest2.TestCase):
         self.__check_for_existing_repo()
         repo = MercurialRepository(PACKAGE_DIR)
         repo_clone = MercurialRepository(TEST_HG_REPO_CLONE,
-            src_url=PACKAGE_DIR, clone_point='tip', update_after_clone=True)
+            src_url=PACKAGE_DIR, update_after_clone=True)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
         # Checking hashes of changesets should be enough
         for changeset in repo.get_changesets(limit=None):
@@ -34,24 +35,25 @@ class MercurialRepositoryTest(unittest2.TestCase):
             self.assertEqual(raw_id, repo_clone.get_changeset(raw_id).raw_id)
 
     def test_repo_clone_with_update(self):
+        repo = MercurialRepository(PACKAGE_DIR)
         repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_w_update',
-            src_url=PACKAGE_DIR, clone_point='tip', update_after_clone=True)
+            src_url=PACKAGE_DIR, update_after_clone=True)
+        self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
+        
+        #check if current workdir was updated
+        self.assertEqual(os.path.isfile(os.path.join(TEST_HG_REPO_CLONE \
+                                                    + '_w_update',
+                                                    'MANIFEST.in')), True,)
+        
         
     def test_repo_clone_without_update(self):
+        repo = MercurialRepository(PACKAGE_DIR)
         repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_wo_update',
-            src_url=PACKAGE_DIR, clone_point='tip', update_after_clone=False)    
-    
-    def test_repo_clone_at_branch(self):
-        repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_at_branch',
-            src_url=PACKAGE_DIR, clone_point='git', update_after_clone=False)   
-         
-    def test_repo_clone_at_tag(self):
-        repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_at_tag',
-            src_url=PACKAGE_DIR, clone_point='v0.1.2', update_after_clone=False)    
-    
-    def test_repo_clone_at_revision(self):
-        repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_at_rev',
-            src_url=PACKAGE_DIR, clone_point='30', update_after_clone=False)
+            src_url=PACKAGE_DIR, update_after_clone=False)    
+        self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
+        self.assertEqual(os.path.isfile(os.path.join(TEST_HG_REPO_CLONE \
+                                                    + '_wo_update',
+                                                    'MANIFEST.in')), False,)
             
     def test_pull(self):
         if os.path.exists(TEST_HG_REPO_PULL):
@@ -133,7 +135,7 @@ class MercurialRepositoryTest(unittest2.TestCase):
         self.assertEqual(sorted(init_chset._dir_paths),
             sorted(['', 'vcs', 'vcs/backends']))
 
-        self.assertRaises(ChangesetError, init_chset.get_node, path='foobar')
+        self.assertRaises(NodeDoesNotExistError, init_chset.get_node, path='foobar')
 
         node = init_chset.get_node('vcs/')
         self.assertTrue(hasattr(node, 'kind'))
@@ -445,7 +447,7 @@ class MercurialChangesetTest(unittest2.TestCase):
         # ChangesetError exception
         chset = self.repo.get_changeset(2)
         path = 'vcs/backends/BaseRepository.py'
-        self.assertRaises(ChangesetError, chset.get_node, path)
+        self.assertRaises(NodeDoesNotExistError, chset.get_node, path)
         # but it would be one of ``removed`` (changeset's attribute)
         self.assertTrue(path in [rf.path for rf in chset.removed])
 
