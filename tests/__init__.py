@@ -29,6 +29,7 @@ from test_hg import *
 from test_nodes import *
 from test_utils import *
 from test_vcs import *
+from test_inmemchangesets import *
 
 def setup_package():
     """

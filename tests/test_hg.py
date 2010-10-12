@@ -2,34 +2,59 @@ import os
 import unittest2
 
 from vcs.backends.hg import MercurialRepository, MercurialChangeset
-from vcs.exceptions import ChangesetError, RepositoryError, VCSError
+from vcs.exceptions import ChangesetError, RepositoryError, VCSError, \
+    NodeDoesNotExistError
 from vcs.nodes import NodeKind, NodeState
-from conf import PACKAGE_DIR, TEST_HG_REPO, TEST_HG_REPO_CLONE,\
+from conf import PACKAGE_DIR, TEST_HG_REPO, TEST_HG_REPO_CLONE, \
     TEST_HG_REPO_PULL
 
 class MercurialRepositoryTest(unittest2.TestCase):
 
+    def __check_for_existing_repo(self):
+        if os.path.exists(TEST_HG_REPO_CLONE):
+            self.fail('Cannot test mercurial clone repo as location %s already '
+                      'exists. You should manually remove it first.'
+                      % TEST_HG_REPO_CLONE)        
+
     def setUp(self):
         self.repo = MercurialRepository(TEST_HG_REPO)
 
-    def test_repo_init(self):
+    def test_wrong_repo_path(self):
         wrong_repo_path = '/tmp/errorrepo'
         self.assertRaises(RepositoryError, MercurialRepository, wrong_repo_path)
 
     def test_repo_clone(self):
-        if os.path.exists(TEST_HG_REPO_CLONE):
-            self.fail('Cannot test mercurial clone repo as location %s already '
-                      'exists. You should manually remove it first.'
-                      % TEST_HG_REPO_CLONE)
+        self.__check_for_existing_repo()
         repo = MercurialRepository(PACKAGE_DIR)
         repo_clone = MercurialRepository(TEST_HG_REPO_CLONE,
-            clone_url=PACKAGE_DIR)
+            src_url=PACKAGE_DIR, update_after_clone=True)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
         # Checking hashes of changesets should be enough
         for changeset in repo.get_changesets(limit=None):
             raw_id = changeset.raw_id
             self.assertEqual(raw_id, repo_clone.get_changeset(raw_id).raw_id)
 
+    def test_repo_clone_with_update(self):
+        repo = MercurialRepository(PACKAGE_DIR)
+        repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_w_update',
+            src_url=PACKAGE_DIR, update_after_clone=True)
+        self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
+        
+        #check if current workdir was updated
+        self.assertEqual(os.path.isfile(os.path.join(TEST_HG_REPO_CLONE \
+                                                    + '_w_update',
+                                                    'MANIFEST.in')), True,)
+        
+        
+    def test_repo_clone_without_update(self):
+        repo = MercurialRepository(PACKAGE_DIR)
+        repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_wo_update',
+            src_url=PACKAGE_DIR, update_after_clone=False)    
+        self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
+        self.assertEqual(os.path.isfile(os.path.join(TEST_HG_REPO_CLONE \
+                                                    + '_wo_update',
+                                                    'MANIFEST.in')), False,)
+            
     def test_pull(self):
         if os.path.exists(TEST_HG_REPO_PULL):
             self.fail('Cannot test mercurial pull command as location %s '
@@ -110,7 +135,7 @@ class MercurialRepositoryTest(unittest2.TestCase):
         self.assertEqual(sorted(init_chset._dir_paths),
             sorted(['', 'vcs', 'vcs/backends']))
 
-        self.assertRaises(ChangesetError, init_chset.get_node, path='foobar')
+        self.assertRaises(NodeDoesNotExistError, init_chset.get_node, path='foobar')
 
         node = init_chset.get_node('vcs/')
         self.assertTrue(hasattr(node, 'kind'))
@@ -422,23 +447,23 @@ class MercurialChangesetTest(unittest2.TestCase):
         # ChangesetError exception
         chset = self.repo.get_changeset(2)
         path = 'vcs/backends/BaseRepository.py'
-        self.assertRaises(ChangesetError, chset.get_node, path)
+        self.assertRaises(NodeDoesNotExistError, chset.get_node, path)
         # but it would be one of ``removed`` (changeset's attribute)
         self.assertTrue(path in [rf.path for rf in chset.removed])
 
     def test_commit_message_is_unicode(self):
         for cm in self.repo:
-            self.assertEqual(type(cm.message),unicode)
+            self.assertEqual(type(cm.message), unicode)
 
     def test_changeset_author_is_unicode(self):
         for cm in self.repo:
-            self.assertEqual(type(cm.author),unicode)
+            self.assertEqual(type(cm.author), unicode)
 
     def test_repo_files_content_is_unicode(self):
         test_changeset = self.repo.get_changeset(100)
         for node in test_changeset.get_node('/'):
             if node.is_file():
-                self.assertEqual(type(node.content),unicode)
+                self.assertEqual(type(node.content), unicode)
 
     def test_wrong_path(self):
         # There is 'setup.py' in the root dir but not there:

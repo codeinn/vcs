@@ -424,7 +424,7 @@ class DirNode(Node):
     @LazyProperty
     def size(self):
         size = 0
-        for root, dirs, files in self.changeset.repository.walk(self.path):
+        for root, dirs, files in self.changeset.walk(self.path):
             for f in files:
                 size += f.size
 

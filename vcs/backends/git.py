@@ -18,7 +18,11 @@ from itertools import chain
 from vcs.backends.base import BaseRepository
 from vcs.backends.base import BaseChangeset
 from vcs.backends.base import BaseInMemoryChangeset
-from vcs.exceptions import RepositoryError, ChangesetError
+from vcs.exceptions import RepositoryError
+from vcs.exceptions import EmptyRepositoryError
+from vcs.exceptions import ChangesetError
+from vcs.exceptions import ChangesetDoesNotExistError
+from vcs.exceptions import NodeDoesNotExistError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.paths import abspath
 from vcs.utils.lazy import LazyProperty
@@ -27,16 +31,18 @@ from vcs.utils import safe_unicode
 from dulwich.repo import Repo, NotGitRepository
 from dulwich import objects
 
+
 class GitRepository(BaseRepository):
     """
-    Git repository backend
+    Git repository backend.
     """
 
-    def __init__(self, repo_path, create=False, clone_url=None):
+    def __init__(self, repo_path, create=False, src_url=None,
+                 update_after_clone=False):        
 
         self.path = abspath(repo_path)
         self.changesets = {}
-        self._set_repo(create, clone_url)
+        self._set_repo(create, src_url, update_after_clone)
         try:
             self.head = self._repo.head()
         except KeyError:
@@ -46,7 +52,8 @@ class GitRepository(BaseRepository):
     @LazyProperty
     def revisions(self):
         """
-        Being lazy attribute allows external tools to inject shas from cache.
+        Returns list of revisions' ids, in ascending order.  Being lazy
+        attribute allows external tools to inject shas from cache.
         """
         return self._get_all_revisions()
 
@@ -60,13 +67,12 @@ class GitRepository(BaseRepository):
            at Dulwich (see https://bugs.launchpad.net/bugs/645142). Parsing
            os command's output is road to hell...
 
-        :param cmd: git command
-        :param repo_path: if given, command would be prefixed with
-          --git-dir=repo_path/.git (note that ".git" is always appended
+        :param cmd: git command to be executed
         """
-        cmd = '(cd %s && git %s)' % (self.path, cmd)
+        #cmd = '(cd %s && git %s)' % (self.path, cmd)
+        cmd = 'git %s' % cmd
         try:
-            p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+            p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, cwd=self.path)
         except OSError, err:
             raise RepositoryError("Couldn't run git command (%s).\n"
                 "Original error was:%s" % (cmd, err))
@@ -77,7 +83,7 @@ class GitRepository(BaseRepository):
                 "stderr:\n%s" % (cmd, se))
         return so, se
 
-    def _set_repo(self, create, clone_url=None):
+    def _set_repo(self, create, src_url=None, update_after_clone=False):
         if create and os.path.exists(self.path):
             raise RepositoryError("Location already exist")
         try:
@@ -86,8 +92,8 @@ class GitRepository(BaseRepository):
                 self._repo = Repo.init(self.path)
             else:
                 self._repo = Repo(self.path)
-            if clone_url:
-                self.pull(clone_url)
+            if src_url:
+                self.clone(src_url, update_after_clone)
         except (NotGitRepository, OSError), err:
             raise RepositoryError(str(err))
 
@@ -104,7 +110,7 @@ class GitRepository(BaseRepository):
         that changset's revision attribute would become integer.
         """
         if len(self.revisions) == 0:
-            raise RepositoryError("There are no changesets yet")
+            raise EmptyRepositoryError("There are no changesets yet")
         if revision in (None, 'tip', 'HEAD', 'head', -1):
             #return self.revisions[-1]
             revision = len(self.revisions) - 1
@@ -113,21 +119,22 @@ class GitRepository(BaseRepository):
             revision = int(revision)
         if isinstance(revision, int) and (
             revision < 0 or revision >= len(self.revisions)):
-                raise RepositoryError("Revision %r does not exist for this "
-                    "repository %s" % (revision, self))
+                raise ChangesetDoesNotExistError("Revision %r does not exist "
+                    "for this repository %s" % (revision, self))
         elif isinstance(revision, (str, unicode)):
             pattern = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
             if not pattern.match(revision):
-                raise RepositoryError("Revision %r does not exist for this "
-                    "repository %s" % (revision, self))
+                raise ChangesetDoesNotExistError("Revision %r does not exist "
+                    "for this repository %s" % (revision, self))
             try:
                 revision = self.revisions.index(revision)
             except ValueError:
-                raise RepositoryError("Revision %r does not exist for this "
-                    "repository %s" % (revision, self))
+                raise ChangesetDoesNotExistError("Revision %r does not exist "
+                    "for this repository %s" % (revision, self))
         # Ensure we return integer
         if not isinstance(revision, int):
-            raise RepositoryError("Given revision %r not recognized" % revision)
+            raise ChangesetDoesNotExistError("Given revision %r not recognized"
+                % revision)
         return revision
 
     def _get_tree(self, id):
@@ -234,12 +241,17 @@ class GitRepository(BaseRepository):
         """
         return GitInMemoryChangeset(self)
 
-    def pull(self, url):
+    def clone(self, url, update_after_clone):
         """
-        Tries to pull changes from external location.
+        Tries to clone changes from external location.
+        if update_after_clone is set To false it'll prevent the runing update
+        on workdir
         """
         url = self._get_url(url)
-        cmd = 'pull "%s" master' % url
+        t = ''
+        if not update_after_clone:
+            t = '--no-checkout'
+        cmd = 'clone %s "%s" ' % (url, t)
         # If error occurs run_git_command raises RepositoryError already
         self.run_git_command(cmd)
 
@@ -345,7 +357,7 @@ class GitChangeset(BaseChangeset):
                     name = item
                 self._paths[name] = id
             if not path in self._paths:
-                raise ChangesetError("There is no file nor directory "
+                raise NodeDoesNotExistError("There is no file nor directory "
                     "at the given path %r at revision %r"
                     % (path, self.revision))
         return self._paths[path]
@@ -468,7 +480,7 @@ class GitChangeset(BaseChangeset):
             elif isinstance(obj, objects.Blob):
                 node = FileNode(path, changeset=self)
             else:
-                raise ChangesetError("There is no file nor directory "
+                raise NodeDoesNotExistError("There is no file nor directory "
                     "at the given path %r at revision %r"
                     % (path, self.revision))
             # cache node
@@ -563,7 +575,7 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
             object_store.add_object(blob)
         for node in self.changed:
             blob = objects.Blob.from_string(node.content.encode(ENCODING))
-            tree[node.path] = blob.id
+            tree[node.path] = 0100644, blob.id
             object_store.add_object(blob)
         for node in self.removed:
             del tree[node.path]

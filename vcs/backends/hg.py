@@ -24,9 +24,13 @@ from mercurial.node import hex
 from mercurial.commands import clone, pull
 from mercurial.context import memctx, memfilectx
 
-from vcs.backends.base import BaseRepository, BaseChangeset,\
+from vcs.backends.base import BaseRepository, BaseChangeset, \
     BaseInMemoryChangeset
-from vcs.exceptions import RepositoryError, ChangesetError
+from vcs.exceptions import RepositoryError
+from vcs.exceptions import EmptyRepositoryError
+from vcs.exceptions import ChangesetError
+from vcs.exceptions import ChangesetDoesNotExistError
+from vcs.exceptions import NodeDoesNotExistError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
@@ -38,7 +42,8 @@ class MercurialRepository(BaseRepository):
     Mercurial repository backend
     """
 
-    def __init__(self, repo_path, create=False, baseui=None, clone_url=None):
+    def __init__(self, repo_path, create=False, baseui=None, src_url=None,
+                 update_after_clone=False):
         """
         Raises RepositoryError if repository could not be find at the given
         ``repo_path``.
@@ -47,13 +52,15 @@ class MercurialRepository(BaseRepository):
         :param create=False: if set to True, would try to craete repository if
            it does not exist rather than raising exception
         :param baseui=None: user data
-        :param clone_url=None: would try to clone repository from given location
+        :param src_url=None: would try to clone repository from given location
+        :param update_after_clone=False: sets update of working copy after
+          making a clone
         """
 
         self.path = abspath(repo_path)
         self.baseui = baseui or ui.ui()
         # We've set path and ui, now we can set repo itself
-        self._set_repo(create, clone_url)
+        self._set_repo(create, src_url, update_after_clone)
         self.revisions = list(self.repo)
         self.changesets = {}
 
@@ -65,7 +72,7 @@ class MercurialRepository(BaseRepository):
     def branches(self):
         if not self.revisions:
             return {}
-        
+
         sortkey = lambda ctx: ('close' not in ctx[1]._ctx.extra(),
                                ctx[1]._ctx.rev())
         s_branches = sorted([(name, self.get_changeset(short(head))) for
@@ -83,20 +90,24 @@ class MercurialRepository(BaseRepository):
             name, head in self.repo.tags().items()], key=sortkey, reverse=True)
         return OrderedDict((name, cs.short_id) for name, cs in s_tags)
 
-    def _set_repo(self, create, clone_url=None):
+    def _set_repo(self, create, src_url=None, update_after_clone=False):
         """
         Function will check for mercurial repository in given path and return
         a localrepo object. If there is no repository in that path it will raise
         an exception unless ``create`` parameter is set to True - in that case
         repository would be created and returned.
-        If ``clone_url`` is given, would try to clone repository from the
-        location.
+        If ``src_url`` is given, would try to clone repository from the
+        location at given clone_point. Additionally it'll make update to 
+        working copy accordingly to ``update_after_clone`` flag
         """
         try:
-            if clone_url:
-                url = self._get_url(clone_url)
+            if src_url:
+                url = self._get_url(src_url)
+                opts = {}
+                if not update_after_clone:
+                    opts.update({'noupdate':True})                                
                 try:
-                    clone(self.baseui, url, self.path)
+                    clone(self.baseui, url, self.path, **opts)
                 except urllib2.URLError:
                     raise Abort("Got HTTP 404 error")
                 # Don't try to create if we've already cloned repo
@@ -151,20 +162,20 @@ class MercurialRepository(BaseRepository):
 
     def _get_revision(self, revision):
         if len(self.revisions) == 0:
-            raise RepositoryError("There are no changesets yet")
+            raise EmptyRepositoryError("There are no changesets yet")
         if revision in (None, 'tip', -1):
             revision = self.revisions[-1]
         if isinstance(revision, int) and revision not in self.revisions:
-            raise RepositoryError("Revision %r does not exist for this "
-                "repository %s" % (revision, self))
+            raise ChangesetDoesNotExistError("Revision %r does not exist "
+                "for this repository %s" % (revision, self))
         elif isinstance(revision, (str, unicode)) and revision.isdigit() \
                                                     and len(revision) < 12:
             revision = int(revision)
         elif isinstance(revision, (str, unicode)):
             pattern = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
             if not pattern.match(revision):
-                raise RepositoryError("Revision %r does not exist for this "
-                    "repository %s" % (revision, self))
+                raise ChangesetDoesNotExistError("Revision %r does not exist "
+                    "for this repository %s" % (revision, self))
         return revision
 
     def _get_archives(self, archive_name='tip'):
@@ -413,7 +424,7 @@ class MercurialChangeset(BaseChangeset):
                 else:
                     node = DirNode(path, changeset=self)
             else:
-                raise ChangesetError("There is no file nor directory "
+                raise NodeDoesNotExistError("There is no file nor directory "
                     "at the given path: %r at revision %r"
                     % (path, '%s:%s' % (self.revision, self.id)))
             # cache node
@@ -544,4 +555,7 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         tip = self.repository.get_changeset()
         self.reset()
         return tip
+    
+
+
 
