@@ -52,7 +52,7 @@ Let's ask repo about the content...
 
 .. code-block:: python
 
-   >>> root = repo.request('')
+   >>> root = repo.get_changeset().get_node('')
    >>> print root.nodes # prints nodes of the RootNode
    [<DirNode ''>, <DirNode 'docs'>, <DirNode 'tests'>, # ... (chopped)
    >>>
@@ -91,7 +91,7 @@ Now let's ask for nodes at revision 44
    >>> chset44 = repo.get_changeset(44)
    >>> root = chset44.root
    >>> # You may also use shorter one-liner:
-   >>> root = repo.request('', 44)
+   >>> root = repo.get_changeset(44).get_node('')
 
 .. note::
    If you have to check this to believe, you may get raw id of the changeset and
@@ -116,11 +116,11 @@ Now let's ask for nodes at revision 44
 .. code-block:: python
 
    >>> # Fetch vcs directory
-   >>> vcs = repo.request('vcs', 44)
+   >>> vcs = repo.get_changeset(44).get_node('vcs')
    >>> print vcs.dirs
    [<DirNode 'vcs/backends'>, <DirNode 'vcs/utils'>, <DirNode 'vcs/web'>]
    >>> web_node = vcs.dirs[-1]
-   >>> web = repo.request(web_node.path, 44)
+   >>> web = repo.get_changeset(44).get_node(web_node.path)
    >>> print web.nodes
    [<DirNode 'vcs/web/simplevcs'>, <FileNode 'vcs/web/__init__.py'>]
    >>> print web.files
@@ -172,7 +172,7 @@ Give me a file, finally!
 
 .. code-block:: python
 
-   >>> root = repo.request('', 44)
+   >>> root = repo.get_changeset(44).get_node('')
    >>> backends = root.get_node('vcs/backends')
    >>> backends.files
    [<FileNode 'vcs/backends/__init__.py'>,
@@ -210,7 +210,7 @@ Give me a file, finally!
    <DirNode 'vcs/backends'>
    >>>
    >>> # is it cached? hell yeah...
-   >>> f is f.parent.get_node('hg.py') is repo.request('vcs/backends/hg.py', 44)
+   >>> f is f.parent.get_node('hg.py') is repo.get_changeset(44).get_node('vcs/backends/hg.py')
    True
 
 How about history?
@@ -224,7 +224,7 @@ at ``vcs/nodes.py``.
 
 .. code-block:: python
 
-   >>> f = repo.request('vcs/nodes.py')
+   >>> f = repo.get_changeset().get_node('vcs/nodes.py')
    >>> print f.history
    [<MercurialChangeset at 82>, <MercurialChangeset at 81>, <MercurialChange
    ...
@@ -242,8 +242,8 @@ and we create a html file using `difflib`_.
 
 .. code-block:: python
 
-   >>> f = repo.request('vcs/nodes.py', 82)
-   >>> f_old = repo.request(f.path, 81)
+   >>> f = repo.get_changeset(82).get_node('vcs/nodes.py')
+   >>> f_old = repo.get_changeset(81).get_node(f.path)
    >>> out = open('out.html', 'w')
    >>> from difflib import HtmlDiff
    >>> hd = HtmlDiff(tabsize=4)
