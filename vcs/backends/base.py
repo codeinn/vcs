@@ -134,15 +134,6 @@ class BaseRepository(object):
     def count(self):
         return len(self.revisions)
 
-    def request(self, path, revision=None):
-        chset = self.get_changeset(revision)
-        node = chset.get_node(path)
-        return node
-
-    def walk(self, topurl='', revision=None):
-        chset = self.get_changeset(revision)
-        return chset.walk(topurl)
-
     # ========== #
     # COMMIT API #
     # ========== #

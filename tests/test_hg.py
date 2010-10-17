@@ -14,7 +14,7 @@ class MercurialRepositoryTest(unittest2.TestCase):
         if os.path.exists(TEST_HG_REPO_CLONE):
             self.fail('Cannot test mercurial clone repo as location %s already '
                       'exists. You should manually remove it first.'
-                      % TEST_HG_REPO_CLONE)        
+                      % TEST_HG_REPO_CLONE)
 
     def setUp(self):
         self.repo = MercurialRepository(TEST_HG_REPO)
@@ -39,22 +39,22 @@ class MercurialRepositoryTest(unittest2.TestCase):
         repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_w_update',
             src_url=PACKAGE_DIR, update_after_clone=True)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
-        
+
         #check if current workdir was updated
         self.assertEqual(os.path.isfile(os.path.join(TEST_HG_REPO_CLONE \
                                                     + '_w_update',
                                                     'MANIFEST.in')), True,)
-        
-        
+
+
     def test_repo_clone_without_update(self):
         repo = MercurialRepository(PACKAGE_DIR)
         repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_wo_update',
-            src_url=PACKAGE_DIR, update_after_clone=False)    
+            src_url=PACKAGE_DIR, update_after_clone=False)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
         self.assertEqual(os.path.isfile(os.path.join(TEST_HG_REPO_CLONE \
                                                     + '_wo_update',
                                                     'MANIFEST.in')), False,)
-            
+
     def test_pull(self):
         if os.path.exists(TEST_HG_REPO_PULL):
             self.fail('Cannot test mercurial pull command as location %s '
