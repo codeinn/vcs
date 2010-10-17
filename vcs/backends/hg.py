@@ -97,7 +97,7 @@ class MercurialRepository(BaseRepository):
         an exception unless ``create`` parameter is set to True - in that case
         repository would be created and returned.
         If ``src_url`` is given, would try to clone repository from the
-        location at given clone_point. Additionally it'll make update to 
+        location at given clone_point. Additionally it'll make update to
         working copy accordingly to ``update_after_clone`` flag
         """
         try:
@@ -105,7 +105,7 @@ class MercurialRepository(BaseRepository):
                 url = self._get_url(src_url)
                 opts = {}
                 if not update_after_clone:
-                    opts.update({'noupdate':True})                                
+                    opts.update({'noupdate':True})
                 try:
                     clone(self.baseui, url, self.path, **opts)
                 except urllib2.URLError:
@@ -344,14 +344,6 @@ class MercurialChangeset(BaseChangeset):
         """
         return safe_unicode(self.get_file_changeset(path).message)
 
-    def get_file_revision(self, path):
-        """
-        Returns revision of the last commit related to file at the given
-        ``path``.
-        """
-        fctx = self._get_filectx(path)
-        return fctx.linkrev()
-
     def get_file_changeset(self, path):
         """
         Returns last commit of the file at the given ``path``.
@@ -555,7 +547,7 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         tip = self.repository.get_changeset()
         self.reset()
         return tip
-    
+
 
 
 
