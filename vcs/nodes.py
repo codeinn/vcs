@@ -192,11 +192,6 @@ class FileNode(Node):
         return safe_unicode(content)
 
     @LazyProperty
-    def nodes(self):
-        raise NodeError("%s represents a file and has no ``nodes`` attribute"
-            % self)
-
-    @LazyProperty
     def size(self):
         if self.changeset:
             return self.changeset.get_file_size(self.path)
