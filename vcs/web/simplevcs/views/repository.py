@@ -62,7 +62,8 @@ def browse_repository(request, template_name, repository=None,
     try:
         repository = get_repository(repository, repository_path,
             repository_alias)
-        root = repository.request(node_path, revision=revision)
+        changeset = repository.get_changeset(revision)
+        root = changeset.get_node(node_path)
         if root.is_dir():
             readme_node = get_readme(root)
         else:

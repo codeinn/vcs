@@ -64,8 +64,10 @@ def diff_file(request, file_path, template_name, repository=None,
                 % file_path)
         repository = get_repository(repository, repository_path,
             repository_alias)
-        file_old = repository.request(file_path, revision_old)
-        file_new = repository.request(file_path, revision_new)
+        changeset_old = repository.get_changeset(revision_old)
+        changeset_new = repository.get_changeset(revision_new)
+        file_old = changeset_old(file_path)
+        file_new = changeset_new(file_path)
         diff_content = get_udiff(file_old, file_new)
 
         context.update(dict(

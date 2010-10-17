@@ -8,6 +8,8 @@ from vcs.utils.paths import get_dir_size
 from vcs.web.simplevcs.settings import AVAILABLE_BACKENDS
 from vcs.web.simplevcs.managers import RepositoryManager
 
+from warnings import warn
+
 def validate_alias(alias):
     if alias not in AVAILABLE_BACKENDS:
         raise ValidationError("Cannot use alias %r" % alias)
@@ -48,7 +50,10 @@ class Repository(models.Model):
             yield changeset
 
     def request(self, path, revision=None):
-        return self._repo.request(path, revision)
+        warn("request method is deprecated - use get_changeset to fetch a "
+             "changeset and then get_node explicity", DeprecationWarning)
+        changeset = self._repo.get_changeset(revision)
+        return changeset.get_node(path)
 
     def get_changeset(self, revision=None):
         return self._repo.get_changeset(revision)
