@@ -120,24 +120,6 @@ class GitRepositoryTest(unittest2.TestCase):
         for revision in self.repo.revisions[:10]:
             self._test_single_changeset_cache(revision)
 
-    def _test_request(self, path, revision):
-        chset = self.repo.get_changeset(revision)
-        self.assertEqual(chset.get_node(path),
-            self.repo.request(path, revision))
-
-    def test_request(self):
-        """ Tests if repo.request changeset.get_node would return same """
-        nodes_info = (
-            ('', '50e08c506174d8645a4bb517dd122ac946a0f3bf'),
-            ('README.rst', 'c877b68d18e792a66b7f4c529ea02c8f80801542'),
-            ('vcs', 'ca28fc8ac7b83c5e257a5a7bcf9a0d9ace715739'),
-            ('vcs/backends', 'd7e390a45f6aa96f04f5e7f583ad4f867431aa25'),
-            ('vcs/backends/hg.py', '34f4dd6dd285b533e6af23f794d63603e862f613'),
-        )
-        for path, revision in nodes_info:
-            self._test_request(path, revision)
-
-
     def test_initial_changeset(self):
         id = self.repo.revisions[0]
         init_chset = self.repo.get_changeset(id)
@@ -311,7 +293,7 @@ class GitChangesetTest(unittest2.TestCase):
             self._test_slices(limit, offset)
 
     def _test_file_size(self, revision, path, size):
-        node = self.repo.request(path, revision)
+        node = self.repo.get_changeset(revision).get_node(path)
         self.assertTrue(node.is_file())
         self.assertEqual(node.size, size)
 
@@ -394,7 +376,7 @@ class GitChangesetTest(unittest2.TestCase):
             ],
         }
         for path, revs in files.items():
-            node = self.repo.request(path)
+            node = self.repo.get_changeset().get_node(path)
             node_revs = [chset.raw_id for chset in node.history]
             self.assertTrue(set(revs).issubset(set(node_revs)),
                 "We assumed that %s is subset of revisions for which file %s "
@@ -491,24 +473,27 @@ class GitChangesetTest(unittest2.TestCase):
         """
         Tests state of FileNodes.
         """
-        node = self.repo.request('vcs/utils/diffs.py',
-            'e6ea6d16e2f26250124a1f4b4fe37a912f9d86a0')
+        node = self.repo\
+            .get_changeset('e6ea6d16e2f26250124a1f4b4fe37a912f9d86a0')\
+            .get_node('vcs/utils/diffs.py')
         self.assertTrue(node.state, NodeState.ADDED)
         self.assertTrue(node.added)
         self.assertFalse(node.changed)
         self.assertFalse(node.not_changed)
         self.assertFalse(node.removed)
 
-        node = self.repo.request('.hgignore',
-            '33fa3223355104431402a888fa77a4e9956feb3e')
+        node = self.repo\
+            .get_changeset('33fa3223355104431402a888fa77a4e9956feb3e')\
+            .get_node('.hgignore')
         self.assertTrue(node.state, NodeState.CHANGED)
         self.assertFalse(node.added)
         self.assertTrue(node.changed)
         self.assertFalse(node.not_changed)
         self.assertFalse(node.removed)
 
-        node = self.repo.request('setup.py',
-            'e29b67bd158580fc90fc5e9111240b90e6e86064')
+        node = self.repo\
+            .get_changeset('e29b67bd158580fc90fc5e9111240b90e6e86064')\
+            .get_node('setup.py')
         self.assertTrue(node.state, NodeState.NOT_CHANGED)
         self.assertFalse(node.added)
         self.assertFalse(node.changed)
@@ -547,5 +532,6 @@ class GitChangesetTest(unittest2.TestCase):
     def test_wrong_path(self):
         # There is 'setup.py' in the root dir but not there:
         path = 'foo/bar/setup.py'
-        self.assertRaises(VCSError, self.repo.request, path)
+        tip = self.repo.get_changeset()
+        self.assertRaises(VCSError, tip.get_node, path)
 

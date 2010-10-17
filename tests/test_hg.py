@@ -2,8 +2,7 @@ import os
 import unittest2
 
 from vcs.backends.hg import MercurialRepository, MercurialChangeset
-from vcs.exceptions import ChangesetError, RepositoryError, VCSError, \
-    NodeDoesNotExistError
+from vcs.exceptions import RepositoryError, VCSError, NodeDoesNotExistError
 from vcs.nodes import NodeKind, NodeState
 from conf import PACKAGE_DIR, TEST_HG_REPO, TEST_HG_REPO_CLONE, \
     TEST_HG_REPO_PULL
@@ -101,23 +100,6 @@ class MercurialRepositoryTest(unittest2.TestCase):
     def test_changesets_cache(self):
         for revision in xrange(0, 11):
             self._test_single_changeset_cache(revision)
-
-    def _test_request(self, path, revision):
-        chset = self.repo.get_changeset(revision)
-        self.assertEqual(chset.get_node(path),
-            self.repo.request(path, revision))
-
-    def test_request(self):
-        """ Tests if repo.request changeset.get_node would return same """
-        nodes_info = (
-            ('', 'tip'),
-            ('README.rst', 19),
-            ('vcs', 20),
-            ('vcs/backends', 21),
-            ('vcs/backends/hg.py', 25),
-        )
-        for path, revision in nodes_info:
-            self._test_request(path, revision)
 
     def test_initial_changeset(self):
 
@@ -293,7 +275,7 @@ class MercurialChangesetTest(unittest2.TestCase):
             self._test_slices(limit, offset)
 
     def _test_file_size(self, revision, path, size):
-        node = self.repo.request(path, revision)
+        node = self.repo.get_changeset(revision).get_node(path)
         self.assertTrue(node.is_file())
         self.assertEqual(node.size, size)
 
@@ -323,7 +305,8 @@ class MercurialChangesetTest(unittest2.TestCase):
                 82],
         }
         for path, revs in files.items():
-            node = self.repo.request(path)
+            tip = self.repo.get_changeset()
+            node = tip.get_node(path)
             node_revs = [chset.revision for chset in node.history]
             self.assertTrue(set(revs).issubset(set(node_revs)),
                 "We assumed that %s is subset of revisions for which file %s "
@@ -422,21 +405,24 @@ class MercurialChangesetTest(unittest2.TestCase):
         """
         Tests state of FileNodes.
         """
-        node = self.repo.request('vcs/utils/diffs.py', 85)
+        chset = self.repo.get_changeset(85)
+        node = chset.get_node('vcs/utils/diffs.py')
         self.assertTrue(node.state, NodeState.ADDED)
         self.assertTrue(node.added)
         self.assertFalse(node.changed)
         self.assertFalse(node.not_changed)
         self.assertFalse(node.removed)
 
-        node = self.repo.request('.hgignore', 88)
+        chset = self.repo.get_changeset(88)
+        node = chset.get_node('.hgignore')
         self.assertTrue(node.state, NodeState.CHANGED)
         self.assertFalse(node.added)
         self.assertTrue(node.changed)
         self.assertFalse(node.not_changed)
         self.assertFalse(node.removed)
 
-        node = self.repo.request('setup.py', 85)
+        chset = self.repo.get_changeset(85)
+        node = chset.get_node('setup.py')
         self.assertTrue(node.state, NodeState.NOT_CHANGED)
         self.assertFalse(node.added)
         self.assertFalse(node.changed)
@@ -468,5 +454,5 @@ class MercurialChangesetTest(unittest2.TestCase):
     def test_wrong_path(self):
         # There is 'setup.py' in the root dir but not there:
         path = 'foo/bar/setup.py'
-        self.assertRaises(VCSError, self.repo.request, path)
+        self.assertRaises(VCSError, self.repo.get_changeset().get_node, path)
 
