@@ -206,7 +206,7 @@ class FileNode(Node):
     @LazyProperty
     def message(self):
         if self.changeset:
-            return self.changeset.get_file_message(self.path)
+            return self.last_changeset.message
         raise NodeError("Cannot retrieve message of the file without related "
             "changeset attribute")
 

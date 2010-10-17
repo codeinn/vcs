@@ -337,13 +337,6 @@ class MercurialChangeset(BaseChangeset):
         fctx = self._get_filectx(path)
         return fctx.size()
 
-    def get_file_message(self, path):
-        """
-        Returns message of the last commit related to file at the given
-        ``path``.
-        """
-        return safe_unicode(self.get_file_changeset(path).message)
-
     def get_file_changeset(self, path):
         """
         Returns last commit of the file at the given ``path``.
