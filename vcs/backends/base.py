@@ -20,6 +20,7 @@ from vcs.exceptions import NodeAlreadyChangedError
 from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import NodeNotChangedError
 
+from warnings import warn
 
 class BaseRepository(object):
     """
@@ -133,6 +134,22 @@ class BaseRepository(object):
 
     def count(self):
         return len(self.revisions)
+
+    def request(self, path, revision=None):
+        warn("request method is deprecated and will be removed in version 1.0."
+             " Please, use get_changeset to retrieve revision and then get_node"
+             " method instead.", DeprecationWarning)
+        chset = self.get_changeset(revision)
+        node = chset.get_node(path)
+        return node
+
+    def walk(self, topurl='', revision=None):
+        warn("walk method is deprecated and will be removed in version 1.0. "
+             "Please, use get_changeset to retrieve revision and then walk "
+             "method instead.", DeprecationWarning)
+        chset = self.get_changeset(revision)
+        return chset.walk(topurl)
+
 
     # ========== #
     # COMMIT API #
