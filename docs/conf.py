@@ -25,6 +25,12 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'django.conf.global_settings'
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc']
+try:
+    import rst2pdf
+    if rst2pdf.version >= '0.16':
+        extensions.append('rst2pdf.pdfbuilder')
+except ImportError:
+    print "[NOTE] In order to build PDF you need rst2pdf with version >=0.16"
 
 autoclass_content = "both"
 
@@ -196,3 +202,11 @@ latex_documents = [
 
 # If false, no module index is generated.
 #latex_use_modindex = True
+
+pdf_documents = [
+    ('index', u'vcs', u'vcs Documentation',
+        u'Marcin Kuzminski & Lukasz Balcerzak'),
+]
+pdf_stylesheets = ['sphinx','kerning','a4']
+pdf_break_level = 1
+
