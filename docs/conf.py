@@ -209,4 +209,5 @@ pdf_documents = [
 ]
 pdf_stylesheets = ['sphinx','kerning','a4']
 pdf_break_level = 1
+pdf_inline_footnotes = True
 

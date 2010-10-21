@@ -169,6 +169,26 @@ class InMemoryChangesetTestMixin(object):
         self.assertTrue(not any((self.imc.added, self.imc.changed,
             self.imc.removed)))
 
+    def test_10_commits(self):
+        N = 10
+        last = None
+        for x in xrange(N):
+            fname = 'file%s' % str(x).rjust(5, '0')
+            content = 'foobar\n' * x
+            node = FileNode(fname, content=content)
+            self.imc.add(node)
+            commit = self.imc.commit("Commit no. %s" % (x+1), author='vcs')
+            self.assertTrue(last != commit)
+            last = commit
+
+        # Check commit number for same repo
+        self.assertEqual(len(self.repo.revisions), N)
+
+        # Check commit number for recreated repo
+        backend = self.get_backend()
+        repo = backend(self.repo_path)
+        self.assertEqual(len(repo.revisions), N)
+
 
 # For each backend create test case class
 for alias in SCM_TESTS:
