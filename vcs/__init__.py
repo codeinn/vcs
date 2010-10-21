@@ -2,7 +2,7 @@
 Various Version Control System management abstraction layer for Python.
 """
 
-VERSION = (0, 1, 9, 'dev')
+VERSION = (0, 1, 9)
 
 __version__ = '.'.join((str(each) for each in VERSION[:4]))
 
