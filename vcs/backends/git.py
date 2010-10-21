@@ -594,7 +594,7 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         # Create commit
         commit = objects.Commit()
         commit.tree = tree.id
-        commit.parents = tip and [tip] or []
+        commit.parents = tip and [tip.id] or []
         commit.author = commit.committer = author
         commit.commit_time = commit.author_time = int(time.time())
         tz = time.timezone

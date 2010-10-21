@@ -169,8 +169,8 @@ class InMemoryChangesetTestMixin(object):
         self.assertTrue(not any((self.imc.added, self.imc.changed,
             self.imc.removed)))
 
-    def test_10_commits(self):
-        N = 10
+    def test_multiple_commits(self):
+        N = 3 # number of commits to perform
         last = None
         for x in xrange(N):
             fname = 'file%s' % str(x).rjust(5, '0')
