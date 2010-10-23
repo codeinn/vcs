@@ -1,4 +1,4 @@
 """
-Django pluggable appliation build on top of ``vcs``.
+Django pluggable application build on top of ``vcs``.
 """
 
