@@ -147,6 +147,11 @@ class GitRepository(BaseRepository):
                 % revision)
         return revision
 
+    def _get_archives(self, archive_name='tip'):
+
+        for i in [('zip', '.zip'), ('gz', '.tar.gz'), ('bz2', '.tar.bz2')]:
+                yield {"type" : i[0], "extension": i[1], "node": archive_name}
+
     def _get_tree(self, id):
         return self._repo[id]
 
@@ -302,7 +307,7 @@ class GitChangeset(BaseChangeset):
         refs = self.repository._repo.get_refs()
         heads = [(key[len('refs/heads/'):], val) for key, val in refs.items()
             if key.startswith('refs/heads/')]
-        import pdb; pdb.set_trace()
+
         for name, id in heads:
             walker = self.repository._repo.object_store.get_graph_walker([id])
             while True:
