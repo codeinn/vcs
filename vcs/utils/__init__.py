@@ -3,6 +3,7 @@ This module provides some useful tools for ``vcs`` like annotate/diff html
 output. It also includes some internal helpers.
 """
 import time
+import datetime
 
 def makedate():
     lt = time.localtime()
@@ -11,6 +12,15 @@ def makedate():
     else:
         tz = time.timezone
     return time.mktime(lt), tz
+
+def date_fromtimestamp(unixts, tzoffset=0):
+    """
+    Makes a datetime objec out of unix timestamp with given timezone offset
+    :param unixts:
+    :param tzoffset:
+    """
+    return datetime.datetime(*time.gmtime(float(unixts) - tzoffset)[:6])
+
 
 def safe_unicode(str):
     """

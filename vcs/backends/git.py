@@ -9,7 +9,6 @@ Git backend implementation.
 import os
 import re
 import time
-import datetime
 
 from subprocess import Popen, PIPE
 
@@ -26,11 +25,10 @@ from vcs.exceptions import NodeDoesNotExistError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.paths import abspath
 from vcs.utils.lazy import LazyProperty
-from vcs.utils import safe_unicode
+from vcs.utils import safe_unicode, makedate, date_fromtimestamp
 
 from dulwich.repo import Repo, NotGitRepository
 from dulwich import objects
-
 
 class GitRepository(BaseRepository):
     """
@@ -172,10 +170,9 @@ class GitRepository(BaseRepository):
     @LazyProperty
     def last_change(self):
         """
-        Returns last change made on this repository
+        Returns last change made on this repository as datetime object
         """
-        from vcs.utils import makedate
-        return (self._get_mtime(), makedate()[1])
+        return date_fromtimestamp(self._get_mtime(), makedate()[1])
 
     def _get_mtime(self):
         try:
@@ -294,9 +291,9 @@ class GitChangeset(BaseChangeset):
         except UnicodeDecodeError:
             self.message = commit.message[:-1].decode(commit.encoding
                 or 'utf-8')
-        #self.branch = None
-        #self.tags =
-        self.date = datetime.datetime.fromtimestamp(commit.commit_time)
+        self.branch = None
+        self.tags = []
+        self.date = date_fromtimestamp(commit.commit_time, commit.commit_timezone)
         #tree = self.repository.get_object(self._tree_id)
         self.nodes = {}
         self._paths = {}

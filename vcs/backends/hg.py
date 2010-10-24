@@ -12,7 +12,6 @@ import os
 import re
 import time
 import urllib2
-import datetime
 import posixpath
 import errno
 
@@ -35,7 +34,7 @@ from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils.paths import abspath, get_dirs_for_path
-from vcs.utils import safe_unicode
+from vcs.utils import safe_unicode, makedate, date_fromtimestamp
 
 class MercurialRepository(BaseRepository):
     """
@@ -140,10 +139,9 @@ class MercurialRepository(BaseRepository):
     @LazyProperty
     def last_change(self):
         """
-        Returns last change made on this repository
+        Returns last change made on this repository as datetime object
         """
-        from vcs.utils import makedate
-        return (self._get_mtime(), makedate()[1])
+        return date_fromtimestamp(self._get_mtime(), makedate()[1])
 
     def _get_mtime(self):
         try:
@@ -260,7 +258,7 @@ class MercurialChangeset(BaseChangeset):
         self.message = safe_unicode(ctx.description())
         self.branch = ctx.branch()
         self.tags = ctx.tags()
-        self.date = datetime.datetime.fromtimestamp(ctx.date()[0])
+        self.date = date_fromtimestamp(*ctx.date())
         self._file_paths = list(ctx)
         self._dir_paths = list(set(get_dirs_for_path(*self._file_paths)))
         self._dir_paths.insert(0, '') # Needed for root node
