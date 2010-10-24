@@ -22,7 +22,7 @@ class Repository(models.Model):
 
     @LazyProperty
     def _repo(self):
-        repo = get_repo(self.alias, path=self.path)
+        repo = get_repo(path=self.path, alias=self.alias)
         return repo
 
     @LazyProperty

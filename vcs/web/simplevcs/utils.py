@@ -59,7 +59,7 @@ class MercurialRequest(wsgirequest):
             request.META['PATH_INFO'] += '/'
         self.env = request.META
         self.env['SCRIPT_NAME'] = request.path
-        self.env['PATH_INFO'] ='/'
+        self.env['PATH_INFO'] = '/'
         if request.user:
             self.env['REMOTE_USER'] = request.user.username
 
@@ -199,12 +199,12 @@ def get_mercurial_response(request, repo_path, baseurl=None, name=None,
     """
     repo_path = str(repo_path) # mercurial requires str, not unicode
     webinfo = dict(
-        name = name,
-        baseurl = baseurl,
-        push_ssl = push_ssl,
-        description = description,
-        contact = contact,
-        allow_push = allow_push,
+        name=name,
+        baseurl=baseurl,
+        push_ssl=push_ssl,
+        description=description,
+        contact=contact,
+        allow_push=allow_push,
     )
     mercurial_server = MercurialServer(repo_path, **webinfo)
     if username is not None:
@@ -280,7 +280,7 @@ def get_repository(repository=None, path=None, alias=None):
     elif repository is None and not (path and alias):
         raise RequestError("Have to pass repository OR path/alias")
     if repository is None:
-        repository = get_repo(alias=alias, path=path)
+        repository = get_repo(path=path, alias=alias)
     return repository
 
 def str2obj(text):

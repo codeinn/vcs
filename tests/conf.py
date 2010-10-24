@@ -8,6 +8,7 @@ import tempfile
 import datetime
 
 from utils import get_normalized_path
+from os.path import join as jn
 
 __all__ = (
     'TEST_HG_REPO', 'TEST_GIT_REPO', 'HG_REMOTE_REPO', 'GIT_REMOTE_REPO',
@@ -18,20 +19,22 @@ SCM_TESTS = ['hg', 'git']
 uniq_suffix = str(int(time.mktime(datetime.datetime.now().timetuple())))
 
 GIT_REMOTE_REPO = 'git://github.com/lukaszb/vcs.git'
+
+TEST_TMP_PATH = '/tmp'
 TEST_GIT_REPO = os.environ.get('VCS_TEST_GIT_REPO',
-                              '/tmp/vcs-git%s' % uniq_suffix)
+                              jn(TEST_TMP_PATH, 'vcs-git%s' % uniq_suffix))
 TEST_GIT_REPO_CLONE = os.environ.get('VCS_TEST_GIT_REPO_CLONE',
-                                    '/tmp/vcsgitclone%s' % uniq_suffix)
+                            jn(TEST_TMP_PATH, 'vcsgitclone%s' % uniq_suffix))
 TEST_GIT_REPO_PULL = os.environ.get('VCS_TEST_GIT_REPO_PULL',
-                                   '/tmp/vcsgitpull%s' % uniq_suffix)
+                            jn(TEST_TMP_PATH, 'vcsgitpull%s' % uniq_suffix))
 
 HG_REMOTE_REPO = 'http://bitbucket.org/marcinkuzminski/vcs'
 TEST_HG_REPO = os.environ.get('VCS_TEST_HG_REPO',
-                              '/tmp/vcs-hg%s' % uniq_suffix)
+                              jn(TEST_TMP_PATH, 'vcs-hg%s' % uniq_suffix))
 TEST_HG_REPO_CLONE = os.environ.get('VCS_TEST_HG_REPO_CLONE',
-                                    '/tmp/vcshgclone%s' % uniq_suffix)
+                              jn(TEST_TMP_PATH, 'vcshgclone%s' % uniq_suffix))
 TEST_HG_REPO_PULL = os.environ.get('VCS_TEST_HG_REPO_PULL',
-                                   '/tmp/vcshgpull%s' % uniq_suffix)
+                              jn(TEST_TMP_PATH, 'vcshgpull%s' % uniq_suffix))
 
 TEST_DIR = tempfile.gettempdir()
 TEST_REPO_PREFIX = 'vcs-test'
