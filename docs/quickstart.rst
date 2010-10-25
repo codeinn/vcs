@@ -42,8 +42,7 @@ object by providing it's type and path.
    >>> from vcs import get_repo
    >>>
    >>> # create mercurial repository representation at current dir
-   >>> # alias tells which backend should be used (see vcs.BACKENDS)
-   >>> repo = get_repo(alias='hg', path='.')
+   >>> repo = get_repo(path='')
 
 Basics
 ------
