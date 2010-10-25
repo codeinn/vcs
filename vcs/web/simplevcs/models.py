@@ -70,9 +70,10 @@ class Repository(models.Model):
                 self.repo = backend(self.path, clone_url=clone_url)
         else:
             try:
-                self.repo = get_repo(self.alias, path=self.path, create=True)
+                self.repo = get_repo(path=self.path, alias=self.alias,
+                    create=True)
             except RepositoryError:
-                self.repo = get_repo(self.alias, path=self.path)
+                self.repo = get_repo(path=self.path, alias=self.alias)
         super(Repository, self).save(*args, **kwargs)
 
 
