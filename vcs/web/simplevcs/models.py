@@ -65,9 +65,9 @@ class Repository(models.Model):
         if clone_url:
             backend = get_backend(self.alias)
             try:
-                self.repo = backend(self.path, create=True, clone_url=clone_url)
+                self.repo = backend(self.path, create=True, src_url=clone_url)
             except RepositoryError:
-                self.repo = backend(self.path, clone_url=clone_url)
+                self.repo = backend(self.path, src_url=clone_url)
         else:
             try:
                 self.repo = get_repo(path=self.path, alias=self.alias,
@@ -93,6 +93,10 @@ class RepositoryInfo(models.Model):
         Returns current size of repository directory.
         """
         size = get_dir_size(self.repository.path)
+        if size != self.size:
+            self.size = size
+            if self.id:
+                RepositoryInfo.objects.filter(id=self.id).update(size=size)
         return size
 
 from vcs.web.simplevcs.listeners import start_listening
