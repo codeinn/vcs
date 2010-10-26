@@ -72,22 +72,20 @@ class MercurialRepository(BaseRepository):
         if not self.revisions:
             return {}
 
-        sortkey = lambda ctx: ('close' not in ctx[1]._ctx.extra(),
-                               ctx[1]._ctx.rev())
+        sortkey = lambda ctx: ('close' not in ctx[1]._ctx.extra(), ctx[0])
         s_branches = sorted([(name, self.get_changeset(short(head))) for
             name, head in self.repo.branchtags().items()], key=sortkey,
-            reverse=True)
-        return OrderedDict((name, cs.short_id) for name, cs in s_branches)
+            reverse=False)
+        return OrderedDict((name, cs.raw_id) for name, cs in s_branches)
 
     @LazyProperty
     def tags(self):
         if not self.revisions:
             return {}
 
-        sortkey = lambda ctx: ctx[1]._ctx.rev()
-        s_tags = sorted([(name, self.get_changeset(short(head))) for
-            name, head in self.repo.tags().items()], key=sortkey, reverse=True)
-        return OrderedDict((name, cs.short_id) for name, cs in s_tags)
+        sortkey = lambda ctx: ctx[0]
+        _tags = [(name, hex(head),) for name, head in self.repo.tags().items()]
+        return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
 
     def _set_repo(self, create, src_url=None, update_after_clone=False):
         """

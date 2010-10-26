@@ -25,6 +25,7 @@ from vcs.exceptions import NodeDoesNotExistError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.paths import abspath
 from vcs.utils.lazy import LazyProperty
+from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils import safe_unicode, makedate, date_fromtimestamp
 
 from dulwich.repo import Repo, NotGitRepository
@@ -200,18 +201,22 @@ class GitRepository(BaseRepository):
         if not self.revisions:
             return {}
         refs = self._repo.refs.as_dict()
-        return dict((ref.split('/')[-1], id)
-            for ref, id in refs.items()
-            if ref.startswith('refs/heads/') and not ref.endswith('/HEAD'))
-
+        print refs
+        sortkey = lambda ctx:ctx[0]
+        _branches = [(ref.split('/')[-1], head)
+            for ref, head in refs.items()
+            if ref.startswith('refs/heads/') or
+            ref.startswith('refs/remotes/') and not ref.endswith('/HEAD')]
+        return OrderedDict(sorted(_branches, key=sortkey, reverse=False))
 
     @LazyProperty
     def tags(self):
         if not self.revisions:
             return {}
-        return dict((ref.split('/')[-1], id) for ref, id in
-            self._repo.get_refs().items()
-            if ref.startswith('refs/tags/'))
+        sortkey = lambda ctx:ctx[0]
+        _tags = [(ref.split('/')[-1], head,) for ref, head in
+            self._repo.get_refs().items() if ref.startswith('refs/tags/')]
+        return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
 
     def get_changeset(self, revision=None):
         """
