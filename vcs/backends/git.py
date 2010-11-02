@@ -201,7 +201,6 @@ class GitRepository(BaseRepository):
         if not self.revisions:
             return {}
         refs = self._repo.refs.as_dict()
-        print refs
         sortkey = lambda ctx:ctx[0]
         _branches = [(ref.split('/')[-1], head)
             for ref, head in refs.items()
