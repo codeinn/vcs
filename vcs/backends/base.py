@@ -69,7 +69,14 @@ class BaseRepository(object):
 
     def __len__(self):
         return self.count()
-
+    
+    @LazyProperty
+    def alias(self):
+        from vcs.backends import BACKENDS
+        for k, v in BACKENDS.items():
+            if v.split('.')[-1] == str(self.__class__.__name__):
+                return k
+    
     @LazyProperty
     def name(self):
         raise NotImplementedError
