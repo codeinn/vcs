@@ -262,6 +262,21 @@ class MercurialChangeset(BaseChangeset):
         self._dir_paths.insert(0, '') # Needed for root node
         self.nodes = {}
 
+
+    @LazyProperty
+    def status(self):
+        """
+        Returns modified, added, removed, deleted files for current changeset
+        """
+
+        st1 = self.repository.repo.status(self._ctx.parents()[0], self._ctx)[:4]
+
+#        if len(self._ctx.parents()) > 1:
+#            st2 = self.repository.repo.status(self._ctx.parents()[1], self._ctx)[:4]
+#            return map(lambda x: x[0] + x[1], zip(st1, st2))
+
+        return st1
+
     @LazyProperty
     def _paths(self):
         return self._dir_paths + self._file_paths
@@ -275,7 +290,7 @@ class MercurialChangeset(BaseChangeset):
     @LazyProperty
     def raw_id(self):
         """
-        Returns raw string identifing this changeset, useful for web
+        Returns raw string identifying this changeset, useful for web
         representation.
         """
         return self._ctx.hex()
@@ -417,6 +432,10 @@ class MercurialChangeset(BaseChangeset):
         """
         Returns list of added ``FileNode`` objects.
         """
+        #use status when this cs is a merge
+        if len(self._ctx.parents()) > 1 :
+            return map(self.get_node, self.status[1])
+
         paths = self._ctx.files()
         added_nodes = []
         for path in paths:
@@ -430,11 +449,17 @@ class MercurialChangeset(BaseChangeset):
                 pass
         return added_nodes
 
+
+
     @LazyProperty
     def changed(self):
         """
         Returns list of modified ``FileNode`` objects.
         """
+        #use status when this cs is a merge
+        if len(self._ctx.parents()) > 1 :
+            return map(self.get_node, self.status[0])
+
         paths = self._ctx.files()
         changed_nodes = []
         for path in paths:
@@ -453,6 +478,10 @@ class MercurialChangeset(BaseChangeset):
         """
         Returns list of removed ``FileNode`` objects.
         """
+        #use status when this cs is a merge
+        if len(self._ctx.parents()) > 1 :
+            return map(self.get_node, self.status[2] + self.status[3])
+
         paths = self._ctx.files()
         removed_nodes = []
         for path in paths:
@@ -462,7 +491,6 @@ class MercurialChangeset(BaseChangeset):
                 node = RemovedFileNode(path=path)
                 removed_nodes.append(node)
         return removed_nodes
-
 
 
 class MercurialInMemoryChangeset(BaseInMemoryChangeset):
