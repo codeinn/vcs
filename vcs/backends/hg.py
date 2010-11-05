@@ -480,7 +480,7 @@ class MercurialChangeset(BaseChangeset):
         """
         #use status when this cs is a merge
         if len(self._ctx.parents()) > 1 :
-            return map(self.get_node, self.status[2] + self.status[3])
+            return map(RemovedFileNode, self.status[2] + self.status[3])
 
         paths = self._ctx.files()
         removed_nodes = []
