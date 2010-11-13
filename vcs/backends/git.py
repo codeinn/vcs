@@ -197,6 +197,11 @@ class GitRepository(BaseRepository):
             return undefined_description
 
     @LazyProperty
+    def contact(self):
+        undefined_contact = 'Unknown'
+        return undefined_contact
+
+    @LazyProperty
     def branches(self):
         if not self.revisions:
             return {}
