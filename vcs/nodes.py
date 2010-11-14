@@ -32,7 +32,7 @@ class Node(object):
     should use ``FileNode`` and ``DirNode`` subclasses rather than ``Node``
     directly.
 
-    Node's ``path`` cannot start with slash as we oparete on *relative* paths
+    Node's ``path`` cannot start with slash as we operate on *relative* paths
     only. Moreover, every single node is identified by the ``path`` attribute,
     so it cannot end with slash, too. Otherwise, path could lead to mistakes.
     """
@@ -188,7 +188,7 @@ class FileNode(Node):
             content = self.changeset.get_file_content(self.path)
         else:
             content = self._content
-        if self.is_binary(content):
+        if bool(content and '\0' in content):
             return content
         return safe_unicode(content)
 
@@ -286,14 +286,11 @@ class FileNode(Node):
             return NodeState.NOT_CHANGED
 
     @LazyProperty
-    def is_binary(self, content=None):
+    def is_binary(self):
         """
         Returns True if file has binary content.
         """
-        if not content:
-            content = self.content
-
-        return bool(content and '\0' in content)
+        return bool(self.content and '\0' in self.content)
 
     @LazyProperty
     def extension(self):
