@@ -223,11 +223,13 @@ class FileNode(Node):
         """
         if hasattr(self, '_mimetype'):
             return self._mimetype
-        if self.is_binary:
-            mtype = 'application/octet-stream'
-        else:
-            mtype = mimetypes.guess_type(self.name)[0]
-            if mtype is None:
+
+        mtype = mimetypes.guess_type(self.name)[0]
+
+        if mtype is None:
+            if self.is_binary:
+                mtype = 'application/octet-stream'
+            else:
                 mtype = 'text/plain'
         return mtype
 
