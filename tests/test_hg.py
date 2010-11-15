@@ -361,17 +361,47 @@ class MercurialChangesetTest(unittest2.TestCase):
         """
         Tests which files have been added/changed/removed at particular revision
         """
-        # 88, 85, 82, 68, 64
-        # 88:
-        #    added:   0
-        #    changed: 1 ['.hgignore']
-        #    removed: 0
-        chset88 = self.repo.get_changeset(88)
+
+        # rev 46ad32a4f974:
+        # hg st --rev 46ad32a4f974
+        #    changed: 13
+        #    added:   20
+        #    removed: 1
+        changed = set(['.hgignore'
+            , 'README.rst' , 'docs/conf.py' , 'docs/index.rst' , 'setup.py'
+            , 'tests/test_hg.py' , 'tests/test_nodes.py' , 'vcs/__init__.py'
+            , 'vcs/backends/__init__.py' , 'vcs/backends/base.py'
+            , 'vcs/backends/hg.py' , 'vcs/nodes.py' , 'vcs/utils/__init__.py'])
+
+        added = set(['docs/api/backends/hg.rst'
+            , 'docs/api/backends/index.rst' , 'docs/api/index.rst'
+            , 'docs/api/nodes.rst' , 'docs/api/web/index.rst'
+            , 'docs/api/web/simplevcs.rst' , 'docs/installation.rst'
+            , 'docs/quickstart.rst' , 'setup.cfg' , 'vcs/utils/baseui_config.py'
+            , 'vcs/utils/web.py' , 'vcs/web/__init__.py' , 'vcs/web/exceptions.py'
+            , 'vcs/web/simplevcs/__init__.py' , 'vcs/web/simplevcs/exceptions.py'
+            , 'vcs/web/simplevcs/middleware.py' , 'vcs/web/simplevcs/models.py'
+            , 'vcs/web/simplevcs/settings.py' , 'vcs/web/simplevcs/utils.py'
+            , 'vcs/web/simplevcs/views.py'])
+
+        removed = set(['docs/api.rst'])
+
+        chset64 = self.repo.get_changeset('46ad32a4f974')
+        self.assertEqual(set((node.path for node in chset64.added)), added)
+        self.assertEqual(set((node.path for node in chset64.changed)), changed)
+        self.assertEqual(set((node.path for node in chset64.removed)), removed)
+
+        # rev b090f22d27d6:
+        # hg st --rev b090f22d27d6
+        #    changed: 13
+        #    added:   20
+        #    removed: 1
+        chset88 = self.repo.get_changeset('b090f22d27d6')
         self.assertEqual(set((node.path for node in chset88.added)), set())
         self.assertEqual(set((node.path for node in chset88.changed)),
             set(['.hgignore']))
         self.assertEqual(set((node.path for node in chset88.removed)), set())
-
+#
         # 85:
         #    added:   2 ['vcs/utils/diffs.py', 'vcs/web/simplevcs/views/diffs.py']
         #    changed: 4 ['vcs/web/simplevcs/models.py', ...]
@@ -389,17 +419,6 @@ class MercurialChangesetTest(unittest2.TestCase):
         self.assertEqual(set((node.path for node in chset85.removed)),
             set(['vcs/utils/web.py']))
 
-        # 64:
-        #    added:   0
-        #    changed: 1 ['.hgignore']
-        #    removed: 20
-        chset64 = self.repo.get_changeset(64)
-        self.assertEqual(set((node.path for node in chset64.added)), set())
-        self.assertEqual(set((node.path for node in chset64.changed)),
-            set(['vcs/backends/base.py']))
-        self.assertTrue('docs/api.rst' in
-            [node.path for node in chset64.removed])
-        self.assertEqual(20, len(chset64.removed))
 
     def test_files_state(self):
         """
