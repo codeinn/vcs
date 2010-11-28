@@ -30,7 +30,9 @@ from vcs.exceptions import EmptyRepositoryError
 from vcs.exceptions import ChangesetError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import NodeDoesNotExistError
-from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
+from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode, \
+    RemovedFileNodesGenerator, ChangedFileNodesGenerator, \
+    AddedFileNodesGenerator
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils.paths import abspath, get_dirs_for_path
@@ -434,21 +436,16 @@ class MercurialChangeset(BaseChangeset):
         """
         #use status when this cs is a merge
         if len(self._ctx.parents()) > 1 :
-            return map(self.get_node, self.status[1])
+            return AddedFileNodesGenerator([n for n in self.status[1]], self)
 
         paths = self._ctx.files()
+        manifest = self._ctx.parents()[0].manifest().keys()
         added_nodes = []
         for path in paths:
-            try:
-                last_node = self.repository.get_changeset(hex(
-                                    self._get_filectx(path).filectx(0).node()))
-                node = self.get_node(path)
-                if last_node is self:
-                    added_nodes.append(node)
-            except ChangesetError:
-                pass
-        return added_nodes
+            if path not in manifest:
+                added_nodes.append(path)
 
+        return AddedFileNodesGenerator(added_nodes, self)
 
 
     @LazyProperty
@@ -458,20 +455,19 @@ class MercurialChangeset(BaseChangeset):
         """
         #use status when this cs is a merge
         if len(self._ctx.parents()) > 1 :
-            return map(self.get_node, self.status[0])
+            return ChangedFileNodesGenerator([ n for n in  self.status[0]], self)
 
         paths = self._ctx.files()
+        manifest = self._ctx.manifest().keys()
+        old_manifest = self._ctx.parents()[0].manifest().keys()
         changed_nodes = []
         for path in paths:
-            try:
-                last_node = self.repository.get_changeset(hex(
-                                    self._get_filectx(path).filectx(0).node()))
-                node = self.get_node(path)
-                if last_node is not self:
-                    changed_nodes.append(node)
-            except ChangesetError:
-                pass
-        return changed_nodes
+
+            if path in manifest and path in old_manifest:
+                changed_nodes.append(path)
+
+
+        return ChangedFileNodesGenerator(changed_nodes, self)
 
     @LazyProperty
     def removed(self):
@@ -480,17 +476,17 @@ class MercurialChangeset(BaseChangeset):
         """
         #use status when this cs is a merge
         if len(self._ctx.parents()) > 1 :
-            return map(RemovedFileNode, self.status[2] + self.status[3])
+            rm_nodes = self.status[2] + self.status[3]
+            return RemovedFileNodesGenerator([n for n in rm_nodes], self)
 
         paths = self._ctx.files()
+        manifest = self._ctx.manifest().keys()
         removed_nodes = []
         for path in paths:
-            try:
-                self.get_node(path)
-            except NodeDoesNotExistError:
-                node = RemovedFileNode(path=path)
-                removed_nodes.append(node)
-        return removed_nodes
+            if path not in manifest:
+                removed_nodes.append(path)
+
+        return RemovedFileNodesGenerator(removed_nodes, self)
 
 
 class MercurialInMemoryChangeset(BaseInMemoryChangeset):

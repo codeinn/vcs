@@ -26,6 +26,46 @@ class NodeState:
     NOT_CHANGED = u'not changed'
     REMOVED = u'removed'
 
+class NodeGeneratorBase(object):
+    """
+    Base class for removed added and changed filenodes, it's a lazy generator
+    class that will create filenodes only on iteration or call
+    
+    The len method doesn't need to create filenodes at all 
+    """
+
+    def __init__(self, current_paths, cs):
+        self.cs = cs
+        self.current_paths = current_paths
+
+    def __call__(self):
+        return [n for n in self]
+
+    def __len__(self):
+        return len(self.current_paths)
+
+    def __iter__(self):
+        for p in self.current_paths:
+            yield self.cs.get_node(p)
+
+class AddedFileNodesGenerator(NodeGeneratorBase):
+    """
+    Class holding Added files for current changeset
+    """
+    pass
+class ChangedFileNodesGenerator(NodeGeneratorBase):
+    """
+    Class holding Changed files for current changeset
+    """
+    pass
+class RemovedFileNodesGenerator(NodeGeneratorBase):
+    """
+    Class holding removed files for current changeset
+    """
+    def __iter__(self):
+        for p in self.current_paths:
+            yield RemovedFileNode(path=p)
+
 class Node(object):
     """
     Simplest class representing file or directory on repository.  SCM backends
