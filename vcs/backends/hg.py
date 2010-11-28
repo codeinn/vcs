@@ -375,7 +375,8 @@ class MercurialChangeset(BaseChangeset):
         """
         fctx = self._get_filectx(path)
         annotate = []
-        for ln_no, annotate_data in enumerate(fctx.annotate(), 1):
+        for i, annotate_data in enumerate(fctx.annotate()):
+            ln_no = i + 1
             annotate.append((ln_no, self.repository\
                              .get_changeset(hex(annotate_data[0].node())),
                              annotate_data[1],))
