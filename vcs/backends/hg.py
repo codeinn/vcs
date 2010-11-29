@@ -431,16 +431,20 @@ class MercurialChangeset(BaseChangeset):
         return self.nodes[path]
 
     @LazyProperty
+    def _ppm(self):
+        p = self._ctx.parents()
+        return p, self._ctx.files(), p[0].manifest().keys()
+
+    @LazyProperty
     def added(self):
         """
         Returns list of added ``FileNode`` objects.
         """
+        parents, paths, manifest = self._ppm
         #use status when this cs is a merge
-        if len(self._ctx.parents()) > 1 :
+        if len(parents) > 1 :
             return AddedFileNodesGenerator([n for n in self.status[1]], self)
 
-        paths = self._ctx.files()
-        manifest = self._ctx.parents()[0].manifest().keys()
         added_nodes = []
         for path in paths:
             if path not in manifest:
@@ -454,13 +458,12 @@ class MercurialChangeset(BaseChangeset):
         """
         Returns list of modified ``FileNode`` objects.
         """
+        parents, paths, manifest = self._ppm
         #use status when this cs is a merge
-        if len(self._ctx.parents()) > 1 :
+        if len(parents) > 1 :
             return ChangedFileNodesGenerator([ n for n in  self.status[0]], self)
 
-        paths = self._ctx.files()
-        manifest = self._ctx.manifest().keys()
-        old_manifest = self._ctx.parents()[0].manifest().keys()
+        old_manifest = parents[0].manifest().keys()
         changed_nodes = []
         for path in paths:
 
@@ -475,13 +478,12 @@ class MercurialChangeset(BaseChangeset):
         """
         Returns list of removed ``FileNode`` objects.
         """
+        parents, paths, manifest = self._ppm
         #use status when this cs is a merge
-        if len(self._ctx.parents()) > 1 :
+        if len(parents) > 1 :
             rm_nodes = self.status[2] + self.status[3]
             return RemovedFileNodesGenerator([n for n in rm_nodes], self)
 
-        paths = self._ctx.files()
-        manifest = self._ctx.manifest().keys()
         removed_nodes = []
         for path in paths:
             if path not in manifest:
