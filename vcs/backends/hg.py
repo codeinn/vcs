@@ -431,23 +431,28 @@ class MercurialChangeset(BaseChangeset):
         return self.nodes[path]
 
     @LazyProperty
-    def _ppm(self):
+    def _ppmp(self):
+        """
+        Helper cache function for getting manifest files used in added
+        changed removed functions
+        """
         p = self._ctx.parents()
-        return p, self._ctx.files(), p[0].manifest().keys()
+        return p, self._ctx.files(), \
+            self._ctx.manifest().keys(), p[0].manifest().keys()
 
     @LazyProperty
     def added(self):
         """
         Returns list of added ``FileNode`` objects.
         """
-        parents, paths, manifest = self._ppm
+        parents, paths, manifest, parent_manifest = self._ppmp
         #use status when this cs is a merge
         if len(parents) > 1 :
             return AddedFileNodesGenerator([n for n in self.status[1]], self)
 
         added_nodes = []
         for path in paths:
-            if path not in manifest:
+            if path not in parent_manifest:
                 added_nodes.append(path)
 
         return AddedFileNodesGenerator(added_nodes, self)
@@ -458,18 +463,15 @@ class MercurialChangeset(BaseChangeset):
         """
         Returns list of modified ``FileNode`` objects.
         """
-        parents, paths, manifest = self._ppm
+        parents, paths, manifest, parent_manifest = self._ppmp
         #use status when this cs is a merge
         if len(parents) > 1 :
             return ChangedFileNodesGenerator([ n for n in  self.status[0]], self)
 
-        old_manifest = parents[0].manifest().keys()
         changed_nodes = []
         for path in paths:
-
-            if path in manifest and path in old_manifest:
+            if path in manifest and path in parent_manifest:
                 changed_nodes.append(path)
-
 
         return ChangedFileNodesGenerator(changed_nodes, self)
 
@@ -478,7 +480,7 @@ class MercurialChangeset(BaseChangeset):
         """
         Returns list of removed ``FileNode`` objects.
         """
-        parents, paths, manifest = self._ppm
+        parents, paths, manifest, parent_manifest = self._ppmp
         #use status when this cs is a merge
         if len(parents) > 1 :
             rm_nodes = self.status[2] + self.status[3]
