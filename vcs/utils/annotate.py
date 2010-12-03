@@ -99,7 +99,7 @@ class AnnotateHtmlFormatter(HtmlFormatter):
                 if i % st == 0:
                     if i % sp == 0:
                         if aln:
-                            lines.append('<a href="#%s-%d" class="special">%*d</a>' % 
+                            lines.append('<a href="#%s-%d" class="special">%*d</a>' %
                                          (la, i, mw, i))
                         else:
                             lines.append('<span class="special">%*d</span>' % (mw, i))
@@ -124,9 +124,11 @@ class AnnotateHtmlFormatter(HtmlFormatter):
             ls = '\n'.join(lines)
 
         annotate_changesets = [tup[1] for tup in self.filenode.annotate]
-        # If pygments cropped last line break we need do that too
-        if len(annotate_changesets) > len(ls.splitlines()):
-            annotate_changesets = annotate_changesets[:-1]
+        # If pygments cropped last lines break we need do that too
+        ln_cs = len(annotate_changesets)
+        ln_ = len(ls.splitlines())
+        if  ln_cs > ln_:
+            annotate_changesets = annotate_changesets[:ln_ - ln_cs]
         annotate = ''.join((self.annotate_from_changeset(changeset)
             for changeset in annotate_changesets))
         # in case you wonder about the seemingly redundant <div> here: since the
@@ -153,16 +155,16 @@ class AnnotateHtmlFormatter(HtmlFormatter):
         for key in self.order:
             if key == 'ls':
                 body_row_start.append(
-                    '<td class="linenos"><div class="linenodiv"><pre>' + 
+                    '<td class="linenos"><div class="linenodiv"><pre>' +
                     ls + '</pre></div></td>')
             elif key == 'annotate':
                 body_row_start.append(
-                    '<td class="annotate"><div class="annotatediv"><pre>' + 
+                    '<td class="annotate"><div class="annotatediv"><pre>' +
                     annotate + '</pre></div></td>')
             elif key == 'code':
                 body_row_start.append('<td class="code">')
-        yield 0, ('<table class="%stable">' % self.cssclass + 
-                  ''.join(headers_row) + 
+        yield 0, ('<table class="%stable">' % self.cssclass +
+                  ''.join(headers_row) +
                   ''.join(body_row_start)
                   )
         yield 0, dummyoutfile.getvalue()
