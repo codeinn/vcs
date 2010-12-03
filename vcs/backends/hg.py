@@ -444,17 +444,31 @@ class MercurialChangeset(BaseChangeset):
         changed removed functions
         """
         p = self._ctx.parents()
-        return p, self._ctx.files(), \
-            self._ctx.manifest().keys(), p[0].manifest().keys()
+        large_ = len(self.affected_files) > 100
+        if large_:
+            manifest = []
+            parrent_manifest = []
+        else:
+            manifest = self._ctx.manifest().keys()
+            parrent_manifest = p[0].manifest().keys()
+        return p, self.affected_files, manifest, parrent_manifest, large_
+
+
+    @LazyProperty
+    def affected_files(self):
+        """
+        Get's a fast accessible file changes for given changeset
+        """
+        return self._ctx.files()
 
     @LazyProperty
     def added(self):
         """
         Returns list of added ``FileNode`` objects.
         """
-        parents, paths, manifest, parent_manifest = self._ppmp
+        parents, paths, manifest, parent_manifest, large_ = self._ppmp
         #use status when this cs is a merge
-        if len(parents) > 1 :
+        if len(parents) > 1 or large_:
             return AddedFileNodesGenerator([n for n in self.status[1]], self)
 
         added_nodes = []
@@ -470,9 +484,9 @@ class MercurialChangeset(BaseChangeset):
         """
         Returns list of modified ``FileNode`` objects.
         """
-        parents, paths, manifest, parent_manifest = self._ppmp
+        parents, paths, manifest, parent_manifest, large_ = self._ppmp
         #use status when this cs is a merge
-        if len(parents) > 1 :
+        if len(parents) > 1 or large_:
             return ChangedFileNodesGenerator([ n for n in  self.status[0]], self)
 
         changed_nodes = []
@@ -487,9 +501,9 @@ class MercurialChangeset(BaseChangeset):
         """
         Returns list of removed ``FileNode`` objects.
         """
-        parents, paths, manifest, parent_manifest = self._ppmp
+        parents, paths, manifest, parent_manifest, large_ = self._ppmp
         #use status when this cs is a merge
-        if len(parents) > 1 :
+        if len(parents) > 1 or large_:
             rm_nodes = self.status[2] + self.status[3]
             return RemovedFileNodesGenerator([n for n in rm_nodes], self)
 
