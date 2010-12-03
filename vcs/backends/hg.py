@@ -259,11 +259,7 @@ class MercurialChangeset(BaseChangeset):
         self.branch = ctx.branch()
         self.tags = ctx.tags()
         self.date = date_fromtimestamp(*ctx.date())
-        self._file_paths = list(ctx)
-        self._dir_paths = list(set(get_dirs_for_path(*self._file_paths)))
-        self._dir_paths.insert(0, '') # Needed for root node
         self.nodes = {}
-
 
     @LazyProperty
     def status(self):
@@ -278,6 +274,17 @@ class MercurialChangeset(BaseChangeset):
 #            return map(lambda x: x[0] + x[1], zip(st1, st2))
 
         return st1
+
+
+    @LazyProperty
+    def _file_paths(self):
+        return list(self._ctx)
+
+    @LazyProperty
+    def _dir_paths(self):
+        p = list(set(get_dirs_for_path(*self._file_paths)))
+        p.insert(0, '')
+        return p
 
     @LazyProperty
     def _paths(self):
