@@ -70,6 +70,9 @@ class RemovedFileNodesGenerator(NodeGeneratorBase):
         for p in self.current_paths:
             yield RemovedFileNode(path=p)
 
+    def __getslice__(self, i, j):
+        for p in self.current_paths[i:j]:
+            yield RemovedFileNode(path=p)
 class Node(object):
     """
     Simplest class representing file or directory on repository.  SCM backends
