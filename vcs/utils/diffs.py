@@ -54,9 +54,15 @@ def get_gitdiff(filenode_old, filenode_new):
             raise VCSError("Given object should be FileNode object, not %s"
                 % filenode.__class__)
     
-    repo = filenode_new.changeset.repository    
-    return patch.diff(repo.repo, filenode_old.changeset.raw_id,
-                      filenode_new.changeset.raw_id, opts=diffopts(git=True))
+    repo = filenode_new.changeset.repository
+    
+    old_raw_id = getattr(filenode_old.changeset, 'raw_id', '0' * 40)
+    new_raw_id = getattr(filenode_new.changeset, 'raw_id', '0' * 40)
+        
+    return patch.diff(repo.repo,
+                      old_raw_id,
+                      new_raw_id,
+                      opts=diffopts(git=True))
 
 
 class DiffProcessor(object):
@@ -297,7 +303,7 @@ class DiffProcessor(object):
         """
         Returns raw string as udiff
         """
-        return ''.join(self.copy_iterator())
+        return u''.join(self.copy_iterator())
 
     def as_html(self, table_class='code-difftable', line_class='line',
                 new_lineno_class='lineno old', old_lineno_class='lineno new',
