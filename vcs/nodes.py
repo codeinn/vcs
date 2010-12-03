@@ -41,6 +41,10 @@ class NodeGeneratorBase(object):
     def __call__(self):
         return [n for n in self]
 
+    def __getslice__(self, i, j):
+        for p in self.current_paths[i:j]:
+            yield self.cs.get_node(p)
+
     def __len__(self):
         return len(self.current_paths)
 
