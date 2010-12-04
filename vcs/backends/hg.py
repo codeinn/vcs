@@ -449,8 +449,8 @@ class MercurialChangeset(BaseChangeset):
             manifest = []
             parrent_manifest = []
         else:
-            manifest = self._ctx.manifest().keys()
-            parrent_manifest = p[0].manifest().keys()
+            manifest = self._ctx.manifest()
+            parrent_manifest = p[0].manifest()
         return p, self.affected_files, manifest, parrent_manifest, large_
 
 
@@ -473,7 +473,7 @@ class MercurialChangeset(BaseChangeset):
 
         added_nodes = []
         for path in paths:
-            if path not in parent_manifest:
+            if not parent_manifest.has_key(path):
                 added_nodes.append(path)
 
         return AddedFileNodesGenerator(added_nodes, self)
@@ -491,7 +491,7 @@ class MercurialChangeset(BaseChangeset):
 
         changed_nodes = []
         for path in paths:
-            if path in manifest and path in parent_manifest:
+            if manifest.has_key(path) and parent_manifest.has_key(path):
                 changed_nodes.append(path)
 
         return ChangedFileNodesGenerator(changed_nodes, self)
@@ -509,7 +509,7 @@ class MercurialChangeset(BaseChangeset):
 
         removed_nodes = []
         for path in paths:
-            if path not in manifest:
+            if not manifest.has_key(path):
                 removed_nodes.append(path)
 
         return RemovedFileNodesGenerator(removed_nodes, self)
