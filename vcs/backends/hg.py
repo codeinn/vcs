@@ -77,8 +77,22 @@ class MercurialRepository(BaseRepository):
         if not self.revisions:
             return {}
 
+        def _branchtags(localrepo):
+            """
+            Patched version of mercurial branchtags to not return the closed
+            branches
+            :param localrepo: locarepository instance
+            """
+
+            bt = {}
+            for bn, heads in localrepo.branchmap().iteritems():
+                tip = heads[-1]
+                if 'close' not in localrepo.changelog.read(tip)[5]:
+                    bt[bn] = tip
+            return bt
+
         sortkey = lambda ctx: ctx[0] #sort by name
-        _branches = [(name, hex(head),) for name, head in self.repo.branchtags().items()]
+        _branches = [(n, hex(h),) for n, h in _branchtags(self.repo).items()]
 
         return OrderedDict(sorted(_branches, key=sortkey, reverse=True))
 
@@ -91,7 +105,7 @@ class MercurialRepository(BaseRepository):
             return {}
 
         sortkey = lambda ctx: ctx[0] #sort by name
-        _tags = [(name, hex(head),) for name, head in self.repo.tags().items()]
+        _tags = [(n, hex(h),) for n, h in self.repo.tags().items()]
 
         return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
 

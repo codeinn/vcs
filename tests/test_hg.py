@@ -80,9 +80,16 @@ class MercurialRepositoryTest(unittest2.TestCase):
 
     def test_branches(self):
         # TODO: Need more tests here
+
+        #active branches
         self.assertTrue('default' in self.repo.branches)
-        self.assertTrue('git' in self.repo.branches)
-        self.assertTrue('web' in self.repo.branches)
+        self.assertTrue('webvcs' in self.repo.branches)
+        self.assertTrue('workdir' in self.repo.branches)
+
+        #closed branches
+        self.assertFalse('web' in self.repo.branches)
+        self.assertFalse('git' in self.repo.branches)
+
         for name, id in self.repo.branches.items():
             self.assertTrue(isinstance(
                 self.repo.get_changeset(id), MercurialChangeset))
