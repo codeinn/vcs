@@ -94,7 +94,7 @@ class MercurialRepository(BaseRepository):
         sortkey = lambda ctx: ctx[0] #sort by name
         _branches = [(n, hex(h),) for n, h in _branchtags(self.repo).items()]
 
-        return OrderedDict(sorted(_branches, key=sortkey, reverse=True))
+        return OrderedDict(sorted(_branches, key=sortkey, reverse=False))
 
     @LazyProperty
     def tags(self):
