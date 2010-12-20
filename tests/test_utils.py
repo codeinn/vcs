@@ -1,7 +1,10 @@
+import time
+import tempfile
 import unittest2
 
 from vcs.utils.paths import get_dirs_for_path
 from vcs.utils.helpers import get_scm
+from vcs.utils.helpers import get_scms_for_path
 
 from conf import TEST_HG_REPO, TEST_GIT_REPO, TEST_TMP_PATH
 from vcs.exceptions import VCSError
@@ -47,3 +50,23 @@ class PathsTest(unittest2.TestCase):
 
     def test_get_scm_error_path(self):
         self.assertRaises(VCSError, get_scm, 'err')
+
+    def test_get_scms_for_path(self):
+        dirpath = tempfile.gettempdir()
+        new = os.path.join(dirpath, 'vcs-scms-for-path-%s' % time.time())
+        os.mkdir(new)
+        self.assertEqual(get_scms_for_path(new), [])
+
+        os.mkdir(os.path.join(new, '.tux'))
+        self.assertEqual(get_scms_for_path(new), [])
+
+        os.mkdir(os.path.join(new, '.git'))
+        self.assertEqual(set(get_scms_for_path(new)), set(['git']))
+
+        os.mkdir(os.path.join(new, '.hg'))
+        self.assertEqual(set(get_scms_for_path(new)), set(['git', 'hg']))
+
+
+if __name__ == '__main__':
+    unittest2.main()
+

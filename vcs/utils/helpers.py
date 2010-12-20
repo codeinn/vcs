@@ -33,6 +33,27 @@ def get_scm(path):
 
     return found_scms[0]
 
+def get_scms_for_path(path):
+    """
+    Returns all scm's found at the given path. If no scm is recognized
+    - empty list is returned.
+
+    :param path: path to directory which should be checked. May be callable.
+
+    :raises VCSError: if given ``path`` is not a directory
+    """
+    if hasattr(path, '__call__'):
+        path = path()
+    if not os.path.isdir(path):
+        raise VCSError("Given path %r is not a directory" % path)
+
+    result = []
+    for key in ALIASES:
+        dir = os.path.join(path, '.' + key)
+        if os.path.isdir(dir):
+            result.append(key)
+    return result
+
 def run_command(cmd, *args):
     """
     Runs command on the system with given ``args``.
