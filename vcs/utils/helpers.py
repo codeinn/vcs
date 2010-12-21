@@ -5,24 +5,34 @@ import os.path
 
 from subprocess import Popen, PIPE
 from vcs.exceptions import VCSError
+from vcs.utils.paths import abspath
 
 ALIASES = ['hg', 'git', 'svn', 'bzr']
 
-def get_scm(path):
+def get_scm(path, search_recursively=False):
     """
     Returns one of alias from ``ALIASES`` (in order of precedence same as
     shortcuts given in ``ALIASES``) and top working dir path for the given
     argument. If no scm-specific directory is found or more than one scm is
     found at that directory, ``VCSError`` is raised.
+
+    :param search_recursively: if set to ``True``, this function would try to
+      move up to parent directory every time no scm is recognized for the
+      currently checked path. Default: ``False``.
     """
     if not os.path.isdir(path):
         raise VCSError("Given path %s is not a directory" % path)
 
-    found_scms = []
-    for key in ALIASES:
-        dir = os.path.join(path, '.' + key)
-        if os.path.isdir(dir):
-            found_scms.append((key, path,))
+    def get_scms(path):
+        return [(scm, path) for scm in get_scms_for_path(path)]
+
+    found_scms = get_scms(path)
+    while  not found_scms and search_recursively:
+        newpath = abspath(path, '..')
+        if newpath == path:
+            break
+        path = newpath
+        found_scms = get_scms(path)
 
     if len(found_scms) > 1:
         raise VCSError('More than one [%s] scm found at given path %s'
