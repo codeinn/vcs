@@ -69,14 +69,14 @@ class BaseRepository(object):
 
     def __len__(self):
         return self.count()
-    
+
     @LazyProperty
     def alias(self):
         from vcs.backends import BACKENDS
         for k, v in BACKENDS.items():
             if v.split('.')[-1] == str(self.__class__.__name__):
                 return k
-    
+
     @LazyProperty
     def name(self):
         raise NotImplementedError
@@ -141,6 +141,19 @@ class BaseRepository(object):
 
     def count(self):
         return len(self.revisions)
+
+    def tag(self, name, user, revision=None, message=None, date=None, **opts):
+        """
+        Creates a tag for the given ``revision``.
+
+        :param name: name for new tag
+        :param user: full username, i.e.: "Joe Doe <joe.doe@example.com>"
+        :param revision: changeset id for which new tag would be created
+        :param message: message of the tag's commit
+        :param date: date of tag's commit
+        :param opts: options specific to the backend
+        """
+        raise NotImplementedError
 
     def request(self, path, revision=None):
         warn("request method is deprecated and will be removed in version 1.0."

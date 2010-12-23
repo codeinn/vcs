@@ -13,10 +13,10 @@ import re
 import time
 import urllib2
 import posixpath
+import datetime
 import errno
 
 from mercurial import ui
-from mercurial.context import short
 from mercurial.error import RepoError, RepoLookupError, Abort
 from mercurial.localrepo import localrepository
 from mercurial.node import hex
@@ -30,7 +30,7 @@ from vcs.exceptions import EmptyRepositoryError
 from vcs.exceptions import ChangesetError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import NodeDoesNotExistError
-from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode, \
+from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, \
     RemovedFileNodesGenerator, ChangedFileNodesGenerator, \
     AddedFileNodesGenerator
 from vcs.utils.lazy import LazyProperty
@@ -96,11 +96,7 @@ class MercurialRepository(BaseRepository):
 
         return OrderedDict(sorted(_branches, key=sortkey, reverse=False))
 
-    @LazyProperty
-    def tags(self):
-        """Get's tags for this repository
-        """
-
+    def _get_tags(self):
         if not self.revisions:
             return {}
 
@@ -108,6 +104,36 @@ class MercurialRepository(BaseRepository):
         _tags = [(n, hex(h),) for n, h in self.repo.tags().items()]
 
         return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
+
+    @LazyProperty
+    def tags(self):
+        """Get's tags for this repository
+        """
+        return self._get_tags()
+
+    def tag(self, name, user, revision=None, message=None, date=None, **kwargs):
+        """
+        Creates a tag for the given ``revision``.
+
+        :param name: name for new tag
+        :param user: full username, i.e.: "Joe Doe <joe.doe@example.com>"
+        :param revision: changeset id for which new tag would be created
+        :param message: message of the tag's commit
+        :param date: date of tag's commit
+        """
+        changeset = self.get_changeset(revision)
+        local = kwargs.setdefault('local', False)
+
+        if message is None:
+            message = "Added tag %s for changeset %s" % (name,
+                changeset.short_id)
+
+        if date is None:
+            date = datetime.datetime.now().ctime()
+
+        self.repo.tag(name, changeset._ctx.node(), message, local, user, date)
+        # Reinitialize tags
+        self.tags = self._get_tags()
 
     def _set_repo(self, create, src_url=None, update_after_clone=False):
         """
