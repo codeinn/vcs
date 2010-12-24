@@ -16,6 +16,18 @@ class RepositoryError(VCSError):
 class EmptyRepositoryError(RepositoryError):
     pass
 
+class TagAlreadyExistError(RepositoryError):
+    pass
+
+class TagDoesNotExistError(RepositoryError):
+    pass
+
+class BranchAlreadyExistError(RepositoryError):
+    pass
+
+class BranchDoesNotExistError(RepositoryError):
+    pass
+
 class ChangesetError(RepositoryError):
     pass
 

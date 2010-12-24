@@ -30,6 +30,7 @@ from vcs.exceptions import EmptyRepositoryError
 from vcs.exceptions import ChangesetError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import NodeDoesNotExistError
+from vcs.exceptions import TagAlreadyExistError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, \
     RemovedFileNodesGenerator, ChangedFileNodesGenerator, \
     AddedFileNodesGenerator
@@ -113,7 +114,7 @@ class MercurialRepository(BaseRepository):
 
     def tag(self, name, user, revision=None, message=None, date=None, **kwargs):
         """
-        Creates a tag for the given ``revision``.
+        Creates and returns a tag for the given ``revision``.
 
         :param name: name for new tag
         :param user: full username, i.e.: "Joe Doe <joe.doe@example.com>"
@@ -121,6 +122,8 @@ class MercurialRepository(BaseRepository):
         :param message: message of the tag's commit
         :param date: date of tag's commit
         """
+        if name in self.tags:
+            raise TagAlreadyExistError("Tag %s already exists" % name)
         changeset = self.get_changeset(revision)
         local = kwargs.setdefault('local', False)
 
@@ -136,8 +139,12 @@ class MercurialRepository(BaseRepository):
                 date)
         except Abort, e:
             raise RepositoryError(e.message)
+
         # Reinitialize tags
         self.tags = self._get_tags()
+        tag_id = self.tags[name]
+
+        return self.get_changeset(revision=tag_id)
 
     def _set_repo(self, create, src_url=None, update_after_clone=False):
         """

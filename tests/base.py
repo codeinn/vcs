@@ -69,8 +69,6 @@ class BackendTestMixin(object):
                 self.imc.remove(FileNode(node.path))
             self.imc.commit(message=commit['message'], author=commit['author'])
 
-    def test_base(self):
-        pass
 
 # For each backend create test case class
 for alias in SCM_TESTS:
