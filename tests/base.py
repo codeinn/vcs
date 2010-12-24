@@ -9,13 +9,6 @@ import unittest2
 
 from conf import SCM_TESTS, get_new_dir
 
-from vcs.exceptions import EmptyRepositoryError
-from vcs.exceptions import NodeAlreadyAddedError
-from vcs.exceptions import NodeAlreadyExistsError
-from vcs.exceptions import NodeAlreadyRemovedError
-from vcs.exceptions import NodeAlreadyChangedError
-from vcs.exceptions import NodeDoesNotExistError
-from vcs.exceptions import NodeNotChangedError
 from vcs.nodes import FileNode
 
 
@@ -69,7 +62,6 @@ class BackendTestMixin(object):
 
         for commit in self._get_commits():
             for node in commit.get('added', []):
-                print node
                 self.imc.add(FileNode(node.path, content=node.content))
             for node in commit.get('changed', []):
                 self.imc.change(FileNode(node.path, content=node.content))
