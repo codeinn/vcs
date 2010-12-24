@@ -9,6 +9,7 @@ Git backend implementation.
 import os
 import re
 import time
+import posixpath
 
 from subprocess import Popen, PIPE
 
@@ -491,7 +492,11 @@ class GitChangeset(BaseChangeset):
     def get_node(self, path):
         path = self._fix_path(path)
         if not path in self.nodes:
-            id = self._get_id_for_path(path)
+            try:
+                id = self._get_id_for_path(path)
+            except ChangesetError:
+                raise NodeDoesNotExistError("Cannot find one of parents' "
+                    "directories for a given path: %s" % path)
             obj = self.repository._repo.get_object(id)
             if isinstance(obj, objects.Tree):
                 if path == '':
@@ -592,8 +597,11 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         tree = tip and repo[tip._commit.tree] or objects.Tree()
         for node in self.added:
             blob = objects.Blob.from_string(node.content.encode(ENCODING))
+            added_trees = self.get_missing_trees(node.path)
             tree.add(0100644, node.path, blob.id)
             object_store.add_object(blob)
+            for t in added_trees:
+                object_store.add_object(t)
         for node in self.changed:
             blob = objects.Blob.from_string(node.content.encode(ENCODING))
             tree[node.path] = 0100644, blob.id
@@ -626,4 +634,46 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         tip = self.repository.get_changeset()
         self.reset()
         return tip
+
+    def get_missing_trees(self, path):
+        """
+        Creates missing ``Tree`` objects for the given path.
+
+        :param path: path given as a string. It may be a path to a file node
+        (i.e. ``foo/bar/baz.txt``) or directory path - in that case it must
+        end with slash (i.e. ``foo/bar/``).
+        """
+        dirpath = posixpath.split(path)[0]
+        dirs = dirpath.split('/')
+        if not dirs:
+            return []
+
+        def get_tree_for_dir(tree, dirname):
+            for name, mode, id in tree.iteritems():
+                if name == dirname:
+                    obj = self.repository._repo[id]
+                    if isinstance(obj, objects.Tree):
+                        return obj
+                    else:
+                        raise RepositoryError("Cannot create directory %s "
+                        "at tree %s as path is occupied and is not a "
+                        "Tree" % (dirname, tree))
+            return None
+
+        trees = []
+        try:
+            tip = self.repository.get_changeset()
+        except EmptyRepositoryError:
+            tip = None
+        repo = self.repository._repo
+        parent = tip and repo[tip._commit.tree] or objects.Tree()
+        for dirname in dirs:
+            tree = get_tree_for_dir(parent, dirname)
+            if tree is None:
+                tree = objects.Tree()
+                dirmode = 0100755
+                parent.add(dirmode, dirname, tree.id)
+                trees.append(tree)
+                parent = tree
+        return trees
 

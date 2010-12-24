@@ -131,7 +131,11 @@ class MercurialRepository(BaseRepository):
         if date is None:
             date = datetime.datetime.now().ctime()
 
-        self.repo.tag(name, changeset._ctx.node(), message, local, user, date)
+        try:
+            self.repo.tag(name, changeset._ctx.node(), message, local, user,
+                date)
+        except Abort, e:
+            raise RepositoryError(e.message)
         # Reinitialize tags
         self.tags = self._get_tags()
 

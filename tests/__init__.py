@@ -24,6 +24,7 @@ from utils import VCSTestError, SCMFetcher
 from unittest2 import collector as unittest2_collector, main
 
 # Import Test Cases
+from base import *
 from test_git import *
 from test_hg import *
 from test_nodes import *
