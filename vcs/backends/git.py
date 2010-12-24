@@ -23,6 +23,7 @@ from vcs.exceptions import EmptyRepositoryError
 from vcs.exceptions import ChangesetError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import NodeDoesNotExistError
+from vcs.exceptions import TagAlreadyExistError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.paths import abspath
 from vcs.utils.lazy import LazyProperty
@@ -214,14 +215,40 @@ class GitRepository(BaseRepository):
             ref.startswith('refs/remotes/') and not ref.endswith('/HEAD')]
         return OrderedDict(sorted(_branches, key=sortkey, reverse=False))
 
-    @LazyProperty
-    def tags(self):
+    def _get_tags(self):
         if not self.revisions:
             return {}
         sortkey = lambda ctx:ctx[0]
         _tags = [(ref.split('/')[-1], head,) for ref, head in
             self._repo.get_refs().items() if ref.startswith('refs/tags/')]
         return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
+
+    @LazyProperty
+    def tags(self):
+        return self._get_tags()
+
+    def tag(self, name, user, revision=None, message=None, date=None, **kwargs):
+        """
+        Creates and returns a tag for the given ``revision``.
+
+        :param name: name for new tag
+        :param user: full username, i.e.: "Joe Doe <joe.doe@example.com>"
+        :param revision: changeset id for which new tag would be created
+        :param message: message of the tag's commit
+        :param date: date of tag's commit
+
+        :raises TagAlreadyExistError: if tag with same name already exists
+        """
+        if name in self.tags:
+            raise TagAlreadyExistError("Tag %s already exists" % name)
+        changeset = self.get_changeset(revision)
+        message = message or "Added tag %s for commit %s" % (name,
+            changeset.raw_id)
+        self._repo.refs["refs/tags/%s" % name] = changeset._commit.id
+
+        self.tags = self._get_tags()
+        return changeset
+
 
     def get_changeset(self, revision=None):
         """

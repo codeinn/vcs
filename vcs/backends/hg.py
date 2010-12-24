@@ -121,6 +121,8 @@ class MercurialRepository(BaseRepository):
         :param revision: changeset id for which new tag would be created
         :param message: message of the tag's commit
         :param date: date of tag's commit
+
+        :raises TagAlreadyExistError: if tag with same name already exists
         """
         if name in self.tags:
             raise TagAlreadyExistError("Tag %s already exists" % name)

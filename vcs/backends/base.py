@@ -144,14 +144,15 @@ class BaseRepository(object):
 
     def tag(self, name, user, revision=None, message=None, date=None, **opts):
         """
-        Creates a tag for the given ``revision``.
+        Creates and returns a tag for the given ``revision``.
 
         :param name: name for new tag
         :param user: full username, i.e.: "Joe Doe <joe.doe@example.com>"
         :param revision: changeset id for which new tag would be created
         :param message: message of the tag's commit
         :param date: date of tag's commit
-        :param opts: options specific to the backend
+
+        :raises TagAlreadyExistError: if tag with same name already exists
         """
         raise NotImplementedError
 
