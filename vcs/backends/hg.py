@@ -20,7 +20,7 @@ from mercurial import ui
 from mercurial.error import RepoError, RepoLookupError, Abort
 from mercurial.localrepo import localrepository
 from mercurial.node import hex
-from mercurial.commands import clone, pull
+from mercurial.commands import clone, pull, nullid
 from mercurial.context import memctx, memfilectx
 
 from vcs.backends.base import BaseRepository, BaseChangeset, \
@@ -31,6 +31,7 @@ from vcs.exceptions import ChangesetError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import TagAlreadyExistError
+from vcs.exceptions import TagDoesNotExistError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, \
     RemovedFileNodesGenerator, ChangedFileNodesGenerator, \
     AddedFileNodesGenerator
@@ -147,6 +148,31 @@ class MercurialRepository(BaseRepository):
         tag_id = self.tags[name]
 
         return self.get_changeset(revision=tag_id)
+
+    def remove_tag(self, name, user, message=None, date=None):
+        """
+        Removes tag with the given ``name``.
+
+        :param name: name of the tag to be removed
+        :param user: full username, i.e.: "Joe Doe <joe.doe@example.com>"
+        :param message: message of the tag's removal commit
+        :param date: date of tag's removal commit
+
+        :raises TagDoesNotExistError: if tag with given name does not exists
+        """
+        if name not in self.tags:
+            raise TagDoesNotExistError("Tag %s does not exist" % name)
+        if message is None:
+            message = "Removed tag %s" % name
+        if date is None:
+            date = datetime.datetime.now().ctime()
+        local = False
+
+        try:
+            self.repo.tag(name, nullid, message, local, user, date)
+            self.tags = self._get_tags()
+        except Abort, e:
+            raise RepositoryError(e.message)
 
     def _set_repo(self, create, src_url=None, update_after_clone=False):
         """

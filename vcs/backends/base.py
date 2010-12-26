@@ -156,6 +156,19 @@ class BaseRepository(object):
         """
         raise NotImplementedError
 
+    def remove_tag(self, name, user, message=None, date=None):
+        """
+        Removes tag with the given ``name``.
+
+        :param name: name of the tag to be removed
+        :param user: full username, i.e.: "Joe Doe <joe.doe@example.com>"
+        :param message: message of the tag's removal commit
+        :param date: date of tag's removal commit
+
+        :raises TagDoesNotExistError: if tag with given name does not exists
+        """
+        raise NotImplementedError
+
     def request(self, path, revision=None):
         warn("request method is deprecated and will be removed in version 1.0."
              " Please, use get_changeset to retrieve revision and then get_node"

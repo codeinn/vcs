@@ -24,6 +24,7 @@ from vcs.exceptions import ChangesetError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import TagAlreadyExistError
+from vcs.exceptions import TagDoesNotExistError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils.paths import abspath
 from vcs.utils.lazy import LazyProperty
@@ -249,6 +250,25 @@ class GitRepository(BaseRepository):
         self.tags = self._get_tags()
         return changeset
 
+    def remove_tag(self, name, user, message=None, date=None):
+        """
+        Removes tag with the given ``name``.
+
+        :param name: name of the tag to be removed
+        :param user: full username, i.e.: "Joe Doe <joe.doe@example.com>"
+        :param message: message of the tag's removal commit
+        :param date: date of tag's removal commit
+
+        :raises TagDoesNotExistError: if tag with given name does not exists
+        """
+        if name not in self.tags:
+            raise TagDoesNotExistError("Tag %s does not exist" % name)
+        tagpath = posixpath.join(self._repo.refs.path, 'refs', 'tags', name)
+        try:
+            os.remove(tagpath)
+            self.tags = self._get_tags()
+        except OSError, e:
+            raise RepositoryError(e.strerror)
 
     def get_changeset(self, revision=None):
         """
