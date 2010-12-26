@@ -603,6 +603,17 @@ class MercurialChangeset(BaseChangeset):
 class MercurialInMemoryChangeset(BaseInMemoryChangeset):
 
     def commit(self, message, author, **kwargs):
+        """
+        Commits local (from working directory) changes and returns newly created
+        ``Changeset``. Updates repository's ``revisions`` list.
+
+        :param message: message of the commit
+        :param branch: branch name, as string. If none given, default backend's
+          branch would be used.
+
+        :raises ``CommitError``: if any error occurs while committing
+        """
+
         author = safe_unicode(author)
         try:
             tip = self.repository.get_changeset()

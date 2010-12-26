@@ -348,7 +348,7 @@ class GitChangeset(BaseChangeset):
         except UnicodeDecodeError:
             self.message = commit.message[:-1].decode(commit.encoding
                 or 'utf-8')
-        self.branch = None
+        #self.branch = None
         self.tags = []
         self.date = date_fromtimestamp(commit.commit_time, commit.commit_timezone)
         #tree = self.repository.get_object(self._tree_id)
@@ -626,10 +626,20 @@ class GitChangeset(BaseChangeset):
 
 class GitInMemoryChangeset(BaseInMemoryChangeset):
 
-    def commit(self, message, author, **kwargs):
+    def commit(self, message, author, branch=None, **kwargs):
         """
-        Performs in-memory commit.
+        Commits local (from working directory) changes and returns newly created
+        ``Changeset``. Updates repository's ``revisions`` list.
+
+        :param message: message of the commit
+        :param branch: branch name, as string. If none given, default backend's
+          branch would be used.
+
+        :raises ``CommitError``: if any error occurs while committing
         """
+
+        if branch is None:
+            branch = 'master'
 
         repo = self.repository._repo
         object_store = repo.object_store
@@ -670,7 +680,7 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
 
         object_store.add_object(commit)
 
-        ref = 'refs/heads/master'
+        ref = 'refs/heads/%s' % branch
         repo.refs[ref] = commit.id
         repo.refs['HEAD'] = commit.id
 

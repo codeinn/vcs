@@ -637,10 +637,14 @@ class BaseInMemoryChangeset(object):
         """
         return list(self.get_ipaths())
 
-    def commit(self, message, **kwargs):
+    def commit(self, message, branch=None, **kwargs):
         """
         Commits local (from working directory) changes and returns newly created
         ``Changeset``. Updates repository's ``revisions`` list.
+
+        :param message: message of the commit
+        :param branch: branch name, as string. If none given, default backend's
+          branch would be used.
 
         :raises ``CommitError``: if any error occurs while committing
         """
