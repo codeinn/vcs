@@ -39,6 +39,7 @@ class GitRepository(BaseRepository):
     """
     Git repository backend.
     """
+    DEFAULT_BRANCH_NAME = 'master'
 
     def __init__(self, repo_path, create=False, src_url=None,
                  update_after_clone=False):
@@ -551,8 +552,10 @@ class GitChangeset(BaseChangeset):
                     node = RootNode(changeset=self)
                 else:
                     node = DirNode(path, changeset=self)
+                node._tree = obj
             elif isinstance(obj, objects.Blob):
                 node = FileNode(path, changeset=self)
+                node._blob = obj
             else:
                 raise NodeDoesNotExistError("There is no file nor directory "
                     "at the given path %r at revision %r"
@@ -627,57 +630,118 @@ class GitChangeset(BaseChangeset):
 
 class GitInMemoryChangeset(BaseInMemoryChangeset):
 
-    def commit(self, message, author, branch=None, **kwargs):
+    def commit(self, message, author, parents=None, branch=None, date=None,
+            **kwargs):
         """
-        Commits changes and returns newly created ``Changeset``. Updates
-        repository's ``revisions`` list.
+        Performs in-memory commit (doesn't check workdir in any way) and returns
+        newly created ``Changeset``. Updates repository's ``revisions``.
 
         :param message: message of the commit
+        :param author: full username, i.e. "Joe Doe <joe.doe@example.com>"
+        :param parents: single parent or sequence of parents from which commit
+          would be derieved
+        :param date: ``datetime.datetime`` instance. Defaults to
+          ``datetime.datetime.now()``.
         :param branch: branch name, as string. If none given, default backend's
           branch would be used.
 
         :raises ``CommitError``: if any error occurs while committing
         """
+        self.check_integrity(parents)
 
         if branch is None:
-            branch = 'master'
+            branch = GitRepository.DEFAULT_BRANCH_NAME
 
         repo = self.repository._repo
         object_store = repo.object_store
-        try:
-            tip = self.repository.get_changeset()
-        except RepositoryError:
-            tip = None
 
         ENCODING = "UTF-8"
+        FILEMOD = 010644
+        DIRMOD = 040000
 
         # Create tree and populates it with blobs
-        tree = tip and repo[tip._commit.tree] or objects.Tree()
+        tree = self.parents[0] and repo[self.parents[0]._commit.tree] or \
+            objects.Tree()
+        object_store.add_object(tree)
         for node in self.added:
+            # Compute subdirs if needed
+            dirpath, nodename = posixpath.split(node.path)
+            dirnames = dirpath and dirpath.split('/') or []
+            parent = tree
+
+            # Tries to dig for the deepset existing tree
+            while dirnames:
+                curdir = dirnames.pop(0)
+                try:
+                    dir_id = parent[curdir][1]
+                except KeyError:
+                    # put curdir back into dirnames and stops
+                    dirnames.insert(0, curdir)
+                    break
+                else:
+                    # If found, updates parent
+                    parent = self.repository._repo[dir_id]
+            # Now parent is deepest exising tree and we need to create subtrees
+            # for dirnames (in reverse order)
+            new_trees = []
             blob = objects.Blob.from_string(node.content.encode(ENCODING))
-            added_trees = self.get_missing_trees(node.path)
-            tree.add(0100644, node.path, blob.id)
+            if dirnames:
+                # If there are trees which should be created we need to build
+                # now
+                reversed_dirnames = list(reversed(dirnames))
+                curtree = objects.Tree()
+                curtree.add(FILEMOD, str(node.name), blob.id)
+                new_trees.append(curtree)
+                for dirname in reversed_dirnames[:-1]:
+                    newtree = objects.Tree()
+                    try:
+                        newtree.add(DIRMOD, dirname, curtree.id)
+                    except Exception, e:
+                        print e
+                        #import ipdb; ipdb.set_trace()
+                    new_trees.append(newtree)
+                    curtree = newtree
+                parent[reversed_dirnames[-1]] = DIRMOD, curtree.id
+            else:
+                parent.add(FILEMOD, str(node.name), blob.id)
+
             object_store.add_object(blob)
-            for t in added_trees:
+            for t in new_trees:
                 object_store.add_object(t)
         for node in self.changed:
+            # Compute subdirs if needed
+            dirpath, nodename = posixpath.split(node.path)
+            dirnames = dirpath and dirpath.split('/') or []
+            parent = tree
+            trees = [parent]
+            for dirname in dirnames:
+                try:
+                    dir_id = parent[dirname][1]
+                    parent = self.repository._repo[dir_id]
+                except KeyError:
+                    subdir = objects.Tree()
+                    parent.add(DIRMOD, dirname, subdir.id)
+                    parent = subdir
+                trees.append(parent)
             blob = objects.Blob.from_string(node.content.encode(ENCODING))
-            tree[node.path] = 0100644, blob.id
+            parent[nodename] = FILEMOD, blob.id
             object_store.add_object(blob)
+            for t in trees:
+                object_store.add_object(t)
         for node in self.removed:
             del tree[node.path]
+
         object_store.add_object(tree)
 
         # Create commit
         commit = objects.Commit()
         commit.tree = tree.id
-        commit.parents = tip and [tip.id] or []
+        commit.parents = [p._commit.id for p in self.parents if p]
         commit.author = commit.committer = author
         commit.encoding = ENCODING
         commit.message = message + ' '
 
         # Compute date
-        date = kwargs.pop('date', None)
         if date is None:
             date = time.time()
         elif isinstance(date, datetime.datetime):
@@ -705,20 +769,25 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         self.reset()
         return tip
 
-    def get_missing_trees(self, path):
+    def _get_missing_trees(self, path, root_tree):
         """
         Creates missing ``Tree`` objects for the given path.
 
         :param path: path given as a string. It may be a path to a file node
-        (i.e. ``foo/bar/baz.txt``) or directory path - in that case it must
-        end with slash (i.e. ``foo/bar/``).
+          (i.e. ``foo/bar/baz.txt``) or directory path - in that case it must
+          end with slash (i.e. ``foo/bar/``).
+        :param root_tree: ``dulwich.objects.Tree`` object from which we start
+          traversing (should be commit's root tree)
         """
+        print "Path: %s" % path
         dirpath = posixpath.split(path)[0]
         dirs = dirpath.split('/')
-        if not dirs:
+        print "Dirs:", dirs
+        if not dirs or dirs == ['']:
             return []
 
         def get_tree_for_dir(tree, dirname):
+            print "get_tree_for_dir(tree, %s)" % (dirname,)
             for name, mode, id in tree.iteritems():
                 if name == dirname:
                     obj = self.repository._repo[id]
@@ -731,19 +800,17 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
             return None
 
         trees = []
-        try:
-            tip = self.repository.get_changeset()
-        except EmptyRepositoryError:
-            tip = None
-        repo = self.repository._repo
-        parent = tip and repo[tip._commit.tree] or objects.Tree()
+        parent = root_tree
         for dirname in dirs:
             tree = get_tree_for_dir(parent, dirname)
             if tree is None:
                 tree = objects.Tree()
-                dirmode = 0100755
+                dirmode = 040000
                 parent.add(dirmode, dirname, tree.id)
-                trees.append(tree)
+                print "Dirname: ",dirname
+                print parent.entries()
                 parent = tree
+            # Always append tree
+            trees.append(tree)
         return trees
 

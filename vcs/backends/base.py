@@ -28,6 +28,9 @@ class BaseRepository(object):
 
     **Attributes**
 
+        ``DEFAULT_BRANCH_NAME``
+            name of default branch (i.e. "trunk" for svn, "master" for git etc.
+
         ``repo``
             object from external api
 
@@ -514,6 +517,10 @@ class BaseInMemoryChangeset(object):
             list of ``FileNode`` or ``RemovedFileNode`` objects marked to be
             *removed*
 
+        ``parents``
+            list of ``Changeset`` representing parents of in-memory changeset.
+            Should always be 2-element sequence.
+
     """
 
     def __init__(self, repository):
@@ -521,6 +528,7 @@ class BaseInMemoryChangeset(object):
         self.added = []
         self.changed = []
         self.removed = []
+        self.parents = []
 
     def add(self, *filenodes):
         """
@@ -536,19 +544,7 @@ class BaseInMemoryChangeset(object):
             if node.path in (n.path for n in self.added):
                 raise NodeAlreadyAddedError("Such FileNode %s is already "
                     "marked for addition" % node.path)
-        try:
-            tip = self.repository.get_changeset()
-        except EmptyRepositoryError:
-            tip = None
         for node in filenodes:
-            if tip:
-                try:
-                    tip.get_node(node.path)
-                except NodeDoesNotExistError:
-                    pass
-                else:
-                    raise NodeAlreadyExistsError("Node at %s exists at "
-                        "latest changeset" % node.path)
             self.added.append(node)
 
     def change(self, *filenodes):
@@ -569,7 +565,7 @@ class BaseInMemoryChangeset(object):
                 raise NodeAlreadyRemovedError("Node at %s is already marked "
                     "as removed" % node.path)
         try:
-            tip = self.repository.get_changeset()
+            self.repository.get_changeset()
         except EmptyRepositoryError:
             raise EmptyRepositoryError("Nothing to change - try to *add* new "
                 "nodes rather than changing them")
@@ -577,12 +573,6 @@ class BaseInMemoryChangeset(object):
             if node.path in (n.path for n in self.changed):
                 raise NodeAlreadyChangedError("Node at '%s' is already "
                     "marked as changed" % node.path)
-            try:
-                old = tip.get_node(node.path)
-                if old.content == node.content:
-                    raise NodeNotChangedError(str(node.path))
-            except ChangesetError:
-                raise NodeDoesNotExistError(str(node.path))
             self.changed.append(node)
 
     def remove(self, *filenodes):
@@ -590,20 +580,12 @@ class BaseInMemoryChangeset(object):
         Marks given ``FileNode`` (or ``RemovedFileNode``) objects to be
         *removed* in next commit.
 
-        :raises ``EmptyRepositoryError``: if there are no changesets yet
-        :raises ``NodeDoesNotExistError``: if node does not exist in latest
-          changeset
         :raises ``NodeAlreadyRemovedError``: if node has been already marked to
           be *removed*
         :raises ``NodeAlreadyChangedError``: if node has been already marked to
           be *changed*
         """
-        tip = self.repository.get_changeset()
         for node in filenodes:
-            try:
-                tip.get_node(node.path)
-            except ChangesetError:
-                raise NodeDoesNotExistError(str(node.path))
             if node.path in (n.path for n in self.removed):
                 raise NodeAlreadyRemovedError("Node is already marked to "
                     "for removal at %s" % node.path)
@@ -622,6 +604,7 @@ class BaseInMemoryChangeset(object):
         self.added = []
         self.changed = []
         self.removed = []
+        self.parents = []
 
     def get_ipaths(self):
         """
@@ -637,16 +620,103 @@ class BaseInMemoryChangeset(object):
         """
         return list(self.get_ipaths())
 
-    def commit(self, message, branch=None, **kwargs):
+    def check_integrity(self, parents=None):
         """
-        Commits local (from working directory) changes and returns newly created
-        ``Changeset``. Updates repository's ``revisions`` list.
+        Checks in-memory changeset's integrity. Also, sets parents if not
+        already set.
+
+        :raises CommitError: if any error occurs (i.e.
+          ``NodeDoesNotExistError``).
+        """
+        if not self.parents:
+            parents = parents or []
+            if len(parents) == 0:
+                try:
+                    parents = [self.repository.get_changeset(), None]
+                except EmptyRepositoryError:
+                    parents = [None, None]
+            elif len(parents) == 1:
+                parents += [None]
+            self.parents = parents
+
+        # Local parents, only if not None
+        parents = [p for p in self.parents if p]
+
+        # Check nodes marked as added
+        for p in parents:
+            for node in self.added:
+                try:
+                    p.get_node(node.path)
+                except NodeDoesNotExistError:
+                    pass
+                except KeyError:
+                    import ipdb; ipdb.set_trace()
+                    pass
+                else:
+                    raise NodeAlreadyExistsError("Node at %s already exists "
+                        "at %s" % (node.path, p))
+
+        # Check nodes marked as changed
+        missing = set(self.changed)
+        not_changed = set(self.changed)
+        if self.changed and not parents:
+            raise NodeDoesNotExistError(str(self.changed[0].path))
+        for p in parents:
+            for node in self.changed:
+                try:
+                    old = p.get_node(node.path)
+                    missing.remove(node)
+                    if old.content != node.content:
+                        not_changed.remove(node)
+                except NodeDoesNotExistError:
+                    pass
+        if self.changed and missing:
+            raise NodeDoesNotExistError("Node at %s is missing "
+                "(parents: %s)" % (node.path, parents))
+
+        if self.changed and not_changed:
+            raise NodeNotChangedError("Node at %s wasn't actually changed "
+                "since parents' changesets: %s" % (not_changed[0].path, parents)
+            )
+
+        # Check nodes marked as removed
+        if self.removed and not parents:
+            raise NodeDoesNotExistError("Cannot remove node at %s as there "
+                "were no parents specified" % self.removed[0].path)
+        really_removed = set()
+        for p in parents:
+            for node in self.removed:
+                try:
+                    p.get_node(node.path)
+                    really_removed.add(node)
+                except ChangesetError:
+                    pass
+        not_removed = set(self.removed) - really_removed
+        if not_removed:
+            raise NodeDoesNotExistError("Cannot remove node at %s from "
+                "following parents: %s" % (not_removed[0], parents))
+
+    def commit(self, message, author, parents=None, branch=None, date=None,
+            **kwargs):
+        """
+        Performs in-memory commit (doesn't check workdir in any way) and returns
+        newly created ``Changeset``. Updates repository's ``revisions``.
+
+        .. note::
+            While overriding this method each backend's should call
+            ``self.check_integrity(parents)`` in the first place.
 
         :param message: message of the commit
+        :param author: full username, i.e. "Joe Doe <joe.doe@example.com>"
+        :param parents: single parent or sequence of parents from which commit
+          would be derieved
+        :param date: ``datetime.datetime`` instance. Defaults to
+          ``datetime.datetime.now()``.
         :param branch: branch name, as string. If none given, default backend's
           branch would be used.
 
         :raises ``CommitError``: if any error occurs while committing
         """
+        #self.check_integrity(parents)
         raise NotImplementedError
 

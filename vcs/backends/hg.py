@@ -44,6 +44,7 @@ class MercurialRepository(BaseRepository):
     """
     Mercurial repository backend
     """
+    DEFAULT_BRANCH_NAME = 'default'
 
     def __init__(self, repo_path, create=False, baseui=None, src_url=None,
                  update_after_clone=False):
@@ -602,23 +603,29 @@ class MercurialChangeset(BaseChangeset):
 
 class MercurialInMemoryChangeset(BaseInMemoryChangeset):
 
-    def commit(self, message, author, **kwargs):
+    def commit(self, message, author, parents=None, branch=None, date=None,
+            **kwargs):
         """
-        Commits local (from working directory) changes and returns newly created
-        ``Changeset``. Updates repository's ``revisions`` list.
+        Performs in-memory commit (doesn't check workdir in any way) and returns
+        newly created ``Changeset``. Updates repository's ``revisions``.
 
         :param message: message of the commit
+        :param author: full username, i.e. "Joe Doe <joe.doe@example.com>"
+        :param parents: single parent or sequence of parents from which commit
+          would be derieved
+        :param date: ``datetime.datetime`` instance. Defaults to
+          ``datetime.datetime.now()``.
         :param branch: branch name, as string. If none given, default backend's
           branch would be used.
 
         :raises ``CommitError``: if any error occurs while committing
         """
+        self.check_integrity(parents)
 
         author = safe_unicode(author)
-        try:
-            tip = self.repository.get_changeset()
-        except RepositoryError:
-            tip = None
+        if branch is None:
+            branch = MercurialRepository.DEFAULT_BRANCH_NAME
+        kwargs['branch'] = branch
 
         def filectxfn(repo, memctx, path):
             """
@@ -652,15 +659,16 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
             raise RepositoryError("Given path haven't been marked as added,"
                 "changed or removed (%s)" % path)
 
-        parent1 = tip and tip._ctx.node() or None
-        parent2 = None
+        parents = [None, None]
+        for i, parent in enumerate(self.parents):
+            if parent is not None:
+                parents[i] = parent._ctx.node()
 
-        date = kwargs.pop('date', None)
         if date and isinstance(date, datetime.datetime):
             date = date.ctime()
 
         commit_ctx = memctx(repo=self.repository.repo,
-            parents=(parent1, parent2),
+            parents=parents,
             text='',
             files=self.get_paths(),
             filectxfn=filectxfn,
@@ -671,14 +679,17 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         # injecting given repo params
         commit_ctx._text = message
         commit_ctx._user = author
-        commit_ctx._date = kwargs.get('date', date)
+        commit_ctx._date = date
 
         # TODO: Catch exceptions!
         self.repository.repo.commitctx(commit_ctx) # Returns mercurial node
         self._commit_ctx = commit_ctx # For reference
 
         # Update vcs repository object & recreate mercurial repo
-        new_id = tip and self.repository.revisions[-1] + 1 or 0
+        #new_ctx = self.repository.repo[node]
+        #new_tip = self.repository.get_changeset(new_ctx.hex())
+        new_id = self.repository.revisions and \
+            self.repository.revisions[-1] + 1 or 0
         self.repository.revisions.append(new_id)
         self.repository._set_repo(create=False)
         self.repository.changesets.pop(None, None)
@@ -686,7 +697,4 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         tip = self.repository.get_changeset()
         self.reset()
         return tip
-
-
-
 

@@ -56,6 +56,7 @@ class BackendTestMixin(object):
 
     def setUp(self):
         Backend = self.get_backend()
+        self.backend_class = Backend
         self.repo_path = get_new_dir(str(time.time()))
         self.repo = Backend(self.repo_path, create=True)
         self.imc = self.repo.in_memory_changeset

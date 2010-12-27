@@ -52,6 +52,35 @@ class BranchesTestCaseMixin(BackendTestMixin):
         self.assertTrue('foobar' in self.repo.branches)
         self.assertEqual(foobar_tip.branch, 'foobar')
 
+    def test_new_head(self):
+        tip = self.repo.get_changeset()
+        self.imc.add(vcs.nodes.FileNode('docs/index.txt',
+            content='Documentation\n'))
+        foobar_tip = self.imc.commit(
+            message='New branch: foobar',
+            author='joe',
+            branch='foobar',
+            parents=[tip],
+        )
+        self.imc.change(vcs.nodes.FileNode('docs/index.txt',
+            content='Documentation\nand more...\n'))
+        newtip = self.imc.commit(
+            message='At default branch',
+            author='joe',
+            branch=foobar_tip.branch,
+            parents=[foobar_tip],
+        )
+
+        newest_tip = self.imc.commit(
+            message='Merged with %s' % foobar_tip.raw_id,
+            author='joe',
+            branch=self.backend_class.DEFAULT_BRANCH_NAME,
+            parents=[newtip, foobar_tip],
+        )
+
+        self.assertEqual(newest_tip.branch,
+            self.backend_class.DEFAULT_BRANCH_NAME)
+
 
 # For each backend create test case class
 for alias in SCM_TESTS:
