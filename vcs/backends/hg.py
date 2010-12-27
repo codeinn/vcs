@@ -655,19 +655,23 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         parent1 = tip and tip._ctx.node() or None
         parent2 = None
 
+        date = kwargs.pop('date', None)
+        if date and isinstance(date, datetime.datetime):
+            date = date.ctime()
+
         commit_ctx = memctx(repo=self.repository.repo,
             parents=(parent1, parent2),
             text='',
             files=self.get_paths(),
             filectxfn=filectxfn,
             user=author,
-            date=kwargs.get('date', None),
+            date=date,
             extra=kwargs)
 
         # injecting given repo params
         commit_ctx._text = message
         commit_ctx._user = author
-        commit_ctx._date = kwargs.get('date', None)
+        commit_ctx._date = kwargs.get('date', date)
 
         # TODO: Catch exceptions!
         self.repository.repo.commitctx(commit_ctx) # Returns mercurial node

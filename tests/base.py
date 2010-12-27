@@ -67,7 +67,8 @@ class BackendTestMixin(object):
                 self.imc.change(FileNode(node.path, content=node.content))
             for node in commit.get('removed', []):
                 self.imc.remove(FileNode(node.path))
-            self.imc.commit(message=commit['message'], author=commit['author'])
+            self.imc.commit(message=commit['message'], author=commit['author'],
+                date=commit['date'])
 
 
 # For each backend create test case class

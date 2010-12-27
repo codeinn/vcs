@@ -9,6 +9,7 @@ Git backend implementation.
 import os
 import re
 import time
+import datetime
 import posixpath
 
 from subprocess import Popen, PIPE
@@ -628,8 +629,8 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
 
     def commit(self, message, author, branch=None, **kwargs):
         """
-        Commits local (from working directory) changes and returns newly created
-        ``Changeset``. Updates repository's ``revisions`` list.
+        Commits changes and returns newly created ``Changeset``. Updates
+        repository's ``revisions`` list.
 
         :param message: message of the commit
         :param branch: branch name, as string. If none given, default backend's
@@ -672,11 +673,23 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         commit.tree = tree.id
         commit.parents = tip and [tip.id] or []
         commit.author = commit.committer = author
-        commit.commit_time = commit.author_time = int(time.time())
-        tz = time.timezone
-        commit.commit_timezone = commit.author_timezone = tz
         commit.encoding = ENCODING
         commit.message = message + ' '
+
+        # Compute date
+        date = kwargs.pop('date', None)
+        if date is None:
+            date = time.time()
+        elif isinstance(date, datetime.datetime):
+            date = time.mktime(date.timetuple())
+
+        author_time = kwargs.pop('author_time', date)
+        commit.commit_time = int(date)
+        commit.author_time = int(author_time)
+        tz = time.timezone
+        author_tz = kwargs.pop('author_timezone', tz)
+        commit.commit_timezone = tz
+        commit.author_timezone = author_tz
 
         object_store.add_object(commit)
 
