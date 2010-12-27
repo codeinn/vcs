@@ -694,11 +694,7 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
                 new_trees.append(curtree)
                 for dirname in reversed_dirnames[:-1]:
                     newtree = objects.Tree()
-                    try:
-                        newtree.add(DIRMOD, dirname, curtree.id)
-                    except Exception, e:
-                        print e
-                        #import ipdb; ipdb.set_trace()
+                    newtree.add(DIRMOD, dirname, curtree.id)
                     new_trees.append(newtree)
                     curtree = newtree
                 parent[reversed_dirnames[-1]] = DIRMOD, curtree.id
@@ -779,15 +775,12 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         :param root_tree: ``dulwich.objects.Tree`` object from which we start
           traversing (should be commit's root tree)
         """
-        print "Path: %s" % path
         dirpath = posixpath.split(path)[0]
         dirs = dirpath.split('/')
-        print "Dirs:", dirs
         if not dirs or dirs == ['']:
             return []
 
         def get_tree_for_dir(tree, dirname):
-            print "get_tree_for_dir(tree, %s)" % (dirname,)
             for name, mode, id in tree.iteritems():
                 if name == dirname:
                     obj = self.repository._repo[id]
@@ -807,8 +800,6 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
                 tree = objects.Tree()
                 dirmode = 040000
                 parent.add(dirmode, dirname, tree.id)
-                print "Dirname: ",dirname
-                print parent.entries()
                 parent = tree
             # Always append tree
             trees.append(tree)
