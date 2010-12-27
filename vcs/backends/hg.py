@@ -25,7 +25,7 @@ from mercurial.context import memctx, memfilectx
 
 from vcs.backends.base import BaseRepository, BaseChangeset, \
     BaseInMemoryChangeset
-from vcs.exceptions import RepositoryError
+from vcs.exceptions import RepositoryError, VCSError
 from vcs.exceptions import EmptyRepositoryError
 from vcs.exceptions import ChangesetError
 from vcs.exceptions import ChangesetDoesNotExistError
@@ -402,23 +402,47 @@ class MercurialChangeset(BaseChangeset):
                 for parent in self._ctx.parents() if parent.rev() >= 0]
 
     def next(self, branch=None):
-        try:
-            next_ = self.revision + 1
-            next_rev = self.repository.revisions[next_]
-        except IndexError:
-            raise ChangesetDoesNotExistError
 
-        return self.repository.get_changeset(next_rev)
+        if branch and self.branch != branch:
+            raise VCSError('Branch option used on changeset not belonging '
+                           'to that branch')
+
+        def _next(changeset, branch):
+            try:
+                next_ = changeset.revision + 1
+                next_rev = changeset.repository.revisions[next_]
+            except IndexError:
+                raise ChangesetDoesNotExistError
+            cs = changeset.repository.get_changeset(next_rev)
+
+            if branch and branch != cs.branch:
+                return _next(cs, branch)
+
+            return cs
+
+        return _next(self, branch)
 
     def prev(self, branch=None):
-        try:
-            prev_ = self.revision - 1
-            if prev_ < 0:raise IndexError
-            prev_rev = self.repository.revisions[prev_]
-        except IndexError:
-            raise ChangesetDoesNotExistError
+        if branch and self.branch != branch:
+            raise VCSError('Branch option used on changeset not belonging '
+                           'to that branch')
 
-        return self.repository.get_changeset(prev_rev)
+        def _prev(changeset, branch):
+            try:
+                prev_ = changeset.revision - 1
+                if prev_ < 0:raise IndexError
+                prev_rev = changeset.repository.revisions[prev_]
+            except IndexError:
+                raise ChangesetDoesNotExistError
+
+            cs = changeset.repository.get_changeset(prev_rev)
+
+            if branch and branch != cs.branch:
+                return _prev(cs, branch)
+
+            return cs
+
+        return _prev(self, branch)
 
     def _fix_path(self, path):
         """
