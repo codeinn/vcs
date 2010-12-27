@@ -401,6 +401,25 @@ class MercurialChangeset(BaseChangeset):
         return [self.repository.get_changeset(parent.rev())
                 for parent in self._ctx.parents() if parent.rev() >= 0]
 
+    def next(self, branch=None):
+        try:
+            next_ = self.revision + 1
+            next_rev = self.repository.revisions[next_]
+        except IndexError:
+            raise ChangesetDoesNotExistError
+
+        return self.repository.get_changeset(next_rev)
+
+    def prev(self, branch=None):
+        try:
+            prev_ = self.revision - 1
+            if prev_ < 0:raise IndexError
+            prev_rev = self.repository.revisions[prev_]
+        except IndexError:
+            raise ChangesetDoesNotExistError
+
+        return self.repository.get_changeset(prev_rev)
+
     def _fix_path(self, path):
         """
         Paths are stored without trailing slash so we need to get rid off it if
