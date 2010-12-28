@@ -68,11 +68,14 @@ class InMemoryChangesetTestMixin(object):
         self.imc.add(node)
         self.assertRaises(NodeAlreadyAddedError, self.imc.add, node)
 
-    def test_add_raise_already_exist(self):
+    def test_check_integrity_raise_already_exist(self):
         node = FileNode('foobar', content='baz')
         self.imc.add(node)
         self.imc.commit(message='Added foobar', author=str(self))
-        self.assertRaises(NodeAlreadyExistsError, self.imc.add, node)
+        self.imc.add(node)
+        self.assertRaises(NodeAlreadyExistsError, self.imc.commit,
+            message='new message',
+            author=str(self))
 
     def test_change(self):
         self.test_add() # Performs first commit
@@ -96,12 +99,15 @@ class InMemoryChangesetTestMixin(object):
         node = FileNode('foobar')
         self.assertRaises(EmptyRepositoryError, self.imc.change, node)
 
-    def test_change_raise_node_does_not_exist(self):
+    def test_check_integrity_change_raise_node_does_not_exist(self):
         node = FileNode('foobar', content='baz')
         self.imc.add(node)
         self.imc.commit(message='Added foobar', author=str(self))
         node = FileNode('not-foobar', content='')
-        self.assertRaises(NodeDoesNotExistError, self.imc.change, node)
+        self.imc.change(node)
+        self.assertRaises(NodeDoesNotExistError, self.imc.commit,
+            message='Changed not existing node',
+            author=str(self))
 
     def test_change_raise_node_already_changed(self):
         node = FileNode('foobar', content='baz')
@@ -111,11 +117,14 @@ class InMemoryChangesetTestMixin(object):
         self.imc.change(node)
         self.assertRaises(NodeAlreadyChangedError, self.imc.change, node)
 
-    def test_change_raise_node_not_changed(self):
+    def test_check_integrity_change_raise_node_not_changed(self):
         self.test_add() # Performs first commit
 
         node = FileNode(self.nodes[0].path, content=self.nodes[0].content)
-        self.assertRaises(NodeNotChangedError, self.imc.change, node)
+        self.imc.change(node)
+        self.assertRaises(NodeNotChangedError, self.imc.commit,
+            message='Trying to mark node as changed without touching it',
+            author=str(self))
 
     def test_change_raise_node_already_removed(self):
         node = FileNode('foobar', content='baz')
@@ -138,14 +147,20 @@ class InMemoryChangesetTestMixin(object):
         self.assertNotEqual(tip.id, newtip.id)
         self.assertRaises(NodeDoesNotExistError, newtip.get_node, node.path)
 
-    def test_remove_raise_empty_repository(self):
-        self.assertRaises(EmptyRepositoryError, self.imc.remove, self.nodes[0])
-
     def test_remove_raise_node_does_not_exist(self):
+        self.imc.remove(self.nodes[0])
+        self.assertRaises(NodeDoesNotExistError, self.imc.commit,
+            message='Trying to remove node at empty repository',
+            author=str(self))
+
+    def test_check_integrity_remove_raise_node_does_not_exist(self):
         self.test_add() # Performs first commit
 
         node = FileNode('no-such-file')
-        self.assertRaises(NodeDoesNotExistError, self.imc.remove, node)
+        self.imc.remove(node)
+        self.assertRaises(NodeDoesNotExistError, self.imc.commit,
+            message='Trying to remove not existing node',
+            author=str(self))
 
     def test_remove_raise_node_already_removed(self):
         self.test_add() # Performs first commit

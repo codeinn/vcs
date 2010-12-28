@@ -693,7 +693,8 @@ class BaseInMemoryChangeset(object):
 
         if self.changed and not_changed:
             raise NodeNotChangedError("Node at %s wasn't actually changed "
-                "since parents' changesets: %s" % (not_changed[0].path, parents)
+                "since parents' changesets: %s" % (not_changed.pop().path,
+                    parents)
             )
 
         # Check nodes marked as removed
