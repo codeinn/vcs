@@ -9,7 +9,7 @@ from vcs.utils.paths import abspath
 
 ALIASES = ['hg', 'git', 'svn', 'bzr']
 
-def get_scm(path, search_recursively=False):
+def get_scm(path, search_recursively=False, explicit_alias=None):
     """
     Returns one of alias from ``ALIASES`` (in order of precedence same as
     shortcuts given in ``ALIASES``) and top working dir path for the given
@@ -19,6 +19,10 @@ def get_scm(path, search_recursively=False):
     :param search_recursively: if set to ``True``, this function would try to
       move up to parent directory every time no scm is recognized for the
       currently checked path. Default: ``False``.
+    :param explicit_alias: can be one of available backend aliases, when given
+      it will return given explicit alias in repositories under more than one
+      version control, if explicit_alias is different than found it will raise
+      VCSError
     """
     if not os.path.isdir(path):
         raise VCSError("Given path %s is not a directory" % path)
@@ -35,6 +39,9 @@ def get_scm(path, search_recursively=False):
         found_scms = get_scms(path)
 
     if len(found_scms) > 1:
+        for scm in found_scms:
+            if scm[0] == explicit_alias:
+                return scm
         raise VCSError('More than one [%s] scm found at given path %s'
                        % (','.join((x[0] for x in found_scms)), path))
 
