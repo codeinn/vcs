@@ -46,7 +46,7 @@ class GitRepository(BaseRepository):
 
         self.path = abspath(repo_path)
         self.changesets = {}
-        self._set_repo(create, src_url, update_after_clone)
+        self._repo = self._get_repo(create, src_url, update_after_clone)
         try:
             self.head = self._repo.head()
         except KeyError:
@@ -93,7 +93,7 @@ class GitRepository(BaseRepository):
                 "stderr:\n%s" % (cmd, se))
         return so, se
 
-    def _set_repo(self, create, src_url=None, update_after_clone=False):
+    def _get_repo(self, create, src_url=None, update_after_clone=False):
         if create and os.path.exists(self.path):
             raise RepositoryError("Location already exist")
         if src_url and not create:
@@ -102,12 +102,12 @@ class GitRepository(BaseRepository):
         try:
             if create and src_url:
                 self.clone(src_url, update_after_clone)
-                self._repo = Repo(self.path)
+                return Repo(self.path)
             elif create:
                 os.mkdir(self.path)
-                self._repo = Repo.init(self.path)
+                return Repo.init(self.path)
             else:
-                self._repo = Repo(self.path)
+                return Repo(self.path)
         except (NotGitRepository, OSError), err:
             raise RepositoryError(str(err))
 
