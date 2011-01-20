@@ -25,7 +25,7 @@ setup(
     long_description=long_description,
     zip_safe=False,
     packages=find_packages(),
-    scripts=['bin/vcs'],
+    scripts=[],
     test_suite='tests.collector',
     install_requires=['unittest2', 'Pygments'],
     include_package_data=True,
