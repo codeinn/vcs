@@ -719,6 +719,5 @@ class BaseInMemoryChangeset(object):
 
         :raises ``CommitError``: if any error occurs while committing
         """
-        #self.check_integrity(parents)
         raise NotImplementedError
 
