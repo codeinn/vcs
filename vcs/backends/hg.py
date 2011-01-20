@@ -53,7 +53,7 @@ class MercurialRepository(BaseRepository):
         ``repo_path``.
 
         :param repo_path: local path of the repository
-        :param create=False: if set to True, would try to craete repository if
+        :param create=False: if set to True, would try to create repository if
            it does not exist rather than raising exception
         :param baseui=None: user data
         :param src_url=None: would try to clone repository from given location
