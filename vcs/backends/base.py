@@ -20,8 +20,6 @@ from vcs.exceptions import NodeAlreadyChangedError
 from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import NodeNotChangedError
 
-from warnings import warn
-
 class BaseRepository(object):
     """
     Base Repository for final backends
@@ -439,6 +437,35 @@ class BaseChangeset(object):
             for tup in self.walk(dirnode.path):
                 yield tup
 
+    def get_archive(self, stream=None, kind=None, prefix=None):
+        """
+        Returns archived changeset contents, as stream. Default stream is
+        tempfile as for *huge* changesets we could eat memory.
+
+        :param stream: file like object. Default: new ``tempfile.TemporaryFile``
+          instance.
+        :param kind: one of following: ``zip``, ``tar``, ``tgz`` or ``tbz2``.
+          Default: ``tgz``.
+        :param prefix: name of root directory in archive. Default is repository
+          name and changeset's raw_id joined with dash.
+        """
+        # TODO !
+
+    def get_chunked_archive(self, **kwargs):
+        """
+        Returns iterable archive. Tiny wrapper around ``get_archive`` method.
+
+        :param chunk_size: extra parameter which controls size of returned
+          chunks. Default: 8k.
+        """
+        chunk_size = kwargs.pop('chunk_size', 8192)
+        archive = self.get_archive(**kwargs)
+        while True:
+            data = archive.read(chunk_size)
+            if not data:
+                break
+            yield data
+
 
 class BaseWorkdir(object):
     """
@@ -719,6 +746,5 @@ class BaseInMemoryChangeset(object):
 
         :raises ``CommitError``: if any error occurs while committing
         """
-        #self.check_integrity(parents)
         raise NotImplementedError
 

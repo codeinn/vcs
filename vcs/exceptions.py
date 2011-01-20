@@ -40,6 +40,12 @@ class CommitError(RepositoryError):
 class NothingChangedError(CommitError):
     pass
 
+class NodeError(VCSError):
+    pass
+
+class RemovedFileNodeError(NodeError):
+    pass
+
 class NodeAlreadyExistsError(CommitError):
     pass
 

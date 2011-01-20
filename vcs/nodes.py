@@ -6,15 +6,10 @@ import mimetypes
 
 from vcs.utils.lazy import LazyProperty
 from vcs.utils import safe_unicode
-from vcs.exceptions import VCSError
+from vcs.exceptions import NodeError
+from vcs.exceptions import RemovedFileNodeError
 
 from pygments import lexers
-
-class NodeError(VCSError):
-    pass
-
-class RemovedFileNodeError(NodeError):
-    pass
 
 class NodeKind:
     DIR = 1
@@ -30,8 +25,8 @@ class NodeGeneratorBase(object):
     """
     Base class for removed added and changed filenodes, it's a lazy generator
     class that will create filenodes only on iteration or call
-    
-    The len method doesn't need to create filenodes at all 
+
+    The len method doesn't need to create filenodes at all
     """
 
     def __init__(self, current_paths, cs):
