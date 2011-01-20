@@ -34,6 +34,7 @@ from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import TagAlreadyExistError
 from vcs.exceptions import TagDoesNotExistError
+from vcs.exceptions import InproperArchiveTypeError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, \
     RemovedFileNodesGenerator, ChangedFileNodesGenerator, \
     AddedFileNodesGenerator
@@ -526,7 +527,8 @@ class MercurialChangeset(BaseChangeset):
     def get_archive(self, stream=None, kind='tgz', prefix=None):
         """
         Returns archived changeset contents, as stream. Default stream is 
-        tempfile as for *huge* changesets we could eat memory.
+        tempfile as for *huge* changesets we could eat memory. Raises 
+        InproperArchiveTypeError if given kind in wrong.
         
         :param stream: file like object. 
             Default: new ``tempfile.TemporaryFile`` instance.
@@ -546,7 +548,7 @@ class MercurialChangeset(BaseChangeset):
          }
         allowed_kinds = archive_specs.keys()
         if kind not in allowed_kinds:
-            raise VCSError('Archive kind not supported use one of %s',
+            raise InproperArchiveTypeError('Archive kind not supported use one of %s',
                            allowed_kinds)
 
         if stream is None:
