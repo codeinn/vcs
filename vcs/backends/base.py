@@ -20,8 +20,6 @@ from vcs.exceptions import NodeAlreadyChangedError
 from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import NodeNotChangedError
 
-from warnings import warn
-
 class BaseRepository(object):
     """
     Base Repository for final backends
