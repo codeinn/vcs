@@ -27,7 +27,7 @@ setup(
     packages=find_packages(),
     scripts=['bin/vcs'],
     test_suite='tests.collector',
-    install_requires=['unittest2', 'Pygments', 'dulwich'],
+    install_requires=['unittest2', 'Pygments'],
     include_package_data=True,
     classifiers=[
         'Development Status :: 4 - Beta',
