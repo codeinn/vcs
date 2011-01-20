@@ -172,22 +172,6 @@ class BaseRepository(object):
         """
         raise NotImplementedError
 
-    def request(self, path, revision=None):
-        warn("request method is deprecated and will be removed in version 1.0."
-             " Please, use get_changeset to retrieve revision and then get_node"
-             " method instead.", DeprecationWarning)
-        chset = self.get_changeset(revision)
-        node = chset.get_node(path)
-        return node
-
-    def walk(self, topurl='', revision=None):
-        warn("walk method is deprecated and will be removed in version 1.0. "
-             "Please, use get_changeset to retrieve revision and then walk "
-             "method instead.", DeprecationWarning)
-        chset = self.get_changeset(revision)
-        return chset.walk(topurl)
-
-
     # ========== #
     # COMMIT API #
     # ========== #
