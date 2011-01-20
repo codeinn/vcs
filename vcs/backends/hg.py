@@ -84,6 +84,7 @@ class MercurialRepository(BaseRepository):
             """
             Patched version of mercurial branchtags to not return the closed
             branches
+            
             :param localrepo: locarepository instance
             """
 
