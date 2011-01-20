@@ -25,6 +25,7 @@ from mercurial.commands import clone, pull, nullid
 from mercurial.context import memctx, memfilectx
 from mercurial import archival
 
+from vcs.backends import ARCHIVE_SPECS
 from vcs.backends.base import BaseRepository, BaseChangeset, \
     BaseInMemoryChangeset
 from vcs.exceptions import RepositoryError, VCSError
@@ -540,13 +541,8 @@ class MercurialChangeset(BaseChangeset):
             repo-tip.<kind>
             
         """
-        archive_specs = {
-          'tar' : ('application/x-tar', '.tar'),
-          'tbz2': ('application/x-tar', '.tar.bz2'),
-          'tgz': ('application/x-tar', '.tar.gz'),
-          'zip': ('application/zip', '.zip'),
-         }
-        allowed_kinds = archive_specs.keys()
+
+        allowed_kinds = ARCHIVE_SPECS.keys()
         if kind not in allowed_kinds:
             raise InproperArchiveTypeError('Archive kind not supported use one of %s',
                            allowed_kinds)

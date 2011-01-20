@@ -9,6 +9,13 @@ BACKENDS = {
     'git': 'vcs.backends.git.GitRepository',
 }
 
+ARCHIVE_SPECS = {
+    'tar' : ('application/x-tar', '.tar'),
+    'tbz2': ('application/x-bzip2', '.tar.bz2'),
+    'tgz': ('application/x-gzip', '.tar.gz'),
+    'zip': ('application/zip', '.zip'),
+}
+
 def get_repo(path, alias=None, create=False):
     """
     Returns ``Repository`` object of type linked with given ``alias`` at
