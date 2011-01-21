@@ -35,7 +35,7 @@ from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import TagAlreadyExistError
 from vcs.exceptions import TagDoesNotExistError
-from vcs.exceptions import InproperArchiveTypeError
+from vcs.exceptions import ImproperArchiveTypeError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, \
     RemovedFileNodesGenerator, ChangedFileNodesGenerator, \
     AddedFileNodesGenerator
@@ -539,7 +539,7 @@ class MercurialChangeset(BaseChangeset):
         """
         Returns archived changeset contents, as stream. Default stream is 
         tempfile as for *huge* changesets we could eat memory. Raises 
-        InproperArchiveTypeError if given kind in wrong.
+        ImproperArchiveTypeError if given kind in wrong.
         
         :param stream: file like object. 
             Default: new ``tempfile.TemporaryFile`` instance.
@@ -554,7 +554,7 @@ class MercurialChangeset(BaseChangeset):
 
         allowed_kinds = ARCHIVE_SPECS.keys()
         if kind not in allowed_kinds:
-            raise InproperArchiveTypeError('Archive kind not supported use one of %s',
+            raise ImproperArchiveTypeError('Archive kind not supported use one of %s',
                            allowed_kinds)
 
         if stream is None:

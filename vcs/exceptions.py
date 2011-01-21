@@ -64,5 +64,5 @@ class NodeAlreadyAddedError(CommitError):
 class NodeAlreadyRemovedError(CommitError):
     pass
 
-class InproperArchiveTypeError(VCSError):
+class ImproperArchiveTypeError(VCSError):
     pass
