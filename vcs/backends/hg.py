@@ -15,6 +15,7 @@ import urllib2
 import posixpath
 import datetime
 import errno
+import tempfile
 
 from mercurial import ui
 from mercurial.error import RepoError, RepoLookupError, Abort
@@ -22,7 +23,9 @@ from mercurial.localrepo import localrepository
 from mercurial.node import hex
 from mercurial.commands import clone, pull, nullid
 from mercurial.context import memctx, memfilectx
+from mercurial import archival
 
+from vcs.backends import ARCHIVE_SPECS
 from vcs.backends.base import BaseRepository, BaseChangeset, \
     BaseInMemoryChangeset
 from vcs.exceptions import RepositoryError, VCSError
@@ -32,6 +35,7 @@ from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import TagAlreadyExistError
 from vcs.exceptions import TagDoesNotExistError
+from vcs.exceptions import InproperArchiveTypeError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, \
     RemovedFileNodesGenerator, ChangedFileNodesGenerator, \
     AddedFileNodesGenerator
@@ -529,6 +533,43 @@ class MercurialChangeset(BaseChangeset):
                              annotate_data[1],))
 
         return annotate
+
+
+    def get_archive(self, stream=None, kind='tgz', prefix=None):
+        """
+        Returns archived changeset contents, as stream. Default stream is 
+        tempfile as for *huge* changesets we could eat memory. Raises 
+        InproperArchiveTypeError if given kind in wrong.
+        
+        :param stream: file like object. 
+            Default: new ``tempfile.TemporaryFile`` instance.
+        :param kind: one of following: ``zip``, ``tgz`` or ``tbz2``. 
+            Default: ``tgz``.
+        :param prefix: name of root directory in archive. 
+            Default is repository name and changeset's raw_id joined with dash.
+            
+            repo-tip.<kind>
+            
+        """
+
+        allowed_kinds = ARCHIVE_SPECS.keys()
+        if kind not in allowed_kinds:
+            raise InproperArchiveTypeError('Archive kind not supported use one of %s',
+                           allowed_kinds)
+
+        if stream is None:
+            stream = tempfile.TemporaryFile()
+
+        if prefix is None:
+            prefix = '%s-%s' % (self.repository.name, self.short_id)
+
+        archival.archive(self.repository._repo, stream, self.raw_id,
+                         kind, prefix=prefix)
+
+        stream.seek(0)
+        return stream
+
+
 
     def get_nodes(self, path):
         """

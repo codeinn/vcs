@@ -482,3 +482,26 @@ class MercurialChangesetTest(unittest2.TestCase):
         path = 'foo/bar/setup.py'
         self.assertRaises(VCSError, self.repo.get_changeset().get_node, path)
 
+
+    def test_archival_file(self):
+        #TODO:
+        pass
+
+    def test_archival_as_generator(self):
+        #TODO:        
+        pass
+
+    def test_archival_wrong_kind(self):
+        tip = self.repo.get_changeset()
+        self.assertRaises(VCSError, tip.get_archive, kind='error')
+
+    def test_archival_empty_prefix(self):
+        #TODO:        
+        pass
+
+
+
+
+
+
+
