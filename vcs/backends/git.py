@@ -1,11 +1,14 @@
-#!/usr/bin/env python
-# encoding: utf-8
-#
-# Copyright (c) 2010 Marcin Kuzminski,Lukasz Balcerzak.  All rights reserved.
-#
+# -*- coding: utf-8 -*-
 """
-Git backend implementation.
+    vcs.backends.git
+    ~~~~~~~~~~~~~~~~
+    
+    Git backend implementation.
+    
+    :created_on: Apr 8, 2010
+    :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
+
 import os
 import re
 import time

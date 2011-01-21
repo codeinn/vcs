@@ -1,5 +1,12 @@
+# -*- coding: utf-8 -*-
 """
-Various Version Control System management abstraction layer for Python.
+    vcs
+    ~~~
+    
+    Various version Control System (vcs) management abstraction layer for Python.
+    
+    :created_on: Apr 8, 2010
+    :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
 
 VERSION = (0, 1, 11, 'dev')

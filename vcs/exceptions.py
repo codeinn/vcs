@@ -1,10 +1,12 @@
-#
-# Copyright (c) 2010 Marcin Kuzminski,Lukasz Balcerzak.  All rights reserved.
-#
+# -*- coding: utf-8 -*-
 """
-Created on Apr 8, 2010
+    vcs.exceptions
+    ~~~~~~~~~~~~~~
 
-@author: marcink,lukaszb
+    Custom exceptions module
+    
+    :created_on: Apr 8, 2010
+    :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
 
 class VCSError(Exception):

@@ -6,10 +6,8 @@
     set of archiver functions for creating archives from repository content
     
     :created_on: Jan 21, 2011
-    :copyright: (c) 2010-2011 by marcink,lukaszb.
+    :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
-
-
 
 import cStringIO, os, stat, tarfile, time, zipfile
 import zlib, gzip

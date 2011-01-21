@@ -1,13 +1,15 @@
-#!/usr/bin/env python
-# encoding: utf-8
-#
-# Copyright (c) 2010 Marcin Kuzminski,Lukasz Balcerzak.  All rights reserved.
-#
+# -*- coding: utf-8 -*-
 """
-Created on Apr 8, 2010
+    vcs.backends.base
+    ~~~~~~~~~~~~~~~~~
+    
+    Base for all available scm backends
+    
+    :created_on: Apr 8, 2010
+    :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
+"""
 
-:author: marcink,lukaszb
-"""
+
 from itertools import chain
 
 from vcs.utils.lazy import LazyProperty
@@ -399,6 +401,7 @@ class BaseChangeset(object):
         """
 
         raise NotImplementedError
+
 
     def get_chunked_archive(self, **kwargs):
         """

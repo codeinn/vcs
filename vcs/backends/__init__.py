@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+    vcs.backends
+    ~~~~~~~~~~~~
+    
+    Main package for scm backends
+    
+    :created_on: Apr 8, 2010
+    :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
+"""
+
 from pprint import pformat
 from vcs.exceptions import VCSError
 from vcs.utils.helpers import get_scm
