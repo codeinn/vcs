@@ -333,6 +333,12 @@ class BaseChangeset(object):
         """
         raise NotImplementedError
 
+    def get_file_mode(self, path):
+        """
+        Returns stat mode of the file at the given ``path``.
+        """
+        raise NotImplementedError
+
     def get_file_content(self, path):
         """
         Returns content of the file at the given ``path``.

@@ -333,6 +333,7 @@ class GitChangeset(BaseChangeset):
     """
 
     def __init__(self, repository, revision):
+        self._stat_modes = {}
         self.repository = repository
         self.revision = repository._get_revision(revision)
         self.raw_id = self.repository.revisions[revision]
@@ -412,6 +413,7 @@ class GitChangeset(BaseChangeset):
                     else:
                         item_path = item
                     self._paths[item_path] = id
+                    self._stat_modes[item_path] = stat
                     if dir == item:
                         dir_id = id
                 if dir_id:
@@ -427,6 +429,7 @@ class GitChangeset(BaseChangeset):
                 else:
                     name = item
                 self._paths[name] = id
+                self._stat_modes[name] = stat
             if not path in self._paths:
                 raise NodeDoesNotExistError("There is no file nor directory "
                     "at the given path %r at revision %r"
@@ -451,6 +454,14 @@ class GitChangeset(BaseChangeset):
         """
         return [self.repository.get_changeset(parent)
             for parent in self._commit.parents]
+
+    def get_file_mode(self, path):
+        """
+        Returns stat mode of the file at the given ``path``.
+        """
+        # ensure path is traversed
+        self._get_id_for_path(path)
+        return self._stat_modes[path]
 
     def get_file_content(self, path):
         """
@@ -524,10 +535,12 @@ class GitChangeset(BaseChangeset):
                 obj_path = '/'.join((path, name))
             else:
                 obj_path = name
+            if obj_path not in self._stat_modes:
+                self._stat_modes[obj_path] = stat
             if isinstance(obj, objects.Tree):
                 dirnodes.append(DirNode(obj_path, changeset=self))
             elif isinstance(obj, objects.Blob):
-                filenodes.append(FileNode(obj_path, changeset=self))
+                filenodes.append(FileNode(obj_path, changeset=self, mode=stat))
             else:
                 raise ChangesetError("Requested object should be Tree or Blob, "
                     "is %r" % type(obj))
@@ -656,7 +669,6 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         object_store = repo.object_store
 
         ENCODING = "UTF-8"
-        FILEMOD = 010644
         DIRMOD = 040000
 
         # Create tree and populates it with blobs
@@ -690,7 +702,7 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
                 # now
                 reversed_dirnames = list(reversed(dirnames))
                 curtree = objects.Tree()
-                curtree.add(FILEMOD, str(node.name), blob.id)
+                curtree.add(node.mode, str(node.name), blob.id)
                 new_trees.append(curtree)
                 for dirname in reversed_dirnames[:-1]:
                     newtree = objects.Tree()
@@ -699,7 +711,7 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
                     curtree = newtree
                 parent[reversed_dirnames[-1]] = DIRMOD, curtree.id
             else:
-                parent.add(FILEMOD, str(node.name), blob.id)
+                parent.add(node.mode, str(node.name), blob.id)
 
             object_store.add_object(blob)
             for t in new_trees:
@@ -720,7 +732,7 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
                     parent = subdir
                 trees.append(parent)
             blob = objects.Blob.from_string(node.content.encode(ENCODING))
-            parent[nodename] = FILEMOD, blob.id
+            parent[nodename] = node.mode, blob.id
             object_store.add_object(blob)
             for t in trees:
                 object_store.add_object(t)

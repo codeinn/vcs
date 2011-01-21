@@ -1,6 +1,7 @@
 """
 
 """
+import stat
 import posixpath
 import mimetypes
 
@@ -202,9 +203,10 @@ class FileNode(Node):
     :attribute: path: path to the node, relative to repostiory's root
     :attribute: content: if given arbitrary sets content of the file
     :attribute: changeset: if given, first time content is accessed, callback
+    :attribute: mode: octal stat mode for a node. Default is 0100644.
     """
 
-    def __init__(self, path, content=None, changeset=None):
+    def __init__(self, path, content=None, changeset=None, mode=None):
         """
         Only one of ``content`` and ``changeset`` may be given. Passing both
         would raise ``NodeError`` exception.
@@ -212,6 +214,7 @@ class FileNode(Node):
         :param path: relative path to the node
         :param content: content may be passed to constructor
         :param changeset: if given, will use it to lazily fetch content
+        :param mode: octal representation of ST_MODE (i.e. 0100644)
         """
 
         if content and changeset:
@@ -219,6 +222,19 @@ class FileNode(Node):
         super(FileNode, self).__init__(path, kind=NodeKind.FILE)
         self.changeset = changeset
         self._content = content
+        self._mode = mode or 0100644
+
+    @LazyProperty
+    def mode(self):
+        """
+        Returns lazily mode of the FileNode. If ``changeset`` is not set, would
+        use value given at initialization or 0100644 (default).
+        """
+        if self.changeset:
+            mode = self.changeset.get_file_mode(self.path)
+        else:
+            mode = self._mode
+        return mode
 
     @LazyProperty
     def content(self):
@@ -322,9 +338,9 @@ class FileNode(Node):
         if not self.changeset:
             raise NodeError("Cannot check state of the node if it's not "
                 "linked with changeset")
-        elif self in self.changeset.added:
+        elif self.path in (node.path for node in self.changeset.added):
             return NodeState.ADDED
-        elif self in self.changeset.changed:
+        elif self.path in (node.path for node in self.changeset.changed):
             return NodeState.CHANGED
         else:
             return NodeState.NOT_CHANGED
@@ -340,6 +356,12 @@ class FileNode(Node):
     def extension(self):
         """Returns filenode extension"""
         return self.name.split('.')[-1]
+
+    def is_executable(self):
+        """
+        Returns ``True`` if file has executable flag turned on.
+        """
+        return bool(self.mode & stat.S_IXUSR)
 
 
 class RemovedFileNode(FileNode):

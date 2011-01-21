@@ -1,3 +1,4 @@
+import stat
 import unittest2
 
 from vcs.nodes import Node, NodeKind, NodeError, FileNode, DirNode
@@ -117,6 +118,30 @@ class NodeBasicTest(unittest2.TestCase):
         self.assertRaises(NodeError, getattr, node, 'state')
         node = DirNode('anything')
         self.assertRaises(NodeError, getattr, node, 'state')
+
+    def test_file_node_stat(self):
+        node = FileNode('foobar', 'empty... almost')
+        mode = node.mode # default should be 0100644
+        self.assertTrue(mode & stat.S_IRUSR)
+        self.assertTrue(mode & stat.S_IWUSR)
+        self.assertTrue(mode & stat.S_IRGRP)
+        self.assertTrue(mode & stat.S_IROTH)
+        self.assertFalse(mode & stat.S_IWGRP)
+        self.assertFalse(mode & stat.S_IWOTH)
+        self.assertFalse(mode & stat.S_IXUSR)
+        self.assertFalse(mode & stat.S_IXGRP)
+        self.assertFalse(mode & stat.S_IXOTH)
+
+    def test_file_node_is_executable(self):
+        node = FileNode('foobar', 'empty... almost', mode=0100755)
+        self.assertTrue(node.is_executable())
+
+        node = FileNode('foobar', 'empty... almost', mode=0100500)
+        self.assertTrue(node.is_executable())
+
+        node = FileNode('foobar', 'empty... almost', mode=0100644)
+        self.assertFalse(node.is_executable())
+
 
 class NodeContentTest(unittest2.TestCase):
 
