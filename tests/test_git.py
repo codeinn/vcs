@@ -105,8 +105,8 @@ class GitRepositoryTest(unittest2.TestCase):
 
     def test_tags(self):
         # TODO: Need more tests here
-        self.assertTrue('0.1.1' in self.repo.tags)
-        self.assertTrue('0.1.2' in self.repo.tags)
+        self.assertTrue('v0.1.1' in self.repo.tags)
+        self.assertTrue('v0.1.2' in self.repo.tags)
         for name, id in self.repo.tags.items():
             self.assertTrue(isinstance(
                 self.repo.get_changeset(id), GitChangeset))
