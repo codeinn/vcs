@@ -1,0 +1,4 @@
+*.pyc
+
+build
+vcs.egg-info

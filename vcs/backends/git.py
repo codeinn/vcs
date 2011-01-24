@@ -2,9 +2,9 @@
 """
     vcs.backends.git
     ~~~~~~~~~~~~~~~~
-    
+
     Git backend implementation.
-    
+
     :created_on: Apr 8, 2010
     :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
@@ -700,12 +700,13 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
             # for dirnames (in reverse order)
             new_trees = []
             blob = objects.Blob.from_string(node.content.encode(ENCODING))
+            node_path = node.name.encode(ENCODING)
             if dirnames:
                 # If there are trees which should be created we need to build
                 # now
                 reversed_dirnames = list(reversed(dirnames))
                 curtree = objects.Tree()
-                curtree.add(node.mode, str(node.name), blob.id)
+                curtree.add(node.mode, node_path, blob.id)
                 new_trees.append(curtree)
                 for dirname in reversed_dirnames[:-1]:
                     newtree = objects.Tree()
@@ -714,7 +715,7 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
                     curtree = newtree
                 parent[reversed_dirnames[-1]] = DIRMOD, curtree.id
             else:
-                parent.add(node.mode, str(node.name), blob.id)
+                parent.add(node.mode, node_path, blob.id)
 
             object_store.add_object(blob)
             for t in new_trees:

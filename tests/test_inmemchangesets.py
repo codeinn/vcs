@@ -3,6 +3,7 @@ Tests so called "in memory changesets" commit API of vcs.
 """
 import vcs
 import time
+import datetime
 import unittest2
 
 from conf import SCM_TESTS, get_new_dir
@@ -204,6 +205,74 @@ class InMemoryChangesetTestMixin(object):
         repo = backend(self.repo_path)
         self.assertEqual(len(repo.revisions), N)
 
+    def test_date_attr(self):
+        node = FileNode('foobar.txt', content='Foobared!')
+        self.imc.add(node)
+        date = datetime.datetime(1985, 1, 30, 1, 45)
+        commit = self.imc.commit("Committed at time when I was born ;-)",
+            author='lb', date=date)
+
+        self.assertEqual(commit.date, date)
+
+
+
+class BackendBaseTestCase(unittest2.TestCase):
+    """
+    Base test class for tests which requires repository.
+    """
+    backend_alias = 'hg'
+    commits = [
+        {
+            'message': 'Initial commit',
+            'author': 'Joe Doe <joe.doe@example.com>',
+            'date': datetime.datetime(2010, 1, 1, 20),
+            'added': [
+                FileNode('foobar', content='Foobar'),
+                FileNode('foobar2', content='Foobar II'),
+                FileNode('foo/bar/baz', content='baz here!'),
+            ],
+        },
+    ]
+
+
+    def get_backend(self):
+        return vcs.get_backend(self.backend_alias)
+
+    def get_commits(self):
+        """
+        Returns list of commits which builds repository for each tests.
+        """
+        if hasattr(self, 'commits'):
+            return self.commits
+
+    def get_new_repo_path(self):
+        """
+        Returns newly created repository's directory.
+        """
+        backend = self.get_backend()
+        key = '%s-%s' % (backend.alias, str(time.time()))
+        repo_path = get_new_dir(key)
+        return repo_path
+
+    def setUp(self):
+        Backend = self.get_backend()
+        self.backend_class = Backend
+        self.repo_path = self.get_new_repo_path()
+        self.repo = Backend(self.repo_path, create=True)
+        self.imc = self.repo.in_memory_changeset
+
+        for commit in self.get_commits():
+            for node in commit.get('added', []):
+                self.imc.add(FileNode(node.path, content=node.content))
+            for node in commit.get('changed', []):
+                self.imc.change(FileNode(node.path, content=node.content))
+            for node in commit.get('removed', []):
+                self.imc.remove(FileNode(node.path))
+            self.imc.commit(message=commit['message'], author=commit['author'],
+                date=commit['date'])
+
+        self.tip = self.repo.get_changeset()
+
 
 # For each backend create test case class
 for alias in SCM_TESTS:
@@ -213,7 +282,6 @@ for alias in SCM_TESTS:
     cls_name = ''.join(('%s in memory changeset test' % alias).title().split())
     bases = (InMemoryChangesetTestMixin, unittest2.TestCase)
     globals()[cls_name] = type(cls_name, bases, attrs)
-
 
 
 if __name__ == '__main__':

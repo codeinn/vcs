@@ -31,6 +31,7 @@ from test_nodes import *
 from test_utils import *
 from test_vcs import *
 from test_inmemchangesets import *
+from test_filenodes_unicode_path import *
 
 def setup_package():
     """
