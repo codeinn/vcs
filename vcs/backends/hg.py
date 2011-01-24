@@ -601,7 +601,8 @@ class MercurialChangeset(BaseChangeset):
         Returns ``Node`` object from the given ``path``. If there is no node at
         the given ``path``, ``ChangesetError`` would be raised.
         """
-
+        if isinstance(path, unicode):
+            path = path.encode('utf-8')
         path = self._fix_path(path)
         if not path in self.nodes:
             if path in self._file_paths:
