@@ -555,6 +555,8 @@ class GitChangeset(BaseChangeset):
         return nodes
 
     def get_node(self, path):
+        if isinstance(path, unicode):
+            path = path.encode('utf-8')
         path = self._fix_path(path)
         if not path in self.nodes:
             try:
