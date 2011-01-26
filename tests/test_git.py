@@ -535,3 +535,6 @@ class GitChangesetTest(unittest2.TestCase):
         tip = self.repo.get_changeset()
         self.assertRaises(VCSError, tip.get_node, path)
 
+if __name__ == '__main__':
+    unittest2.main()
+
