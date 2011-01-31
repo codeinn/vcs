@@ -105,8 +105,8 @@ class GitRepositoryTest(unittest2.TestCase):
 
     def test_tags(self):
         # TODO: Need more tests here
-        self.assertTrue('0.1.1' in self.repo.tags)
-        self.assertTrue('0.1.2' in self.repo.tags)
+        self.assertTrue('v0.1.1' in self.repo.tags)
+        self.assertTrue('v0.1.2' in self.repo.tags)
         for name, id in self.repo.tags.items():
             self.assertTrue(isinstance(
                 self.repo.get_changeset(id), GitChangeset))
@@ -534,4 +534,7 @@ class GitChangesetTest(unittest2.TestCase):
         path = 'foo/bar/setup.py'
         tip = self.repo.get_changeset()
         self.assertRaises(VCSError, tip.get_node, path)
+
+if __name__ == '__main__':
+    unittest2.main()
 

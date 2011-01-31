@@ -22,7 +22,7 @@ GIT_REMOTE_REPO = 'git://github.com/lukaszb/vcs.git'
 
 TEST_TMP_PATH = '/tmp'
 TEST_GIT_REPO = os.environ.get('VCS_TEST_GIT_REPO',
-                              jn(TEST_TMP_PATH, 'vcs-git%s' % uniq_suffix))
+                              jn(TEST_TMP_PATH, 'vcs-git'))
 TEST_GIT_REPO_CLONE = os.environ.get('VCS_TEST_GIT_REPO_CLONE',
                             jn(TEST_TMP_PATH, 'vcsgitclone%s' % uniq_suffix))
 TEST_GIT_REPO_PULL = os.environ.get('VCS_TEST_GIT_REPO_PULL',
@@ -30,7 +30,7 @@ TEST_GIT_REPO_PULL = os.environ.get('VCS_TEST_GIT_REPO_PULL',
 
 HG_REMOTE_REPO = 'http://bitbucket.org/marcinkuzminski/vcs'
 TEST_HG_REPO = os.environ.get('VCS_TEST_HG_REPO',
-                              jn(TEST_TMP_PATH, 'vcs-hg%s' % uniq_suffix))
+                              jn(TEST_TMP_PATH, 'vcs-hg'))
 TEST_HG_REPO_CLONE = os.environ.get('VCS_TEST_HG_REPO_CLONE',
                               jn(TEST_TMP_PATH, 'vcshgclone%s' % uniq_suffix))
 TEST_HG_REPO_PULL = os.environ.get('VCS_TEST_HG_REPO_PULL',

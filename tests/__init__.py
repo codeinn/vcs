@@ -19,9 +19,9 @@ function at ``tests/__init__.py``.
 .. _unittest2: http://pypi.python.org/pypi/unittest2
 
 """
+import unittest2
 from conf import *
 from utils import VCSTestError, SCMFetcher
-from unittest2 import collector as unittest2_collector, main
 
 # Import Test Cases
 from base import *
@@ -62,8 +62,12 @@ def setup_package():
 
 def collector():
     setup_package()
-    return unittest2_collector()
+    return unittest2.collector()
+
+def main():
+    collector()
+    unittest2.main()
 
 if __name__ == '__main__':
-    collector()
     main()
+
