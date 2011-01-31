@@ -40,7 +40,7 @@ http://pypi.python.org/pypi/vcs, decompress archive and run::
 Development
 -----------
 
-In order to test the package you'd need all backends' underlying libraries (see
+In order to test the package you'd need all backends underlying libraries (see
 table above) and unittest2_ as we use it to run test suites.
 
 Here is a full list of packages needed to run test suite:

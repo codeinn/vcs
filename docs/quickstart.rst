@@ -6,7 +6,7 @@ Quickstart
 Say you don't want to install ``vcs`` or just want to begin with really fast
 tutorial?  Not a problem, just follow sections below.
 
-Prepere
+Prepare
 -------
 
 We will try to show you how you can use ``vcs`` directly on repository. But hey,
@@ -37,7 +37,7 @@ There is no need to import everything from ``vcs`` - in fact, all you'd need is
 to import ``get_repo``, at least for now. Then, simply initialize repository
 object by providing it's type and path.
 
-.. code-block:: pycon
+.. code-block:: python
 
    >>> from vcs import get_repo
    >>>

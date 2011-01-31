@@ -13,7 +13,6 @@ vcs uses `Semantic Versioning <http://semver.org/>`_
 - Common :ref:`API <API>` for SCM :ref:`backends <api-backends>`
 - Fetching repositories data lazily
 - Simple caching mechanism so we don't hit repo too often
-- Command line client (still basic)
 
 **Incoming**
 
