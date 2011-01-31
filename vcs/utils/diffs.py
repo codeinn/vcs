@@ -19,18 +19,18 @@ def get_udiff(filenode_old, filenode_new):
         filenode_old_date = filenode_old.last_changeset.date
     except NodeError:
         filenode_old_date = None
-        
+
     try:
         filenode_new_date = filenode_new.last_changeset.date
     except NodeError:
         filenode_new_date = None
-    
+
     for filenode in (filenode_old, filenode_new):
         if not isinstance(filenode, FileNode):
             raise VCSError("Given object should be FileNode object, not %s"
                 % filenode.__class__)
-            
-    if filenode_old_date and filenode_new_date:        
+
+    if filenode_old_date and filenode_new_date:
         if not filenode_old_date < filenode_new_date:
             logging.debug("Generating udiff for filenodes with not increasing "
                 "dates")
@@ -48,18 +48,18 @@ def get_gitdiff(filenode_old, filenode_new):
     """Returns mercurial style git diff between given 
     ``filenode_old`` and ``filenode_new``.
     """
-    
+
     for filenode in (filenode_old, filenode_new):
         if not isinstance(filenode, FileNode):
             raise VCSError("Given object should be FileNode object, not %s"
                 % filenode.__class__)
-    
+
     repo = filenode_new.changeset.repository
-    
+
     old_raw_id = getattr(filenode_old.changeset, 'raw_id', '0' * 40)
     new_raw_id = getattr(filenode_new.changeset, 'raw_id', '0' * 40)
-        
-    return patch.diff(repo.repo,
+
+    return patch.diff(repo._repo,
                       old_raw_id,
                       new_raw_id,
                       opts=diffopts(git=True))
@@ -77,15 +77,15 @@ class DiffProcessor(object):
         """
         :param udiff:   a text in udiff format
         """
-        
+
         self.__udiff = udiff
         if isinstance(self.__udiff, basestring):
             udiff = self.__udiff.splitlines(1)
         else:
             udiff_copy = self.copy_iterator()
-            
+
         self.lines = map(self.escaper, udiff_copy)
-        
+
         # Select a differ.
         if differ == 'difflib':
             self.differ = self._highlight_line_difflib
@@ -100,10 +100,10 @@ class DiffProcessor(object):
         make a fresh copy of generator, we should not iterate thru 
         an original as it's needed for repeating operations on 
         this instance of DiffProcessor
-        """ 
+        """
         self.__udiff, iterator_copy = tee(self.__udiff)
         return iterator_copy
-        
+
     def _extract_rev(self, line1, line2):
         """
         Extract the filename and revision hint from a line.
