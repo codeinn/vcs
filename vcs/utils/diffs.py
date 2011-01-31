@@ -10,6 +10,8 @@ from vcs.nodes import FileNode, NodeError
 import difflib
 import logging
 import re
+from itertools import imap
+
 
 def get_udiff(filenode_old, filenode_new):
     """
@@ -59,10 +61,12 @@ def get_gitdiff(filenode_old, filenode_new):
     old_raw_id = getattr(filenode_old.changeset, 'raw_id', '0' * 40)
     new_raw_id = getattr(filenode_new.changeset, 'raw_id', '0' * 40)
 
-    return patch.diff(repo._repo,
+    vcs_gitdiff = patch.diff(repo._repo,
                       old_raw_id,
                       new_raw_id,
                       opts=diffopts(git=True))
+
+    return vcs_gitdiff
 
 
 class DiffProcessor(object):
@@ -84,7 +88,7 @@ class DiffProcessor(object):
         else:
             udiff_copy = self.copy_iterator()
 
-        self.lines = map(self.escaper, udiff_copy)
+        self.lines = imap(self.escaper, udiff_copy)
 
         # Select a differ.
         if differ == 'difflib':
@@ -188,7 +192,7 @@ class DiffProcessor(object):
         """
         Parse the diff an return data for the template.
         """
-        lineiter = iter(self.lines)
+        lineiter = self.lines
         files = []
         try:
             line = lineiter.next()
