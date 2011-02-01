@@ -11,16 +11,14 @@
 
 
 from itertools import chain
-
 from vcs.utils.lazy import LazyProperty
-from vcs.exceptions import EmptyRepositoryError
-from vcs.exceptions import ChangesetError
-from vcs.exceptions import NodeAlreadyAddedError
-from vcs.exceptions import NodeAlreadyExistsError
-from vcs.exceptions import NodeAlreadyRemovedError
-from vcs.exceptions import NodeAlreadyChangedError
-from vcs.exceptions import NodeDoesNotExistError
-from vcs.exceptions import NodeNotChangedError
+
+from vcs.exceptions import ChangesetError, EmptyRepositoryError, \
+    NodeAlreadyAddedError, NodeAlreadyChangedError, NodeAlreadyExistsError, \
+    NodeAlreadyRemovedError, NodeDoesNotExistError, NodeNotChangedError, \
+    RepositoryError
+
+
 
 class BaseRepository(object):
     """
@@ -91,6 +89,27 @@ class BaseRepository(object):
     @LazyProperty
     def description(self):
         raise NotImplementedError
+
+
+    @LazyProperty
+    def size(self):
+        """
+        Returns combined size in bytes for all repository files
+        """
+
+        size = 0
+        try:
+            tip = tip = self.get_changeset()
+            for topnode, dirs, files in tip.walk('/'):
+                for f in files:
+                    size += tip.get_file_size(f.path)
+                for dir in dirs:
+                    for f in files:
+                        size += tip.get_file_size(f.path)
+
+        except RepositoryError, e:
+            pass
+        return size
 
     def is_valid(self):
         """
