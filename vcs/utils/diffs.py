@@ -84,11 +84,11 @@ class DiffProcessor(object):
 
         self.__udiff = udiff
         if isinstance(self.__udiff, basestring):
-            udiff = self.__udiff.splitlines(1)
+            self.lines = iter(self.__udiff.splitlines(1))
+
         else:
             udiff_copy = self.copy_iterator()
-
-        self.lines = imap(self.escaper, udiff_copy)
+            self.lines = imap(self.escaper, udiff_copy)
 
         # Select a differ.
         if differ == 'difflib':
@@ -303,6 +303,31 @@ class DiffProcessor(object):
         """
         return self._parse_udiff()
 
+
+
+    def _safe_id(self, idstring):
+        """Make a string safe for including in an id attribute.
+        
+        The HTML spec says that id attributes 'must begin with 
+        a letter ([A-Za-z]) and may be followed by any number 
+        of letters, digits ([0-9]), hyphens ("-"), underscores 
+        ("_"), colons (":"), and periods (".")'. These regexps
+        are slightly over-zealous, in that they remove colons
+        and periods unnecessarily.
+        
+        Whitespace is transformed into underscores, and then
+        anything which is not a hyphen or a character that 
+        matches \w (alphanumerics and underscore) is removed.
+        
+        """
+        # Transform all whitespace to underscore
+        idstring = re.sub(r'\s', "_", '%s' % idstring)
+        # Remove everything that is not a hyphen or a member of \w
+        idstring = re.sub(r'(?!-)\W', "", idstring).lower()
+        return idstring
+
+
+
     def raw_diff(self):
         """
         Returns raw string as udiff
@@ -339,12 +364,12 @@ class DiffProcessor(object):
                         % {'line_class':line_class, 'action':change['action']}
                     anchor_old_id = ''
                     anchor_new_id = ''
-                    anchor_old = "%(filename)s_OLD%(oldline_no)s" % \
-                                             {'filename':diff['filename'],
-                                             'oldline_no':change['old_lineno']}
-                    anchor_new = "%(filename)s_NEW%(oldline_no)s" % \
-                                             {'filename':diff['filename'],
-                                             'oldline_no':change['new_lineno']}
+                    anchor_old = "%(filename)s_o%(oldline_no)s" % \
+                                    {'filename':self._safe_id(diff['filename']),
+                                     'oldline_no':change['old_lineno']}
+                    anchor_new = "%(filename)s_n%(oldline_no)s" % \
+                                    {'filename':self._safe_id(diff['filename']),
+                                     'oldline_no':change['new_lineno']}
                     cond_old = change['old_lineno'] != '...' and \
                                                         change['old_lineno']
                     cond_new = change['new_lineno'] != '...' and \
