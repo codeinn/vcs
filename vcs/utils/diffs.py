@@ -10,6 +10,8 @@ from vcs.nodes import FileNode, NodeError
 import difflib
 import logging
 import re
+from itertools import imap
+
 
 def get_udiff(filenode_old, filenode_new):
     """
@@ -19,18 +21,18 @@ def get_udiff(filenode_old, filenode_new):
         filenode_old_date = filenode_old.last_changeset.date
     except NodeError:
         filenode_old_date = None
-        
+
     try:
         filenode_new_date = filenode_new.last_changeset.date
     except NodeError:
         filenode_new_date = None
-    
+
     for filenode in (filenode_old, filenode_new):
         if not isinstance(filenode, FileNode):
             raise VCSError("Given object should be FileNode object, not %s"
                 % filenode.__class__)
-            
-    if filenode_old_date and filenode_new_date:        
+
+    if filenode_old_date and filenode_new_date:
         if not filenode_old_date < filenode_new_date:
             logging.debug("Generating udiff for filenodes with not increasing "
                 "dates")
@@ -48,21 +50,23 @@ def get_gitdiff(filenode_old, filenode_new):
     """Returns mercurial style git diff between given 
     ``filenode_old`` and ``filenode_new``.
     """
-    
+
     for filenode in (filenode_old, filenode_new):
         if not isinstance(filenode, FileNode):
             raise VCSError("Given object should be FileNode object, not %s"
                 % filenode.__class__)
-    
+
     repo = filenode_new.changeset.repository
-    
+
     old_raw_id = getattr(filenode_old.changeset, 'raw_id', '0' * 40)
     new_raw_id = getattr(filenode_new.changeset, 'raw_id', '0' * 40)
-        
-    return patch.diff(repo.repo,
+
+    vcs_gitdiff = patch.diff(repo._repo,
                       old_raw_id,
                       new_raw_id,
                       opts=diffopts(git=True))
+
+    return vcs_gitdiff
 
 
 class DiffProcessor(object):
@@ -77,15 +81,15 @@ class DiffProcessor(object):
         """
         :param udiff:   a text in udiff format
         """
-        
+
         self.__udiff = udiff
         if isinstance(self.__udiff, basestring):
-            udiff = self.__udiff.splitlines(1)
+            self.lines = iter(self.__udiff.splitlines(1))
+
         else:
             udiff_copy = self.copy_iterator()
-            
-        self.lines = map(self.escaper, udiff_copy)
-        
+            self.lines = imap(self.escaper, udiff_copy)
+
         # Select a differ.
         if differ == 'difflib':
             self.differ = self._highlight_line_difflib
@@ -100,10 +104,10 @@ class DiffProcessor(object):
         make a fresh copy of generator, we should not iterate thru 
         an original as it's needed for repeating operations on 
         this instance of DiffProcessor
-        """ 
+        """
         self.__udiff, iterator_copy = tee(self.__udiff)
         return iterator_copy
-        
+
     def _extract_rev(self, line1, line2):
         """
         Extract the filename and revision hint from a line.
@@ -188,7 +192,7 @@ class DiffProcessor(object):
         """
         Parse the diff an return data for the template.
         """
-        lineiter = iter(self.lines)
+        lineiter = self.lines
         files = []
         try:
             line = lineiter.next()
@@ -299,6 +303,31 @@ class DiffProcessor(object):
         """
         return self._parse_udiff()
 
+
+
+    def _safe_id(self, idstring):
+        """Make a string safe for including in an id attribute.
+        
+        The HTML spec says that id attributes 'must begin with 
+        a letter ([A-Za-z]) and may be followed by any number 
+        of letters, digits ([0-9]), hyphens ("-"), underscores 
+        ("_"), colons (":"), and periods (".")'. These regexps
+        are slightly over-zealous, in that they remove colons
+        and periods unnecessarily.
+        
+        Whitespace is transformed into underscores, and then
+        anything which is not a hyphen or a character that 
+        matches \w (alphanumerics and underscore) is removed.
+        
+        """
+        # Transform all whitespace to underscore
+        idstring = re.sub(r'\s', "_", '%s' % idstring)
+        # Remove everything that is not a hyphen or a member of \w
+        idstring = re.sub(r'(?!-)\W', "", idstring).lower()
+        return idstring
+
+
+
     def raw_diff(self):
         """
         Returns raw string as udiff
@@ -335,12 +364,12 @@ class DiffProcessor(object):
                         % {'line_class':line_class, 'action':change['action']}
                     anchor_old_id = ''
                     anchor_new_id = ''
-                    anchor_old = "%(filename)s_OLD%(oldline_no)s" % \
-                                             {'filename':diff['filename'],
-                                             'oldline_no':change['old_lineno']}
-                    anchor_new = "%(filename)s_NEW%(oldline_no)s" % \
-                                             {'filename':diff['filename'],
-                                             'oldline_no':change['new_lineno']}
+                    anchor_old = "%(filename)s_o%(oldline_no)s" % \
+                                    {'filename':self._safe_id(diff['filename']),
+                                     'oldline_no':change['old_lineno']}
+                    anchor_new = "%(filename)s_n%(oldline_no)s" % \
+                                    {'filename':self._safe_id(diff['filename']),
+                                     'oldline_no':change['new_lineno']}
                     cond_old = change['old_lineno'] != '...' and \
                                                         change['old_lineno']
                     cond_new = change['new_lineno'] != '...' and \
