@@ -1,4 +1,7 @@
 *.pyc
 
+.coverage
+.hg
+
 build
 vcs.egg-info
