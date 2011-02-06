@@ -613,9 +613,9 @@ class GitChangeset(BaseChangeset):
         for parent in self.parents:
             try:
                 # Second param at --stat is for paths to be showed completely
-                cmd = 'diff --stat=0,9999 %s %s' % (self.raw_id, parent.raw_id)
+                cmd = 'diff --stat=999,999 %s %s' % (self.raw_id, parent.raw_id)
                 so, se = self.repository.run_git_command(cmd)
-                for line in so.split('\n')[:-2]:
+                for line in so.splitlines()[:-1]:
                     path = line.split()[0]
                     if path in not_changed_paths:
                         continue
