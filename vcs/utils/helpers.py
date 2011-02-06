@@ -71,6 +71,20 @@ def get_scms_for_path(path):
             result.append(key)
     return result
 
+def get_repo_paths(path):
+    """
+    Returns path's subdirectories which seems to be a repository.
+    """
+    repo_paths = []
+    dirnames = (os.path.abspath(dirname) for dirname in os.listdir(path))
+    for dirname in dirnames:
+        try:
+            get_scm(dirname)
+            repo_paths.append(dirname)
+        except VCSError:
+            pass
+    return repo_paths
+
 def run_command(cmd, *args):
     """
     Runs command on the system with given ``args``.
