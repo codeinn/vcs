@@ -26,7 +26,7 @@ MercurialChangeset
 
    .. autoattribute:: raw_id
 
-      Returns raw string identifing this changeset (40-length hex)
+      Returns raw string identifying this changeset (40-length hex)
 
    .. autoattribute:: short_id
 
