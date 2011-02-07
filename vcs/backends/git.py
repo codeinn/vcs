@@ -14,29 +14,25 @@ import re
 import time
 import datetime
 import posixpath
-
-from subprocess import Popen, PIPE
-
+from dulwich import objects
+from dulwich.repo import Repo, NotGitRepository
 from itertools import chain
-
-from vcs.backends.base import BaseRepository
+from subprocess import Popen, PIPE
 from vcs.backends.base import BaseChangeset
 from vcs.backends.base import BaseInMemoryChangeset
-from vcs.exceptions import RepositoryError
-from vcs.exceptions import EmptyRepositoryError
-from vcs.exceptions import ChangesetError
+from vcs.backends.base import BaseRepository
 from vcs.exceptions import ChangesetDoesNotExistError
+from vcs.exceptions import ChangesetError
+from vcs.exceptions import EmptyRepositoryError
 from vcs.exceptions import NodeDoesNotExistError
+from vcs.exceptions import RepositoryError
 from vcs.exceptions import TagAlreadyExistError
 from vcs.exceptions import TagDoesNotExistError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
-from vcs.utils.paths import abspath
+from vcs.utils import safe_unicode, makedate, date_fromtimestamp
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
-from vcs.utils import safe_unicode, makedate, date_fromtimestamp
-
-from dulwich.repo import Repo, NotGitRepository
-from dulwich import objects
+from vcs.utils.paths import abspath
 
 class GitRepository(BaseRepository):
     """
@@ -294,18 +290,13 @@ class GitRepository(BaseRepository):
         attribute if None is given whole list of revisions is returned
         :param limit: int limit or None
         """
-        count = self.count()
-        offset = offset or 0
-        limit = limit or None
-        i = 0
-        while True:
-            if limit and i == limit:
-                break
-            i += 1
-            rev_index = count - offset - i
-            if rev_index < 0:
-                break
-            id = self.revisions[rev_index]
+        top = self.get_changeset(offset)
+        args = [top.raw_id]
+        if limit is not None:
+            args.append('--max-count %d' % limit)
+        cmd = 'rev-list ' + ' '.join(args)
+        so, se = self.run_git_command(cmd)
+        for id in so.splitlines():
             yield self.get_changeset(id)
 
     @LazyProperty
