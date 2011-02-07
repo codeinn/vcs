@@ -155,10 +155,11 @@ class BaseRepository(object):
     def get_changesets_ranges(self, rev_from, rev_to):
         """
         Returns a slice iterator from given string(hash) revisions
-        raises exceptions if start is after end
+        raises exceptions if start is after end. If rev_to is None the
+        iteration will finish in tip
         
         :param rev_from: revision from: str
-        :param rev_to: revision to : str
+        :param rev_to: revision to : str or None
         """
         raise NotImplementedError
 
