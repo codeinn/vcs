@@ -272,7 +272,11 @@ class MercurialChangesetTest(unittest2.TestCase):
             "(get_changeset returned: %s and sliced: %s"
             % (limit, offset, result, sliced))
 
-    def test_slices(self):
+
+    def _test_slices_revisions(self, from_rev, to_rev):
+        return self.repo[from_rev:to_rev]
+
+    def test_slices_numercial(self):
         slices = (
             # (limit, offset)
             (2, 0), # should get 2 most recent changesets
@@ -280,6 +284,26 @@ class MercurialChangesetTest(unittest2.TestCase):
         )
         for limit, offset in slices:
             self._test_slices(limit, offset)
+
+
+    def test_slices_revisions(self):
+        slices = (
+            # (from, to)
+            ('6cba7170863a', None), # should get from 2 till tip
+            ('6cba7170863a', 5), # should get from 2 to 5 changesets
+        )
+        for start_rev, end_rev in slices:
+            self._test_slices_revisions(start_rev, end_rev)
+
+
+    def test_slices_revisions_errors(self):
+
+        rev_generator = self._test_slices_revisions('6fff84722075',
+                                                    '6cba7170863a')
+        #from 5 to 2 should raise Repository Error
+        self.assertRaises(RepositoryError, list, rev_generator)
+
+        #TODO: write more error scenarios
 
     def _test_file_size(self, revision, path, size):
         node = self.repo.get_changeset(revision).get_node(path)
