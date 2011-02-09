@@ -111,9 +111,13 @@ class GitRepository(BaseRepository):
             raise RepositoryError(str(err))
 
     def _get_all_revisions(self):
-        cmd = 'log --pretty=oneline'
-        so, se = self.run_git_command(cmd)
-        revisions = [line.split()[0] for line in so.split('\n')[:-1]]
+        cmd = 'rev-list --all --date-order'
+        try:
+            so, se = self.run_git_command(cmd)
+        except RepositoryError:
+            # Can be raised for empty repositories
+            return []
+        revisions = so.splitlines()
         revisions.reverse()
         return revisions
 
