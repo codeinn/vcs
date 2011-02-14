@@ -4,6 +4,7 @@
 from difflib import unified_diff
 from mercurial import patch
 from mercurial.mdiff import diffopts
+from mercurial.match import match
 from itertools import tee
 from vcs.exceptions import VCSError
 from vcs.nodes import FileNode, NodeError
@@ -61,9 +62,13 @@ def get_gitdiff(filenode_old, filenode_new):
     old_raw_id = getattr(filenode_old.changeset, 'raw_id', '0' * 40)
     new_raw_id = getattr(filenode_new.changeset, 'raw_id', '0' * 40)
 
+    file_filter = match(filenode_old.changeset.repository.path, '',
+                        [filenode_new.path])
+
     vcs_gitdiff = patch.diff(repo._repo,
                       old_raw_id,
                       new_raw_id,
+                      match=file_filter,
                       opts=diffopts(git=True))
 
     return vcs_gitdiff
