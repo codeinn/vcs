@@ -319,6 +319,27 @@ class MercurialRepository(BaseRepository):
                 break
             yield self.get_changeset(rev)
 
+
+    def get_changesets_ranges(self, from_rev, to_rev, limit=None):
+        start_cs = self.get_changeset(from_rev)
+        end_cs = self.get_changeset(to_rev)
+
+        if start_cs.revision >= end_cs.revision:
+            raise RepositoryError('Starting revision cannot be after End')
+
+        yield start_cs
+
+        cnt = 0
+        while 1:
+            next = start_cs.next()
+            yield next
+            start_cs = next
+            cnt += 1
+            if next == end_cs:
+                break
+            if limit and cnt > limit:
+                break
+
     def pull(self, url):
         """
         Tries to pull changes from external location.

@@ -127,7 +127,7 @@ class BaseRepository(object):
     def get_changeset(self, revision=None):
         """
         Returns instance of ``Changeset`` class. If ``revision`` is None, most
-        recenent changeset is returned.
+        recent changeset is returned.
 
         :raises ``EmptyRepositoryError``: if there are no revisions
         """
@@ -152,14 +152,38 @@ class BaseRepository(object):
         """
         raise NotImplementedError
 
+    def get_changesets_ranges(self, rev_from, rev_to):
+        """
+        Returns a slice iterator from given string(hash) revisions
+        raises exceptions if start is after end. If rev_to is None the
+        iteration will finish in tip
+        
+        :param rev_from: revision from: str
+        :param rev_to: revision to : str or None
+        """
+        raise NotImplementedError
+
     def __getslice__(self, i, j):
         """
-        Convenient wrapper for ``get_changesets`` method. Those two are same::
+        Convenient wrapper for ``get_changesets`` or ``get_changesets_ranges`` 
+        method. Those two are same as calling::
 
             >>> repo[2:5] == repo.get_changesets(offset=2, limit=3)
+            >>> repo['0e29922030fe':'433b0cf2983a'] == 
+            repo.get_changesets_ranges('0e29922030fe','433b0cf2983a')
 
         """
-        return self.get_changesets(offset=i, limit=j - i)
+        if isinstance(i, basestring) and isinstance(j, basestring):
+            return self.get_changesets_ranges(i, j)
+        else:
+            return self.get_changesets(offset=i, limit=j - i)
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            return self.get_changesets_ranges(key.start, key.stop)
+        else:
+            return self.get_changeset(key)
+
 
     def count(self):
         return len(self.revisions)
