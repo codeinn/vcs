@@ -62,8 +62,10 @@ def get_gitdiff(filenode_old, filenode_new):
     old_raw_id = getattr(filenode_old.changeset, 'raw_id', '0' * 40)
     new_raw_id = getattr(filenode_new.changeset, 'raw_id', '0' * 40)
 
-    file_filter = match(filenode_old.changeset.repository.path, '',
-                        [filenode_new.path])
+
+    root = filenode_new.changeset.repository.path
+
+    file_filter = match(root, '', [filenode_new.path])
 
     vcs_gitdiff = patch.diff(repo._repo,
                       old_raw_id,
