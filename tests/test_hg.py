@@ -24,9 +24,9 @@ class MercurialRepositoryTest(unittest2.TestCase):
 
     def test_repo_clone(self):
         self.__check_for_existing_repo()
-        repo = MercurialRepository(PACKAGE_DIR)
+        repo = MercurialRepository(TEST_HG_REPO)
         repo_clone = MercurialRepository(TEST_HG_REPO_CLONE,
-            src_url=PACKAGE_DIR, update_after_clone=True)
+            src_url=TEST_HG_REPO, update_after_clone=True)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
         # Checking hashes of changesets should be enough
         for changeset in repo.get_changesets(limit=None):
@@ -34,9 +34,9 @@ class MercurialRepositoryTest(unittest2.TestCase):
             self.assertEqual(raw_id, repo_clone.get_changeset(raw_id).raw_id)
 
     def test_repo_clone_with_update(self):
-        repo = MercurialRepository(PACKAGE_DIR)
+        repo = MercurialRepository(TEST_HG_REPO)
         repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_w_update',
-            src_url=PACKAGE_DIR, update_after_clone=True)
+            src_url=TEST_HG_REPO, update_after_clone=True)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
 
         #check if current workdir was updated
@@ -46,9 +46,9 @@ class MercurialRepositoryTest(unittest2.TestCase):
 
 
     def test_repo_clone_without_update(self):
-        repo = MercurialRepository(PACKAGE_DIR)
+        repo = MercurialRepository(TEST_HG_REPO)
         repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_wo_update',
-            src_url=PACKAGE_DIR, update_after_clone=False)
+            src_url=TEST_HG_REPO, update_after_clone=False)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
         self.assertEqual(os.path.isfile(os.path.join(TEST_HG_REPO_CLONE \
                                                     + '_wo_update',
