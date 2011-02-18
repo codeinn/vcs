@@ -636,7 +636,7 @@ class MercurialChangeset(BaseChangeset):
             else:
                 raise NodeDoesNotExistError("There is no file nor directory "
                     "at the given path: %r at revision %r"
-                    % (path, '%s:%s' % (self.revision, self.id)))
+                    % (path, self.short_id))
             # cache node
             self.nodes[path] = node
         return self.nodes[path]

@@ -431,7 +431,7 @@ class GitChangeset(BaseChangeset):
             if not path in self._paths:
                 raise NodeDoesNotExistError("There is no file nor directory "
                     "at the given path %r at revision %r"
-                    % (path, self.revision))
+                    % (path, self.short_id))
         return self._paths[path]
 
     def _get_kind(self, path):
@@ -572,7 +572,7 @@ class GitChangeset(BaseChangeset):
             else:
                 raise NodeDoesNotExistError("There is no file nor directory "
                     "at the given path %r at revision %r"
-                    % (path, self.revision))
+                    % (path, self.short_id))
             # cache node
             self.nodes[path] = node
         return self.nodes[path]
