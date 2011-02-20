@@ -70,8 +70,16 @@ class MercurialRepository(BaseRepository):
         self.baseui = baseui or ui.ui()
         # We've set path and ui, now we can set _repo itself
         self._repo = self._get_repo(create, src_url, update_after_clone)
-        self.revisions = list(self._repo)
         self.changesets = {}
+
+    @LazyProperty
+    def revisions(self):
+        """
+        Returns list of revisions' ids, in ascending order.  Being lazy
+        attribute allows external tools to inject shas from cache.
+        """
+        return self._get_all_revisions()
+
 
     @LazyProperty
     def name(self):
@@ -180,6 +188,10 @@ class MercurialRepository(BaseRepository):
             self.tags = self._get_tags()
         except Abort, e:
             raise RepositoryError(e.message)
+
+    def _get_all_revisions(self):
+        return map(hex, sorted(self._repo.changelog.nodemap,
+                               key=self._repo.changelog.nodemap.get))[1:]
 
     def _get_repo(self, create, src_url=None, update_after_clone=False):
         """
