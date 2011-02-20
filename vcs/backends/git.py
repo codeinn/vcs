@@ -295,6 +295,9 @@ class GitRepository(BaseRepository):
         
         :param limit: int limit or None
         """
+        offset = offset or 0
+        limit = limit or None
+
         top = self.get_changeset((offset - 1 + limit))
         args = [top.raw_id]
         if limit is not None:

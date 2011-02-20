@@ -189,7 +189,7 @@ class MercurialChangesetTest(unittest2.TestCase):
         # self.assertEqual(tip, self.repo.changesets[None])
         # self.assertEqual(tip, self.repo.changesets['tip'])
         self.assertEqual(tip, self.repo.get_changeset(revision=None))
-        self.assertEqual(tip, list(self.repo.get_changesets(limit=1))[0])
+        self.assertEqual(tip, list(self.repo.get_changesets(limit=1, offset=len(list(self.repo)) - 1))[0])
 
     def test_root_node(self):
         tip = self.repo.get_changeset('tip')
@@ -256,8 +256,8 @@ class MercurialChangesetTest(unittest2.TestCase):
         changesets = self.repo.get_changesets(limit=limit, offset=offset)
         idx = 0
         for changeset in changesets:
+            rev = offset + idx
             idx += 1
-            rev = count - offset - idx
             if idx > limit:
                 self.fail("Exceeded limit already (getting revision %s, "
                     "there are %s total revisions, offset=%s, limit=%s)"

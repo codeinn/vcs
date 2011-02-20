@@ -315,7 +315,7 @@ class MercurialRepository(BaseRepository):
                 break
             rev = offset + i
             i += 1
-            if rev < 0:
+            if rev >= self.count():
                 break
             yield self.get_changeset(rev)
 
