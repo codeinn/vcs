@@ -93,6 +93,18 @@ class GitRepositoryTest(unittest2.TestCase):
             'e686b958768ee96af8029fe19c6050b1a8dd3b2b'])
         self.assertTrue(subset.issubset(set(self.repo.revisions)))
 
+
+
+    def test_slicing(self):
+        #4 1 5 10 95
+        for sfrom, sto, size in [(0, 4, 4), (1, 2, 1), (10, 15, 5),
+                                 (10, 20, 10), (5, 100, 95)]:
+            revs = list(self.repo[sfrom:sto])
+            self.assertEqual(len(revs), size)
+            self.assertEqual(revs[0], self.repo.get_changeset(sfrom))
+            self.assertEqual(revs[-1], self.repo.get_changeset(sto - 1))
+
+
     def test_branches(self):
         # TODO: Need more tests here
         # Removed (those are 'remotes' branches for cloned repo)
