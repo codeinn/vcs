@@ -292,16 +292,18 @@ class GitRepository(BaseRepository):
         """
         Return last n number of ``MercurialChangeset`` specified by limit
         attribute if None is given whole list of revisions is returned
+        
         :param limit: int limit or None
         """
-        top = self.get_changeset(offset)
+        top = self.get_changeset((offset - 1 + limit))
         args = [top.raw_id]
         if limit is not None:
-            args.append('--max-count %d' % limit)
+            args.append('--max-count %d' % (limit))
         cmd = 'rev-list ' + ' '.join(args)
         so, se = self.run_git_command(cmd)
-        for id in so.splitlines():
-            yield self.get_changeset(id)
+
+        for id_ in reversed(so.splitlines()):
+            yield self.get_changeset(id_)
 
     @LazyProperty
     def in_memory_changeset(self):

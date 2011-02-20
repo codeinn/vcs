@@ -306,15 +306,15 @@ class MercurialRepository(BaseRepository):
         :param limit: int limit or None
         :param offset: int offset
         """
-        count = self.count()
+
         offset = offset or 0
         limit = limit or None
         i = 0
         while True:
             if limit and i == limit:
                 break
+            rev = offset + i
             i += 1
-            rev = count - offset - i
             if rev < 0:
                 break
             yield self.get_changeset(rev)
