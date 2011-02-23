@@ -165,22 +165,25 @@ class BaseRepository(object):
 
     def __getslice__(self, i, j):
         """
-        Convenient wrapper for ``get_changesets`` or ``get_changesets_ranges`` 
+        Convenient wrapper for ``get_changesets`` 
         method. Those two are same as calling::
 
-            >>> repo[2:5] == repo.get_changesets(offset=2, limit=3)
+            >>> repo[2:5] == repo.get_changesets(start='0e29922030fe', 
+             end='433b0cf2983a')
             >>> repo['0e29922030fe':'433b0cf2983a'] == 
-            repo.get_changesets_ranges('0e29922030fe','433b0cf2983a')
+            repo.get_changesets(start='0e29922030fe',end='433b0cf2983a')
 
         """
         if isinstance(i, basestring) and isinstance(j, basestring):
-            return self.get_changesets_ranges(i, j)
+            rev = [self.revisions.indexof(i), self.revisions.indexof(j)]
         else:
-            return self.get_changesets(offset=i, limit=j - i)
+            rev = self.revisions[i:j]
+
+        return self.get_changesets(start=rev[0], end=rev[-1])
 
     def __getitem__(self, key):
         if isinstance(key, slice):
-            return self.get_changesets_ranges(key.start, key.stop)
+            return self.get_changesets(start=key.start, end=key.stop)
         else:
             return self.get_changeset(key)
 
