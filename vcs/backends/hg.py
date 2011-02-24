@@ -92,7 +92,7 @@ class MercurialRepository(BaseRepository):
             return bt
 
         sortkey = lambda ctx: ctx[0] #sort by name
-        _branches = [(n, hex(h),) for n, h in _branchtags(self.repo).items()]
+        _branches = [(n.decode('utf-8'), hex(h),) for n, h in _branchtags(self.repo).items()]
 
         return OrderedDict(sorted(_branches, key=sortkey, reverse=False))
 
@@ -105,7 +105,7 @@ class MercurialRepository(BaseRepository):
             return {}
 
         sortkey = lambda ctx: ctx[0] #sort by name
-        _tags = [(n, hex(h),) for n, h in self.repo.tags().items()]
+        _tags = [(n.decode('utf-8'), hex(h),) for n, h in self.repo.tags().items()]
 
         return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
 
