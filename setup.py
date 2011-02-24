@@ -30,7 +30,7 @@ setup(
     install_requires=['unittest2', 'Pygments', 'dulwich'],
     include_package_data=True,
     classifiers=[
-        'Development Status :: 5 - Stable',
+        'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',
         'Intended Audience :: Developers',
         'Programming Language :: Python',
