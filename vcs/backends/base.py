@@ -178,7 +178,7 @@ class BaseRepository(object):
             rev = [self.revisions.indexof(i), self.revisions.indexof(j)]
         else:
             rev = self.revisions[i:j]
-
+            if rev == []:return []
         return self.get_changesets(start=rev[0], end=rev[-1])
 
     def __getitem__(self, key):
