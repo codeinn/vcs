@@ -18,9 +18,9 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.simplevcs.test_settings'
 setup(
     name='vcs',
     version=vcs.get_version(),
-    url='http://bitbucket.org/marcinkuzminski/vcs/',
+    url='https://github.com/codeinn/vcs',
     author='Marcin Kuzminski, Lukasz Balcerzak',
-    author_email='marcin@python-blog.com',
+    author_email='marcin@python-works.com',
     description=vcs.__doc__,
     long_description=long_description,
     zip_safe=False,
