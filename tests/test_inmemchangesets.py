@@ -193,7 +193,7 @@ class InMemoryChangesetTestMixin(object):
             content = 'foobar\n' * x
             node = FileNode(fname, content=content)
             self.imc.add(node)
-            commit = self.imc.commit("Commit no. %s" % (x+1), author='vcs')
+            commit = self.imc.commit("Commit no. %s" % (x + 1), author='vcs')
             self.assertTrue(last != commit)
             last = commit
 

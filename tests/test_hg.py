@@ -70,7 +70,26 @@ class MercurialRepositoryTest(unittest2.TestCase):
     def test_revisions(self):
         # there are 21 revisions at bitbucket now
         # so we can assume they would be available from now on
-        subset = set(range(0, 22))
+        subset = set(['b986218ba1c9b0d6a259fac9b050b1724ed8e545',
+                 '3d8f361e72ab303da48d799ff1ac40d5ac37c67e',
+                 '6cba7170863a2411822803fa77a0a264f1310b35',
+                 '56349e29c2af3ac913b28bde9a2c6154436e615b',
+                 '2dda4e345facb0ccff1a191052dd1606dba6781d',
+                 '6fff84722075f1607a30f436523403845f84cd9e',
+                 '7d4bc8ec6be56c0f10425afb40b6fc315a4c25e7',
+                 '3803844fdbd3b711175fc3da9bdacfcd6d29a6fb',
+                 'dc5d2c0661b61928834a785d3e64a3f80d3aad9c',
+                 'be90031137367893f1c406e0a8683010fd115b79',
+                 'db8e58be770518cbb2b1cdfa69146e47cd481481',
+                 '84478366594b424af694a6c784cb991a16b87c21',
+                 '17f8e105dddb9f339600389c6dc7175d395a535c',
+                 '20a662e756499bde3095ffc9bc0643d1def2d0eb',
+                 '2e319b85e70a707bba0beff866d9f9de032aa4f9',
+                 '786facd2c61deb9cf91e9534735124fb8fc11842',
+                 '94593d2128d38210a2fcd1aabff6dda0d6d9edf8',
+                 'aa6a0de05b7612707db567078e130a6cd114a9a7',
+                 'eada5a770da98ab0dd7325e29d00e0714f228d09'
+                ])
         self.assertTrue(subset.issubset(set(self.repo.revisions)))
 
     def test_iter_slice(self):
@@ -111,6 +130,7 @@ class MercurialRepositoryTest(unittest2.TestCase):
 
     def _test_single_changeset_cache(self, revision):
         chset = self.repo.get_changeset(revision)
+        revision = self.repo._get_revision(revision)
         self.assertTrue(self.repo.changesets.has_key(revision))
         self.assertTrue(chset is self.repo.changesets[revision])
 
@@ -149,8 +169,16 @@ class MercurialRepositoryTest(unittest2.TestCase):
         self.assertEqual(node.kind, NodeKind.FILE)
 
     def test_not_existing_changeset(self):
+        #rawid
         self.assertRaises(RepositoryError, self.repo.get_changeset,
-            self.repo.revisions[-1] + 1)
+            'abcd' * 10)
+        #shortid
+        self.assertRaises(RepositoryError, self.repo.get_changeset,
+            'erro' * 4)
+        #numeric
+        self.assertRaises(RepositoryError, self.repo.get_changeset,
+            self.repo.count() + 1)
+
 
         # Small chance we ever get to this one
         revision = pow(2, 30)
