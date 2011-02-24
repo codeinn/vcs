@@ -174,11 +174,8 @@ class BaseRepository(object):
             repo.get_changesets(start='0e29922030fe',end='433b0cf2983a')
 
         """
-        if isinstance(i, basestring) and isinstance(j, basestring):
-            rev = [self.revisions.indexof(i), self.revisions.indexof(j)]
-        else:
-            rev = self.revisions[i:j]
-            if rev == []:return []
+        rev = self.revisions[i:j]
+        if rev == []:return []
         return self.get_changesets(start=rev[0], end=rev[-1])
 
     def __getitem__(self, key):

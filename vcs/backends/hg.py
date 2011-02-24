@@ -366,8 +366,10 @@ class MercurialRepository(BaseRepository):
         :param branch_name:
         :param reversed:
         """
-        start = self.revisions.index(start)
-        end = self.revisions.index(end) + 1 # +1 needed for inclusive slice
+        start = self.revisions.index(self._get_revision(start))
+        end = self.revisions.index(self._get_revision(end)) + 1 # +1 needed for inclusive slice
+        if start > end:
+            raise RepositoryError('start cannot be after end')
 
         slice = reversed(self.revisions[start:end]) if reversed else \
             self.revisions[start:end]
