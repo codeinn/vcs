@@ -9,42 +9,35 @@
     :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
 
-import os
-import re
-import time
-import urllib2
-import posixpath
-import datetime
-import errno
-import tempfile
-
-from mercurial import ui
+from mercurial import archival, ui
+from mercurial.commands import clone, pull, nullid
+from mercurial.context import memctx, memfilectx
 from mercurial.error import RepoError, RepoLookupError, Abort
 from mercurial.localrepo import localrepository
 from mercurial.node import hex
-from mercurial.commands import clone, pull, nullid
-from mercurial.context import memctx, memfilectx
-from mercurial import archival
 from mercurial.revlog import lazymap
-
 from vcs.backends import ARCHIVE_SPECS
 from vcs.backends.base import BaseRepository, BaseChangeset, \
     BaseInMemoryChangeset
-from vcs.exceptions import RepositoryError, VCSError
-from vcs.exceptions import EmptyRepositoryError
-from vcs.exceptions import ChangesetError
-from vcs.exceptions import ChangesetDoesNotExistError
-from vcs.exceptions import NodeDoesNotExistError
-from vcs.exceptions import TagAlreadyExistError
-from vcs.exceptions import TagDoesNotExistError
-from vcs.exceptions import ImproperArchiveTypeError
+from vcs.exceptions import ChangesetDoesNotExistError, ChangesetError, \
+    EmptyRepositoryError, ImproperArchiveTypeError, NodeDoesNotExistError, \
+    RepositoryError, VCSError, TagAlreadyExistError, TagDoesNotExistError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, \
-    RemovedFileNodesGenerator, ChangedFileNodesGenerator, \
-    AddedFileNodesGenerator
+    RemovedFileNodesGenerator, ChangedFileNodesGenerator, AddedFileNodesGenerator
+from vcs.utils import safe_unicode, makedate, date_fromtimestamp
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils.paths import abspath, get_dirs_for_path
-from vcs.utils import safe_unicode, makedate, date_fromtimestamp
+import datetime
+import errno
+import os
+import posixpath
+import re
+import tempfile
+import time
+import urllib2
+
+
 
 
 class MercurialRepository(BaseRepository):
@@ -310,9 +303,8 @@ class MercurialRepository(BaseRepository):
                 #this is little more heavy but still fast enough
                 try:
                     short_id = revision
-                    indx = map(lambda x:x[:12], self.revisions).index(short_id)
-                    revision = self.revisions[indx]
-                except (IndexError, ValueError):
+                    revision = hex(self._repo.lookup(short_id))
+                except (IndexError, ValueError, RepoLookupError):
                     raise ChangesetDoesNotExistError("Revision %r does not "
                                             "exist for this repository %s" \
                                             % (short_id, self))
