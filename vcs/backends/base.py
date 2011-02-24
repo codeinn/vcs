@@ -330,7 +330,7 @@ class BaseChangeset(object):
 
     def __str__(self):
         return '<%s at %s:%s>' % (self.__class__.__name__, self.revision,
-            self.raw_id)
+            self.short_id)
 
     def __repr__(self):
         return self.__str__()
