@@ -354,9 +354,10 @@ class MercurialRepository(BaseRepository):
         return self.changesets[revision]
 
     def get_changesets(self, start=None, end=None, start_date=None,
-                       end_date=None, branch_name=None, reversed=False):
+                       end_date=None, branch_name=None, reverse=False):
         """
         Returns iterator of ``MercurialChangeset`` objects from start to end 
+        This should behave just like a list, ie. end is not inclusive
          
         
         :param start: int None or str
@@ -366,12 +367,15 @@ class MercurialRepository(BaseRepository):
         :param branch_name:
         :param reversed:
         """
-        start = self.revisions.index(self._get_revision(start))
-        end = self.revisions.index(self._get_revision(end)) + 1 # +1 needed for inclusive slice
+        if not isinstance(start, int):
+            start = self.revisions.index(self._get_revision(start))
+        if not isinstance(end, int):
+            end = self.revisions.index(self._get_revision(end))
+
         if start > end:
             raise RepositoryError('start cannot be after end')
-
-        slice = reversed(self.revisions[start:end]) if reversed else \
+        #print 'getcs', start, end, self.revisions[start:end]
+        slice = reversed(self.revisions[start:end]) if reverse else \
             self.revisions[start:end]
 
         for id_ in slice:

@@ -168,15 +168,12 @@ class BaseRepository(object):
         Convenient wrapper for ``get_changesets`` 
         method. Those two are same as calling::
 
-            >>> repo[2:5] == repo.get_changesets(start='0e29922030fe', 
-             end='433b0cf2983a')
+            >>> repo[2:5] == repo.get_changesets(start=2, end=5)
             >>> repo['0e29922030fe':'433b0cf2983a'] == 
             repo.get_changesets(start='0e29922030fe',end='433b0cf2983a')
 
         """
-        rev = self.revisions[i:j]
-        if rev == []:return []
-        return self.get_changesets(start=rev[0], end=rev[-1])
+        return self.get_changesets(start=i, end=j)
 
     def __getitem__(self, key):
         if isinstance(key, slice):
