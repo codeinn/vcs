@@ -72,7 +72,6 @@ class MercurialRepository(BaseRepository):
         self.baseui = baseui or ui.ui()
         # We've set path and ui, now we can set _repo itself
         self._repo = self._get_repo(create, src_url, update_after_clone)
-        self.changesets = {} #memory for initialized revisions
 
     @LazyProperty
     def revisions(self):
@@ -203,7 +202,7 @@ class MercurialRepository(BaseRepository):
             #for large repos nodemap is a lazymap instance, in future
             #versions of mercurial >1.8 lazymap is going to be destroyed
             #in replacement for lazyloaded  dict
-            return map(hex, nodemap)[:-2]
+            return map(hex, nodemap)[1:]
         else:
             raise VCSError('undefined type of nodemap need dict or lazymap')
 
@@ -283,44 +282,16 @@ class MercurialRepository(BaseRepository):
         
         :param revision: str or int or None
         """
+
         if len(self.revisions) == 0:
             raise EmptyRepositoryError("There are no changesets yet")
 
-        if revision in (None, 'tip', -1):
-            revision = self.revisions[-1]
-
-        #revision as int or digit string
-        if isinstance(revision, int) or (revision.isdigit() \
-                                         and len(revision) < 12):
-            try:
-                revision = self.revisions[revision]
-            except IndexError:
-                raise ChangesetDoesNotExistError("Revision %r does not exist "
-                "for this repository %s" % (revision, self))
-
-        elif isinstance(revision, basestring):
-            pattern_short_id = re.compile(r'[0-9a-fA-F]{12}$')
-            pattern_raw_id = re.compile(r'[0-9a-fA-F]{40}$')
-
-            is_short = pattern_short_id.match(revision)
-            is_raw = pattern_raw_id.match(revision)
-
-            #we need to make raw_id out of shortid
-            if is_short:
-                #this is little more heavy but still fast enough
-                try:
-                    short_id = revision
-                    revision = hex(self._repo.lookup(short_id))
-                except (IndexError, ValueError, RepoLookupError):
-                    raise ChangesetDoesNotExistError("Revision %r does not "
-                                            "exist for this repository %s" \
-                                            % (short_id, self))
-
-            #this is a 40 char
-            elif not is_raw or not revision in self.revisions:
-                raise ChangesetDoesNotExistError("Revision %r does not exist "
-                    "for this repository %s" % (revision, self))
-
+        try:
+            revision = hex(self._repo.lookup(revision or 'tip'))
+        except (IndexError, ValueError, RepoLookupError):
+            raise ChangesetDoesNotExistError("Revision %r does not "
+                                    "exist for this repository %s" \
+                                    % (revision, self))
         return revision
 
     def _get_archives(self, archive_name='tip'):
@@ -346,12 +317,8 @@ class MercurialRepository(BaseRepository):
         changeset at the given ``revision``.
         """
         revision = self._get_revision(revision)
-        if not self.changesets.has_key(revision):
-            changeset = MercurialChangeset(repository=self, revision=revision)
-            self.changesets[changeset.raw_id] = changeset
-            return changeset
-
-        return self.changesets[revision]
+        changeset = MercurialChangeset(repository=self, revision=revision)
+        return changeset
 
     def get_changesets(self, start=None, end=None, start_date=None,
                        end_date=None, branch_name=None, reverse=False):
@@ -360,26 +327,35 @@ class MercurialRepository(BaseRepository):
         This should behave just like a list, ie. end is not inclusive
          
         
-        :param start: int None or str
-        :param end: int None or str
+        :param start: None or str
+        :param end:  None or str
         :param start_date:
         :param end_date:
         :param branch_name:
-        :param reversed:
+        :param reversed: return changesets in reversed order
         """
-        if not isinstance(start, int):
-            start = self.revisions.index(self._get_revision(start))
-        if not isinstance(end, int):
-            end = self.revisions.index(self._get_revision(end))
 
-        if start > end:
+        start_pos = self.revisions.index(self._get_revision(start))
+        end_pos = self.revisions.index(self._get_revision(end)) + 1 #inclusive
+
+        if start_pos > end_pos:
             raise RepositoryError('start cannot be after end')
+
+
+        if branch_name and branch_name not in self.branches.keys():
+            raise RepositoryError('Such branch %s does not exists for'
+                                  ' this repository' % branch_name)
+
         #print 'getcs', start, end, self.revisions[start:end]
-        slice = reversed(self.revisions[start:end]) if reverse else \
-            self.revisions[start:end]
+        slice = reversed(self.revisions[start_pos:end_pos]) if reverse else \
+            self.revisions[start_pos:end_pos]
 
         for id_ in slice:
-            yield self.get_changeset(id_)
+            cs = self.get_changeset(id_)
+            if branch_name and cs.branch != branch_name:
+                continue
+
+            yield cs
 
     def pull(self, url):
         """
@@ -400,20 +376,36 @@ class MercurialChangeset(BaseChangeset):
 
     def __init__(self, repository, revision):
         self.repository = repository
-        revision = repository.revisions.index(repository._get_revision(revision))
+        self.raw_id = self.repository._get_revision(revision)
+        self.revision = repository.revisions.index(self.raw_id)
         try:
             ctx = repository._repo[revision]
         except RepoLookupError:
             raise RepositoryError("Cannot find revision %s" % revision)
-        self.revision = ctx.rev()
         self._ctx = ctx
         self._fctx = {}
-        self.author = safe_unicode(ctx.user())
-        self.message = safe_unicode(ctx.description())
-        self.branch = ctx.branch()
-        self.tags = ctx.tags()
-        self.date = date_fromtimestamp(*ctx.date())
         self.nodes = {}
+
+    @property
+    def tags(self):
+        return self._ctx.tags()
+
+    @property
+    def branch(self):
+        return  self._ctx.branch()
+
+    @property
+    def message(self):
+        return safe_unicode(self._ctx.description())
+
+    @property
+    def author(self):
+        return safe_unicode(self._ctx.user())
+
+    @property
+    def date(self):
+        return date_fromtimestamp(*self._ctx.date())
+
 
     @LazyProperty
     def status(self):
@@ -449,14 +441,6 @@ class MercurialChangeset(BaseChangeset):
         if self.last:
             return u'tip'
         return self.short_id
-
-    @LazyProperty
-    def raw_id(self):
-        """
-        Returns raw string identifying this changeset, useful for web
-        representation.
-        """
-        return self._ctx.hex()
 
     @LazyProperty
     def short_id(self):
