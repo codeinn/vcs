@@ -324,7 +324,7 @@ class BaseChangeset(object):
     def last(self):
         if self.repository is None:
             raise ChangesetError("Cannot check if it's most recent revision")
-        return self.revision == self.repository.revisions[-1]
+        return self.raw_id == self.repository.revisions[-1]
 
     @LazyProperty
     def parents(self):
@@ -336,14 +336,14 @@ class BaseChangeset(object):
     @LazyProperty
     def id(self):
         """
-        Returns string identifing this changeset.
+        Returns string identifying this changeset.
         """
         raise NotImplementedError
 
     @LazyProperty
     def raw_id(self):
         """
-        Returns raw string identifing this changeset.
+        Returns raw string identifying this changeset.
         """
         raise NotImplementedError
 
@@ -351,14 +351,14 @@ class BaseChangeset(object):
     def short_id(self):
         """
         Returns shortened version of ``raw_id`` attribute, as string,
-        identifing this changeset, useful for web representation.
+        identifying this changeset, useful for web representation.
         """
         raise NotImplementedError
 
     @LazyProperty
     def revision(self):
         """
-        Returns integer identifing this changeset.
+        Returns integer identifying this changeset.
 
         """
         raise NotImplementedError

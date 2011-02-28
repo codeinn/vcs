@@ -378,31 +378,27 @@ class MercurialChangeset(BaseChangeset):
         self.repository = repository
         self.raw_id = self.repository._get_revision(revision)
         self.revision = repository.revisions.index(self.raw_id)
-        try:
-            ctx = repository._repo[revision]
-        except RepoLookupError:
-            raise RepositoryError("Cannot find revision %s" % revision)
-        self._ctx = ctx
+        self._ctx = repository._repo[revision]
         self._fctx = {}
         self.nodes = {}
 
-    @property
+    @LazyProperty
     def tags(self):
         return self._ctx.tags()
 
-    @property
+    @LazyProperty
     def branch(self):
         return  self._ctx.branch()
 
-    @property
+    @LazyProperty
     def message(self):
         return safe_unicode(self._ctx.description())
 
-    @property
+    @LazyProperty
     def author(self):
         return safe_unicode(self._ctx.user())
 
-    @property
+    @LazyProperty
     def date(self):
         return date_fromtimestamp(*self._ctx.date())
 
