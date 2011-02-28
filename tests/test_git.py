@@ -29,7 +29,7 @@ class GitRepositoryTest(unittest2.TestCase):
             src_url=TEST_GIT_REPO, create=True, update_after_clone=True)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
         # Checking hashes of changesets should be enough
-        for changeset in repo.get_changesets(limit=None):
+        for changeset in repo.get_changesets():
             raw_id = changeset.raw_id
             self.assertEqual(raw_id, repo_clone.get_changeset(raw_id).raw_id)
 

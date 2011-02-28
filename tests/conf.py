@@ -18,7 +18,7 @@ __all__ = (
 SCM_TESTS = ['hg', 'git']
 uniq_suffix = str(int(time.mktime(datetime.datetime.now().timetuple())))
 
-GIT_REMOTE_REPO = 'git://github.com/lukaszb/vcs.git'
+GIT_REMOTE_REPO = 'git://github.com/codeinn/vcs.git'
 
 TEST_TMP_PATH = '/tmp'
 TEST_GIT_REPO = os.environ.get('VCS_TEST_GIT_REPO',
