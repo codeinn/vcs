@@ -142,44 +142,32 @@ class BaseRepository(object):
         for revision in self.revisions:
             yield self.get_changeset(revision)
 
-    def get_changesets(self, limit=10, offset=None):
+    def get_changesets(self, start=None, end=None, start_date=None,
+                       end_date=None, branch_name=None, reverse=False):
         """
-        Return last n number of ``Changeset`` objects specified by limit
-        attribute if None is given whole list of revisions is returned
-
-        :param: ``limit``: int limit or None
-        :param: ``offset``: int offset
-        """
-        raise NotImplementedError
-
-    def get_changesets_ranges(self, rev_from, rev_to):
-        """
-        Returns a slice iterator from given string(hash) revisions
-        raises exceptions if start is after end. If rev_to is None the
-        iteration will finish in tip
+        Returns iterator of ``MercurialChangeset`` objects from start to end 
+        not inclusive
+        This should behave just like a list, ie. end is not inclusive
+         
         
-        :param rev_from: revision from: str
-        :param rev_to: revision to : str or None
+        :param start: None or str
+        :param end: None or str
+        :param start_date:
+        :param end_date:
+        :param branch_name:
+        :param reversed:
         """
         raise NotImplementedError
 
     def __getslice__(self, i, j):
         """
-        Convenient wrapper for ``get_changesets`` 
-        method. Those two are same as calling::
-
-            >>> repo[2:5] == repo.get_changesets(start=2, end=5)
-            >>> repo['0e29922030fe':'433b0cf2983a'] == 
-            repo.get_changesets(start='0e29922030fe',end='433b0cf2983a')
-
+        Returns a iterator of sliced repository
         """
-        return self.get_changesets(start=i, end=j)
+        for rev in self.revisions[i:j]:
+            yield self.get_changeset(rev)
 
     def __getitem__(self, key):
-        if isinstance(key, slice):
-            return self.get_changesets(start=key.start, end=key.stop)
-        else:
-            return self.get_changeset(key)
+        return self.get_changeset(key)
 
 
     def count(self):
