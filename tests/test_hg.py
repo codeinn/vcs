@@ -29,7 +29,7 @@ class MercurialRepositoryTest(unittest2.TestCase):
             src_url=TEST_HG_REPO, update_after_clone=True)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
         # Checking hashes of changesets should be enough
-        for changeset in repo.get_changesets(limit=None):
+        for changeset in repo.get_changesets():
             raw_id = changeset.raw_id
             self.assertEqual(raw_id, repo_clone.get_changeset(raw_id).raw_id)
 
@@ -222,12 +222,8 @@ class MercurialChangesetTest(unittest2.TestCase):
     def test_default_changeset(self):
         tip = self.repo.get_changeset('tip')
         self.assertEqual(tip, self.repo.get_changeset())
-        # Mercurial backend converts all given revision parameters
-        # so it cannot pass following two (commented) test
-        # self.assertEqual(tip, self.repo.changesets[None])
-        # self.assertEqual(tip, self.repo.changesets['tip'])
         self.assertEqual(tip, self.repo.get_changeset(revision=None))
-        self.assertEqual(tip, list(self.repo.get_changesets(limit=1, offset=len(list(self.repo)) - 1))[0])
+        self.assertEqual(tip, list(self.repo[-1:])[0])
 
     def test_root_node(self):
         tip = self.repo.get_changeset('tip')
