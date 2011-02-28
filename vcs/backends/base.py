@@ -99,7 +99,7 @@ class BaseRepository(object):
 
         size = 0
         try:
-            tip = tip = self.get_changeset()
+            tip = self.get_changeset()
             for topnode, dirs, files in tip.walk('/'):
                 for f in files:
                     size += tip.get_file_size(f.path)
@@ -118,7 +118,7 @@ class BaseRepository(object):
         raise NotImplementedError
 
     def get_last_change(self):
-        self.get_changesets(limit=1)
+        self.get_changesets()
 
     #===========================================================================
     # CHANGESETS
