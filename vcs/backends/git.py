@@ -21,6 +21,7 @@ from subprocess import Popen, PIPE
 from vcs.backends.base import BaseChangeset
 from vcs.backends.base import BaseInMemoryChangeset
 from vcs.backends.base import BaseRepository
+from vcs.exceptions import BranchDoesNotExistError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import ChangesetError
 from vcs.exceptions import EmptyRepositoryError
@@ -288,25 +289,66 @@ class GitRepository(BaseRepository):
             self.changesets[changeset.short_id] = changeset
         return self.changesets[revision]
 
-    def get_changesets(self, limit=10, offset=None):
+    def get_changesets(self, start=None, end=None, start_date=None,
+           end_date=None, branch_name=None, reverse=False):
         """
-        Return last n number of ``MercurialChangeset`` specified by limit
-        attribute if None is given whole list of revisions is returned
+        Returns iterator of ``GitChangeset`` objects from start to end (both
+        are inclusive).
         
-        :param limit: int limit or None
+        :param start: changeset ID, as str; first returned changeset
+        :param end: changeset ID, as str; last returned changeset
+        :param start_date: if specified, changesets with commit date less than
+          ``start_date`` would be filtered out from returned set
+        :param end_date: if specified, changesets with commit date greater than
+          ``end_date`` would be filtered out from returned set
+        :param branch_name: if specified, changesets not reachable from given
+          branch would be filtered out from returned set
+        :param reverse: if ``True``, returned generator would be reversed
+
+        :raise BranchDoesNotExistError: If given ``branch_name`` does not exist.
+        :raise ChangesetDoesNotExistError: If changeset for given ``start`` or
+          ``end`` could not be found.
+
         """
-        offset = offset or 0
-        limit = limit or None
+        if start is not None:
+            try:
+                start = self.revisions.index(start)
+            except ValueError:
+                raise ChangesetDoesNotExistError("Changeset for revision '%s' "
+                    "could not be found" % start)
+        if end is not None:
+            # If last changeset is specified, include it
+            try:
+                end = self.revisions.index(end) + 1
+            except ValueError:
+                raise ChangesetDoesNotExistError("Changeset for revision '%s' "
+                    "could not be found" % end)
 
-        top = self.get_changeset((offset - 1 + limit))
-        args = [top.raw_id]
-        if limit is not None:
-            args.append('--max-count %d' % (limit))
-        cmd = 'rev-list ' + ' '.join(args)
-        so, se = self.run_git_command(cmd)
+        if start and end and start > end:
+            raise RepositoryError('start cannot be after end')
 
-        for id_ in reversed(so.splitlines()):
-            yield self.get_changeset(id_)
+        revs = self.revisions[start:end]
+
+        if reverse:
+            revs = reversed(revs)
+
+        if branch_name and branch_name not in self.branches:
+            raise BranchDoesNotExistError("Branch '%s' not found" % branch_name)
+        elif branch_name:
+            out = self.run_git_command('rev-list %s' % branch_name)[0]
+            branch_revs = out.splitlines()
+        else:
+            branch_revs = None
+
+        for rev in revs:
+            cs = self.get_changeset(rev)
+            if start_date and cs.date < start_date:
+                continue
+            if end_date and cs.date > end_date:
+                continue
+            if branch_revs and cs.raw_id not in branch_revs:
+                continue
+            yield cs
 
     @LazyProperty
     def in_memory_changeset(self):
