@@ -26,6 +26,8 @@ from utils import VCSTestError, SCMFetcher
 # Import Test Cases
 from base import *
 from test_git import *
+from test_getitem import *
+from test_getslice import *
 from test_hg import *
 from test_nodes import *
 from test_utils import *
