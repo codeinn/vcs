@@ -833,8 +833,6 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         new_id = hex(n)
         self.repository.revisions.append(new_id)
         self._repo = self.repository._get_repo(create=False)
-        self.repository.changesets.pop(None, None)
-        self.repository.changesets.pop('tip', None)
         tip = self.repository.get_changeset()
         self.reset()
         return tip

@@ -202,7 +202,6 @@ class GitChangesetTest(unittest2.TestCase):
         tip = self.repo.get_changeset()
         self.assertEqual(tip, self.repo.get_changeset(None))
         self.assertEqual(tip, self.repo.get_changeset('tip'))
-        self.assertEqual(tip, list(self.repo.get_changesets(limit=1, offset=len(list(self.repo)) - 1))[0])
 
     def test_root_node(self):
         tip = self.repo.get_changeset()
@@ -294,15 +293,6 @@ class GitChangesetTest(unittest2.TestCase):
             msg="Comparison failed for limit=%s, offset=%s"
             "(get_changeset returned: %s and sliced: %s"
             % (limit, offset, result, sliced))
-
-    def test_slices(self):
-        slices = (
-            # (limit, offset)
-            (2, 0), # should get 2 most recent changesets
-            (5, 2), # should get 5 most recent changesets after first 2
-        )
-        for limit, offset in slices:
-            self._test_slices(limit, offset)
 
     def _test_file_size(self, revision, path, size):
         node = self.repo.get_changeset(revision).get_node(path)
