@@ -126,17 +126,7 @@ class MercurialRepositoryTest(unittest2.TestCase):
     def test_tags(self):
         # tip is always a tag
         tip = self.repo.get_changeset()
-        tip in self.repo.tags
-
-    def _test_single_changeset_cache(self, revision):
-        chset = self.repo.get_changeset(revision)
-        revision = self.repo._get_revision(revision)
-        self.assertTrue(self.repo.changesets.has_key(revision))
-        self.assertTrue(chset is self.repo.changesets[revision])
-
-    def test_changesets_cache(self):
-        for revision in xrange(0, 11):
-            self._test_single_changeset_cache(revision)
+        self.assertTrue(tip in self.repo.tags)
 
     def test_initial_changeset(self):
 
@@ -210,7 +200,7 @@ class MercurialChangesetTest(unittest2.TestCase):
 
     def _test_equality(self, changeset):
         revision = changeset.revision
-        self.assertEqual(changeset, self.repo.changesets[revision])
+        self.assertEqual(changeset, self.repo.get_changeset(revision))
 
     def test_equality(self):
         self.setUp()
@@ -227,7 +217,7 @@ class MercurialChangesetTest(unittest2.TestCase):
 
     def test_root_node(self):
         tip = self.repo.get_changeset('tip')
-        tip.root is tip.get_node('')
+        self.assertTrue(tip.root is tip.get_node(''))
 
     def test_lazy_fetch(self):
         """
@@ -285,59 +275,42 @@ class MercurialChangesetTest(unittest2.TestCase):
         tip = self.repo.get_changeset('tip')
         self.assertTrue('tip' in tip.tags)
 
-    def _test_slices(self, limit, offset):
+    def _test_slices(self, start, end):
         count = self.repo.count()
-        changesets = self.repo.get_changesets(limit=limit, offset=offset)
+        changesets = self.repo.get_changesets(start=start, end=end)
         idx = 0
         for changeset in changesets:
-            rev = offset + idx
+            rev = end + idx
             idx += 1
-            if idx > limit:
-                self.fail("Exceeded limit already (getting revision %s, "
-                    "there are %s total revisions, offset=%s, limit=%s)"
-                    % (rev, count, offset, limit))
+            if idx > start:
+                self.fail("Exceeded start already (getting revision %s, "
+                    "there are %s total revisions, end=%s, start=%s)"
+                    % (rev, count, end, start))
             self.assertEqual(changeset, self.repo.get_changeset(rev))
-        result = list(self.repo.get_changesets(limit=limit, offset=offset))
-        start = offset
-        end = limit and offset + limit or None
+        result = list(self.repo.get_changesets(start=start, end=end))
+        start = end
+        end = start and end + start or None
         sliced = list(self.repo[start:end])
         self.failUnlessEqual(result, sliced,
-            msg="Comparison failed for limit=%s, offset=%s"
+            msg="Comparison failed for start=%s, end=%s"
             "(get_changeset returned: %s and sliced: %s"
-            % (limit, offset, result, sliced))
+            % (start, end, result, sliced))
 
 
-    def _test_slices_revisions(self, from_rev, to_rev):
-        return self.repo[from_rev:to_rev]
+
 
     def test_slices_numercial(self):
         slices = (
-            # (limit, offset)
-            (2, 0), # should get 2 most recent changesets
-            (5, 2), # should get 5 most recent changesets after first 2
+            # (start, end)
+                (0, 5),
+                (1, 10),
+                (0, 0),
+                (0, 1),
+                (0, 2),
+                (50, 700),
         )
-        for limit, offset in slices:
-            self._test_slices(limit, offset)
-
-
-    def test_slices_revisions(self):
-        slices = (
-            # (from, to)
-            ('6cba7170863a', None), # should get from 2 till tip
-            ('6cba7170863a', 5), # should get from 2 to 5 changesets
-        )
-        for start_rev, end_rev in slices:
-            self._test_slices_revisions(start_rev, end_rev)
-
-
-    def test_slices_revisions_errors(self):
-
-        rev_generator = self._test_slices_revisions('6fff84722075',
-                                                    '6cba7170863a')
-        #from 5 to 2 should raise Repository Error
-        self.assertRaises(RepositoryError, list, rev_generator)
-
-        #TODO: write more error scenarios
+        for start, end in slices:
+            self._test_slices(start, end)
 
     def _test_file_size(self, revision, path, size):
         node = self.repo.get_changeset(revision).get_node(path)

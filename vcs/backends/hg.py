@@ -38,6 +38,7 @@ from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import TagAlreadyExistError
 from vcs.exceptions import TagDoesNotExistError
 from vcs.exceptions import ImproperArchiveTypeError
+from vcs.exceptions import BranchDoesNotExistError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, \
     RemovedFileNodesGenerator, ChangedFileNodesGenerator, \
     AddedFileNodesGenerator
@@ -288,7 +289,7 @@ class MercurialRepository(BaseRepository):
 
         try:
             revision = hex(self._repo.lookup(revision or 'tip'))
-        except (IndexError, ValueError, RepoLookupError):
+        except (IndexError, ValueError, RepoLookupError, TypeError):
             raise ChangesetDoesNotExistError("Revision %r does not "
                                     "exist for this repository %s" \
                                     % (revision, self))
@@ -334,16 +335,17 @@ class MercurialRepository(BaseRepository):
         :param branch_name:
         :param reversed: return changesets in reversed order
         """
+        start_raw_id = self._get_revision(start)
+        start_pos = self.revisions.index(start_raw_id) if start else None
+        end_raw_id = self._get_revision(end)
+        end_pos = self.revisions.index(end_raw_id) + 1  if end else None
 
-        start_pos = self.revisions.index(self._get_revision(start))
-        end_pos = self.revisions.index(self._get_revision(end)) + 1 #inclusive
-
-        if start_pos > end_pos:
+        if (start_pos and end_pos) and start_pos > end_pos:
             raise RepositoryError('start cannot be after end')
 
 
         if branch_name and branch_name not in self.branches.keys():
-            raise RepositoryError('Such branch %s does not exists for'
+            raise BranchDoesNotExistError('Such branch %s does not exists for'
                                   ' this repository' % branch_name)
 
         #print 'getcs', start, end, self.revisions[start:end]
@@ -376,7 +378,7 @@ class MercurialChangeset(BaseChangeset):
 
     def __init__(self, repository, revision):
         self.repository = repository
-        self.raw_id = self.repository._get_revision(revision)
+        self.raw_id = revision
         self.revision = repository.revisions.index(self.raw_id)
         self._ctx = repository._repo[revision]
         self._fctx = {}
