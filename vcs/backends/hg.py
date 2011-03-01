@@ -382,8 +382,8 @@ class MercurialChangeset(BaseChangeset):
     def __init__(self, repository, revision):
         self.repository = repository
         self.raw_id = revision
-        self.revision = repository.revisions.index(self.raw_id)
         self._ctx = repository._repo[revision]
+        self.revision = self._ctx._rev
         self._fctx = {}
         self.nodes = {}
 
