@@ -320,6 +320,9 @@ class BaseChangeset(object):
     def __unicode__(self):
         return u'%s:%s' % (self.revision, self.short_id)
 
+    def __eq__(self, other):
+        return self.raw_id == other.raw_id
+
     @LazyProperty
     def last(self):
         if self.repository is None:

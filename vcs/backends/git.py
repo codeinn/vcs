@@ -282,12 +282,8 @@ class GitRepository(BaseRepository):
         at the given revision or head (most recent commit) if None given.
         """
         revision = self._get_revision(revision)
-        if not self.changesets.has_key(revision):
-            changeset = GitChangeset(repository=self, revision=revision)
-            self.changesets[changeset.revision] = changeset
-            self.changesets[changeset.raw_id] = changeset
-            self.changesets[changeset.short_id] = changeset
-        return self.changesets[revision]
+        changeset = GitChangeset(repository=self, revision=revision)
+        return changeset
 
     def get_changesets(self, start=None, end=None, start_date=None,
            end_date=None, branch_name=None, reverse=False):
