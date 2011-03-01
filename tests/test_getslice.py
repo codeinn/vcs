@@ -23,15 +23,16 @@ class GetsliceTestCaseMixin(BackendTestMixin):
         self.assertEqual(list(self.repo[-1:])[0], self.repo.get_changeset())
 
     def test__getslice__respects_start_index(self):
-        self.assertItemsEqual(self.repo[2:],
+        self.assertEqual(list(self.repo[2:]),
             [self.repo.get_changeset(rev) for rev in self.repo.revisions[2:]])
+
 
     def test__getslice__respects_negative_start_index(self):
         self.assertItemsEqual(self.repo[-2:],
             [self.repo.get_changeset(rev) for rev in self.repo.revisions[-2:]])
 
     def test__getslice__respects_end_index(self):
-        self.assertItemsEqual(self.repo[:2],
+        self.assertEqual(list(self.repo[:2]),
             [self.repo.get_changeset(rev) for rev in self.repo.revisions[:2]])
 
     def test__getslice__respects_negative_end_index(self):
