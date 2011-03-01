@@ -287,8 +287,11 @@ class MercurialRepository(BaseRepository):
         if len(self.revisions) == 0:
             raise EmptyRepositoryError("There are no changesets yet")
 
+        if revision in [-1, 'tip', None]:
+            revision = 'tip'
+
         try:
-            revision = hex(self._repo.lookup(revision or 'tip'))
+            revision = hex(self._repo.lookup(revision))
         except (IndexError, ValueError, RepoLookupError, TypeError):
             raise ChangesetDoesNotExistError("Revision %r does not "
                                     "exist for this repository %s" \
