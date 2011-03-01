@@ -203,7 +203,7 @@ class MercurialRepository(BaseRepository):
             #for large repos nodemap is a lazymap instance, in future
             #versions of mercurial >1.8 lazymap is going to be destroyed
             #in replacement for lazyloaded  dict
-            return map(hex, nodemap)[1:]
+            return map(hex, nodemap)[1:-1]
         else:
             raise VCSError('undefined type of nodemap need dict or lazymap')
 
