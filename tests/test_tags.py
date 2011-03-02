@@ -9,7 +9,7 @@ from vcs.exceptions import TagDoesNotExistError
 
 class TagsTestCaseMixin(BackendTestMixin):
 
-    def test_tag(self):
+    def test_new_tag(self):
         tip = self.repo.get_changeset()
         tagsize = len(self.repo.tags)
         tag = self.repo.tag('last-commit', 'joe', tip.raw_id)
@@ -17,7 +17,6 @@ class TagsTestCaseMixin(BackendTestMixin):
         self.assertEqual(len(self.repo.tags), tagsize + 1)
         for top, dirs, files in tip.walk():
             self.assertEqual(top, tag.get_node(top.path))
-
 
     def test_tag_already_exist(self):
         tip = self.repo.get_changeset()

@@ -25,15 +25,18 @@ from utils import VCSTestError, SCMFetcher
 
 # Import Test Cases
 from base import *
-from test_git import *
+from test_branches import *
+from test_changesets import *
+from test_filenodes_unicode_path import *
 from test_getitem import *
 from test_getslice import *
+from test_git import *
 from test_hg import *
+from test_inmemchangesets import *
 from test_nodes import *
+from test_tags import *
 from test_utils import *
 from test_vcs import *
-from test_inmemchangesets import *
-from test_filenodes_unicode_path import *
 
 def setup_package():
     """

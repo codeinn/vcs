@@ -76,6 +76,8 @@ class RemovedFileNodesGenerator(NodeGeneratorBase):
     def __getslice__(self, i, j):
         for p in self.current_paths[i:j]:
             yield RemovedFileNode(path=p)
+
+
 class Node(object):
     """
     Simplest class representing file or directory on repository.  SCM backends
@@ -141,13 +143,22 @@ class Node(object):
         return cmp(self.name, other.name)
 
     def __eq__(self, other):
-        for attr in self.__dict__:
-            if self.__dict__[attr] != other.__dict__[attr]:
+        for attr in ['name', 'path', 'kind']:
+            if getattr(self, attr) != getattr(other, attr):
+                return False
+        if self.is_file():
+            if self.content != other.content:
+                return False
+        else:
+            # For DirNode's check without entering each dir
+            self_nodes_paths = list(sorted(n.path for n in self.nodes))
+            other_nodes_paths = list(sorted(n.path for n in self.nodes))
+            if self_nodes_paths != other_nodes_paths:
                 return False
         return True
 
     def __nq__(self, other):
-        return not self == other
+        return not self.__eq__(other)
 
     def __repr__(self):
         return '<%s %r>' % (self.__class__.__name__, self.path)
