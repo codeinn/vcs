@@ -359,6 +359,10 @@ class MercurialRepository(BaseRepository):
             cs = self.get_changeset(id_)
             if branch_name and cs.branch != branch_name:
                 continue
+            if start_date and cs.date < start_date:
+                continue
+            if end_date and cs.date > end_date:
+                continue
 
             yield cs
 
