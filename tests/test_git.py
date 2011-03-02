@@ -128,10 +128,6 @@ class GitRepositoryTest(unittest2.TestCase):
         self.assertTrue(self.repo.changesets.has_key(revision))
         self.assertTrue(chset is self.repo.changesets[revision])
 
-    def test_changesets_cache(self):
-        for revision in self.repo.revisions[:10]:
-            self._test_single_changeset_cache(revision)
-
     def test_initial_changeset(self):
         id = self.repo.revisions[0]
         init_chset = self.repo.get_changeset(id)
@@ -187,16 +183,6 @@ class GitChangesetTest(unittest2.TestCase):
 
     def setUp(self):
         self.repo = GitRepository(TEST_GIT_REPO)
-
-    def _test_equality(self, changeset):
-        revision = changeset.revision
-        self.assertEqual(changeset, self.repo.changesets[revision])
-
-    def test_equality(self):
-        revs = self.repo.revisions
-        changesets = [self.repo.get_changeset(rev) for rev in revs]
-        for changeset in changesets:
-            self._test_equality(changeset)
 
     def test_default_changeset(self):
         tip = self.repo.get_changeset()

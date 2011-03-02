@@ -24,7 +24,7 @@ class GetitemTestCaseMixin(BackendTestMixin):
 
     def test__getitem__returns_correct_items(self):
         changesets = [self.repo[x] for x in xrange(len(self.repo.revisions))]
-        self.assertItemsEqual(changesets, self.repo.get_changesets())
+        self.assertEqual(changesets, list(self.repo.get_changesets()))
 
 
 # For each backend create test case class

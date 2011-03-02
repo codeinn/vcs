@@ -45,13 +45,11 @@ class GitRepository(BaseRepository):
                  update_after_clone=False):
 
         self.path = abspath(repo_path)
-        self.changesets = {}
         self._repo = self._get_repo(create, src_url, update_after_clone)
         try:
             self.head = self._repo.head()
         except KeyError:
             self.head = None
-        self.changesets = {}
 
     @LazyProperty
     def revisions(self):
@@ -817,7 +815,6 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         # Update vcs repository object & recreate dulwich repo
         self.repository.revisions.append(commit.id)
         self.repository._repo = Repo(self.repository.path)
-        self.repository.changesets.pop(None, None)
         tip = self.repository.get_changeset()
         self.reset()
         return tip

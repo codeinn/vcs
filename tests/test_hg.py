@@ -123,10 +123,13 @@ class MercurialRepositoryTest(unittest2.TestCase):
             self.assertTrue(isinstance(
                 self.repo.get_changeset(id), MercurialChangeset))
 
-    def test_tags(self):
+    def test_tip_in_tags(self):
         # tip is always a tag
+        self.assertIn('tip', self.repo.tags)
+
+    def test_tip_changeset_in_tags(self):
         tip = self.repo.get_changeset()
-        self.assertTrue(tip in self.repo.tags)
+        self.assertEqual(self.repo.tags['tip'], tip.raw_id)
 
     def test_initial_changeset(self):
 
@@ -274,43 +277,6 @@ class MercurialChangesetTest(unittest2.TestCase):
 
         tip = self.repo.get_changeset('tip')
         self.assertTrue('tip' in tip.tags)
-
-    def _test_slices(self, start, end):
-        count = self.repo.count()
-        changesets = self.repo.get_changesets(start=start, end=end)
-        idx = 0
-        for changeset in changesets:
-            rev = end + idx
-            idx += 1
-            if idx > start:
-                self.fail("Exceeded start already (getting revision %s, "
-                    "there are %s total revisions, end=%s, start=%s)"
-                    % (rev, count, end, start))
-            self.assertEqual(changeset, self.repo.get_changeset(rev))
-        result = list(self.repo.get_changesets(start=start, end=end))
-        start = end
-        end = start and end + start or None
-        sliced = list(self.repo[start:end])
-        self.failUnlessEqual(result, sliced,
-            msg="Comparison failed for start=%s, end=%s"
-            "(get_changeset returned: %s and sliced: %s"
-            % (start, end, result, sliced))
-
-
-
-
-    def test_slices_numercial(self):
-        slices = (
-            # (start, end)
-                (0, 5),
-                (1, 10),
-                (0, 0),
-                (0, 1),
-                (0, 2),
-                (50, 700),
-        )
-        for start, end in slices:
-            self._test_slices(start, end)
 
     def _test_file_size(self, revision, path, size):
         node = self.repo.get_changeset(revision).get_node(path)
