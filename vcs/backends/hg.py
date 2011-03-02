@@ -25,7 +25,7 @@ from mercurial.node import hex
 from mercurial.commands import clone, pull, nullid
 from mercurial.context import memctx, memfilectx
 from mercurial import archival
-from mercurial.revlog import lazymap
+from mercurial import mdiff
 
 from vcs.backends import ARCHIVE_SPECS
 from vcs.backends.base import BaseRepository, BaseChangeset, \
@@ -196,16 +196,8 @@ class MercurialRepository(BaseRepository):
 
         nodemap = self._repo.changelog.nodemap
 
-        if isinstance(nodemap, dict):
-            sortkey = self._repo.changelog.nodemap.get
-            return map(hex, sorted(nodemap, key=sortkey))[1:]
-        elif isinstance(nodemap, lazymap):
-            #for large repos nodemap is a lazymap instance, in future
-            #versions of mercurial >1.8 lazymap is going to be destroyed
-            #in replacement for lazyloaded  dict
-            return map(hex, nodemap)[1:-1]
-        else:
-            raise VCSError('undefined type of nodemap need dict or lazymap')
+        sortkey = self._repo.changelog.nodemap.get
+        return map(hex, sorted(nodemap, key=sortkey))[1:]
 
     def _get_repo(self, create, src_url=None, update_after_clone=False):
         """
@@ -417,14 +409,9 @@ class MercurialChangeset(BaseChangeset):
         """
         Returns modified, added, removed, deleted files for current changeset
         """
+        return self.repository._repo.status(self._ctx.p1().node(),
+                                            self._ctx.node())
 
-        st1 = self.repository._repo.status(self._ctx.parents()[0], self._ctx)[:4]
-
-#        if len(self._ctx.parents()) > 1:
-#            st2 = self.repository._repo.status(self._ctx.parents()[1], self._ctx)[:4]
-#            return map(lambda x: x[0] + x[1], zip(st1, st2))
-
-        return st1
 
 
     @LazyProperty
@@ -672,81 +659,33 @@ class MercurialChangeset(BaseChangeset):
         return self.nodes[path]
 
     @LazyProperty
-    def _ppmp(self):
-        """
-        Helper cache function for getting manifest files used in added
-        changed removed functions
-        """
-        p = self._ctx.parents()
-        large_ = len(self.affected_files) > 100
-        if large_:
-            manifest = []
-            parrent_manifest = []
-        else:
-            manifest = self._ctx.manifest()
-            parrent_manifest = p[0].manifest()
-        return p, self.affected_files, manifest, parrent_manifest, large_
-
-
-    @LazyProperty
     def affected_files(self):
         """
         Get's a fast accessible file changes for given changeset
         """
         return self._ctx.files()
 
-    @LazyProperty
+    @property
     def added(self):
         """
         Returns list of added ``FileNode`` objects.
         """
-        parents, paths, manifest, parent_manifest, large_ = self._ppmp
-        #use status when this cs is a merge
-        if len(parents) > 1 or large_:
-            return AddedFileNodesGenerator([n for n in self.status[1]], self)
-
-        added_nodes = []
-        for path in paths:
-            if not parent_manifest.has_key(path):
-                added_nodes.append(path)
-
-        return AddedFileNodesGenerator(added_nodes, self)
+        return AddedFileNodesGenerator([n for n in self.status[1]], self)
 
 
-    @LazyProperty
+    @property
     def changed(self):
         """
         Returns list of modified ``FileNode`` objects.
         """
-        parents, paths, manifest, parent_manifest, large_ = self._ppmp
-        #use status when this cs is a merge
-        if len(parents) > 1 or large_:
-            return ChangedFileNodesGenerator([ n for n in  self.status[0]], self)
+        return ChangedFileNodesGenerator([ n for n in  self.status[0]], self)
 
-        changed_nodes = []
-        for path in paths:
-            if manifest.has_key(path) and parent_manifest.has_key(path):
-                changed_nodes.append(path)
-
-        return ChangedFileNodesGenerator(changed_nodes, self)
-
-    @LazyProperty
+    @property
     def removed(self):
         """
         Returns list of removed ``FileNode`` objects.
         """
-        parents, paths, manifest, parent_manifest, large_ = self._ppmp
-        #use status when this cs is a merge
-        if len(parents) > 1 or large_:
-            rm_nodes = self.status[2] + self.status[3]
-            return RemovedFileNodesGenerator([n for n in rm_nodes], self)
-
-        removed_nodes = []
-        for path in paths:
-            if not manifest.has_key(path):
-                removed_nodes.append(path)
-
-        return RemovedFileNodesGenerator(removed_nodes, self)
+        return RemovedFileNodesGenerator([n for n in self.status[2]], self)
 
 
 class MercurialInMemoryChangeset(BaseInMemoryChangeset):
