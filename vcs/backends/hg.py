@@ -211,7 +211,7 @@ class MercurialRepository(BaseRepository):
         """
         try:
             if src_url:
-                url = self._get_url(src_url)
+                url = str(self._get_url(src_url))
                 opts = {}
                 if not update_after_clone:
                     opts.update({'noupdate':True})
@@ -411,7 +411,30 @@ class MercurialChangeset(BaseChangeset):
         """
         return self.repository._repo.status(self._ctx.p1().node(),
                                             self._ctx.node())
+        parent = self.parents[0]
+        diff = self.repository._repo.manifest.revdiff(parent.revision,
+                                                      self.revision)
 
+        delta_short = self.repository._repo.manifest.parse(mdiff.patchtext(diff)).keys()
+
+        delta_full = self._ctx._manifestdelta.keys()
+
+        afs = set(self.affected_files)
+
+        #TODO: REMOVE THIS !!
+        ################################
+        #import ipdb;ipdb.set_trace()
+        print 'setting ipdb debuggin for vcs.backends.hg.MercurialChangeset.status'
+        ################################
+
+
+        added = afs.intersection(delta_full)
+        changed = afs.intersection(delta_full)
+        removed = afs.difference(set(delta_full))
+
+
+        st = list(added), list(changed), list(removed)
+        return st
 
 
     @LazyProperty
