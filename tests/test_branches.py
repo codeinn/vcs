@@ -10,7 +10,8 @@ from vcs.nodes import FileNode
 
 class BranchesTestCaseMixin(BackendTestMixin):
 
-    def _get_commits(self):
+    @classmethod
+    def _get_commits(cls):
         commits = [
             {
                 'message': 'Initial commit',

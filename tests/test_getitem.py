@@ -7,7 +7,8 @@ from vcs.nodes import FileNode
 
 class GetitemTestCaseMixin(BackendTestMixin):
 
-    def _get_commits(self):
+    @classmethod
+    def _get_commits(cls):
         start_date = datetime.datetime(2010, 1, 1, 20)
         for x in xrange(5):
             yield {

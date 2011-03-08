@@ -22,12 +22,17 @@ class BackendTestMixin(object):
     - ``backend_alias``: alias of used backend (see ``vcs.BACKENDS``)
     - ``repo_path``: path to the repository which would be created for set of
       tests
+    - ``recreate_repo_per_test``: If set to ``False``, repo would NOT be created
+      before every single test. Defaults to ``True``.
     """
+    recreate_repo_per_test = True
 
-    def get_backend(self):
-        return vcs.get_backend(self.backend_alias)
+    @classmethod
+    def get_backend(cls):
+        return vcs.get_backend(cls.backend_alias)
 
-    def _get_commits(self):
+    @classmethod
+    def _get_commits(cls):
         commits = [
             {
                 'message': 'Initial commit',
@@ -54,22 +59,27 @@ class BackendTestMixin(object):
         ]
         return commits
 
-    def setUp(self):
-        Backend = self.get_backend()
-        self.backend_class = Backend
-        self.repo_path = get_new_dir(str(time.time()))
-        self.repo = Backend(self.repo_path, create=True)
-        self.imc = self.repo.in_memory_changeset
+    @classmethod
+    def setUpClass(cls):
+        Backend = cls.get_backend()
+        cls.backend_class = Backend
+        cls.repo_path = get_new_dir(str(time.time()))
+        cls.repo = Backend(cls.repo_path, create=True)
+        cls.imc = cls.repo.in_memory_changeset
 
-        for commit in self._get_commits():
+        for commit in cls._get_commits():
             for node in commit.get('added', []):
-                self.imc.add(FileNode(node.path, content=node.content))
+                cls.imc.add(FileNode(node.path, content=node.content))
             for node in commit.get('changed', []):
-                self.imc.change(FileNode(node.path, content=node.content))
+                cls.imc.change(FileNode(node.path, content=node.content))
             for node in commit.get('removed', []):
-                self.imc.remove(FileNode(node.path))
-            self.imc.commit(message=commit['message'], author=commit['author'],
+                cls.imc.remove(FileNode(node.path))
+            cls.imc.commit(message=commit['message'], author=commit['author'],
                 date=commit['date'])
+
+    def setUp(self):
+        if getattr(self, 'recreate_repo_per_test', False):
+            self.__class__.setUpClass()
 
 
 # For each backend create test case class
