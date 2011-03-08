@@ -49,8 +49,28 @@ class InMemoryChangesetTestMixin(object):
         rev_count = len(self.repo.revisions)
         to_add = [FileNode(node.path, content=node.content)
             for node in self.nodes]
+        for node in to_add:
+            self.imc.add(node)
+        message = 'Added: %s' % ', '.join((node.path for node in self.nodes))
+        author = str(self.__class__)
+        changeset = self.imc.commit(message=message, author=author)
+
+        newtip = self.repo.get_changeset()
+        self.assertEqual(changeset, newtip)
+        self.assertEqual(rev_count + 1, len(self.repo.revisions))
+        self.assertEqual(newtip.message, message)
+        self.assertEqual(newtip.author, author)
+        self.assertTrue(not any((self.imc.added, self.imc.changed,
+            self.imc.removed)))
+        for node in to_add:
+            self.assertEqual(newtip.get_node(node.path).content, node.content)
+
+    def test_add_in_bulk(self):
+        rev_count = len(self.repo.revisions)
+        to_add = [FileNode(node.path, content=node.content)
+            for node in self.nodes]
         self.imc.add(*to_add)
-        message = 'Added newfile.txt and newfile2.txt'
+        message = 'Added: %s' % ', '.join((node.path for node in self.nodes))
         author = str(self.__class__)
         changeset = self.imc.commit(message=message, author=author)
 
