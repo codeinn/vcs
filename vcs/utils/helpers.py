@@ -5,6 +5,7 @@ import os.path
 
 from subprocess import Popen, PIPE
 from vcs.exceptions import VCSError
+from vcs.exceptions import RepositoryError
 from vcs.utils.paths import abspath
 
 ALIASES = ['hg', 'git', 'svn', 'bzr']
@@ -59,6 +60,7 @@ def get_scms_for_path(path):
 
     :raises VCSError: if given ``path`` is not a directory
     """
+    from vcs.backends import get_backend
     if hasattr(path, '__call__'):
         path = path()
     if not os.path.isdir(path):
@@ -66,9 +68,22 @@ def get_scms_for_path(path):
 
     result = []
     for key in ALIASES:
-        dir = os.path.join(path, '.' + key)
-        if os.path.isdir(dir):
+        dirname = os.path.join(path, '.' + key)
+        if os.path.isdir(dirname):
             result.append(key)
+            continue
+        # We still need to check if it's not bare repository as
+        # bare repos don't have working directories
+        try:
+            get_backend(key)(path)
+            result.append(key)
+            continue
+        except RepositoryError:
+            # Wrong backend
+            pass
+        except VCSError:
+            # No backend at all
+            pass
     return result
 
 def get_repo_paths(path):
