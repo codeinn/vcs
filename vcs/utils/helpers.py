@@ -8,7 +8,7 @@ from vcs.exceptions import VCSError
 from vcs.exceptions import RepositoryError
 from vcs.utils.paths import abspath
 
-ALIASES = ['hg', 'git', 'svn', 'bzr']
+ALIASES = ['hg', 'git']
 
 def get_scm(path, search_recursively=False, explicit_alias=None):
     """
