@@ -74,7 +74,8 @@ class BackendTestMixin(object):
                 cls.imc.change(FileNode(node.path, content=node.content))
             for node in commit.get('removed', []):
                 cls.imc.remove(FileNode(node.path))
-            cls.imc.commit(message=commit['message'], author=commit['author'],
+            cls.tip = cls.imc.commit(message=commit['message'],
+                author=commit['author'],
                 date=commit['date'])
 
     def setUp(self):
