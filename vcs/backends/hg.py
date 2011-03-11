@@ -616,8 +616,8 @@ class MercurialChangeset(BaseChangeset):
 
         allowed_kinds = ARCHIVE_SPECS.keys()
         if kind not in allowed_kinds:
-            raise ImproperArchiveTypeError('Archive kind not supported use one of %s',
-                           allowed_kinds)
+            raise ImproperArchiveTypeError('Archive kind not supported use one'
+                'of %s', allowed_kinds)
 
         if stream is None:
             stream = tempfile.TemporaryFile()

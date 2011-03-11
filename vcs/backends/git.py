@@ -14,10 +14,12 @@ import re
 import time
 import datetime
 import posixpath
+import tempfile
 from dulwich import objects
 from dulwich.repo import Repo, NotGitRepository
 from itertools import chain
 from subprocess import Popen, PIPE
+from vcs.backends import ARCHIVE_SPECS
 from vcs.backends.base import BaseChangeset
 from vcs.backends.base import BaseInMemoryChangeset
 from vcs.backends.base import BaseRepository
@@ -25,6 +27,7 @@ from vcs.exceptions import BranchDoesNotExistError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import ChangesetError
 from vcs.exceptions import EmptyRepositoryError
+from vcs.exceptions import ImproperArchiveTypeError
 from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import RepositoryError
 from vcs.exceptions import TagAlreadyExistError
@@ -558,6 +561,58 @@ class GitChangeset(BaseChangeset):
             id, line = re.split(r' \(.+?\) ', blame_line, 1)
             annotate.append((ln_no, self.repository.get_changeset(id), line))
         return annotate
+
+    def get_archive(self, stream=None, kind='tgz', prefix=None):
+        """
+        Returns archived changeset contents, as stream. Default stream is
+        tempfile as for *huge* changesets we could eat memory.
+
+        :param stream: file like object.
+            Default: new ``tempfile.TemporaryFile`` instance.
+        :param kind: one of following: ``zip``, ``tgz`` or ``tbz2``.
+            Default: ``tgz``.
+        :param prefix: name of root directory in archive.
+            Default is repository name and changeset's raw_id joined with dash
+            (``repo-tip.<KIND>``).
+
+        :raise ImproperArchiveTypeError: If given kind is wrong.
+
+        """
+        allowed_kinds = ARCHIVE_SPECS.keys()
+        if kind not in allowed_kinds:
+            raise ImproperArchiveTypeError('Archive kind not supported use one'
+                'of %s', allowed_kinds)
+
+        if prefix is None:
+            prefix = '%s-%s' % (self.repository.name, self.short_id)
+        prefix.strip('/')
+
+        if kind == 'zip':
+            frmt = 'zip'
+        else:
+            frmt = 'tar'
+        cmd = 'git archive --format=%s --prefix=%s/ %s' % (frmt, prefix,
+            self.raw_id)
+        if kind == 'tgz':
+            cmd += ' | gzip -9'
+        elif kind == 'tbz2':
+            cmd += ' | bzip2 -9'
+        if stream is None:
+            arch_path = tempfile.mkstemp()[1]
+            cmd += ' > %s' % arch_path
+            stream = PIPE
+        else:
+            arch_path = None
+
+        popen = Popen(cmd, stdout=stream, stderr=PIPE, shell=True,
+            cwd=self.repository.path)
+        popen.communicate()[0]
+        if arch_path:
+            try:
+                stream = open(arch_path, 'r')
+            except (OSError, IOError):
+                raise
+        return stream
 
     def get_nodes(self, path):
         if self._get_kind(path) != NodeKind.DIR:
