@@ -32,6 +32,7 @@ from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import RepositoryError
 from vcs.exceptions import TagAlreadyExistError
 from vcs.exceptions import TagDoesNotExistError
+from vcs.exceptions import VCSError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
 from vcs.utils import safe_unicode, makedate, date_fromtimestamp
 from vcs.utils.lazy import LazyProperty
@@ -585,7 +586,10 @@ class GitChangeset(BaseChangeset):
 
         if prefix is None:
             prefix = '%s-%s' % (self.repository.name, self.short_id)
-        prefix.strip('/')
+        elif prefix.startswith('/'):
+            raise VCSError("Prefix cannot start with leading slash")
+        elif prefix.strip() == '':
+            raise VCSError("Prefix cannot be empty")
 
         if kind == 'zip':
             frmt = 'zip'

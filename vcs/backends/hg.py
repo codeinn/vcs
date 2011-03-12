@@ -10,7 +10,6 @@
 """
 
 import os
-import re
 import time
 import urllib2
 import posixpath
@@ -25,7 +24,6 @@ from mercurial.node import hex
 from mercurial.commands import clone, pull, nullid
 from mercurial.context import memctx, memfilectx
 from mercurial import archival
-from mercurial import mdiff
 
 from vcs.backends import ARCHIVE_SPECS
 from vcs.backends.base import BaseRepository, BaseChangeset, \
@@ -602,6 +600,10 @@ class MercurialChangeset(BaseChangeset):
 
         if prefix is None:
             prefix = '%s-%s' % (self.repository.name, self.short_id)
+        elif prefix.startswith('/'):
+            raise VCSError("Prefix cannot start with leading slash")
+        elif prefix.strip() == '':
+            raise VCSError("Prefix cannot be empty")
 
         archival.archive(self.repository._repo, stream, self.raw_id,
                          kind, prefix=prefix)
