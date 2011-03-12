@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    vcs.backends.git
+    vcs.backends.hg
     ~~~~~~~~~~~~~~~~
     
     Mercurial backend implementation.
