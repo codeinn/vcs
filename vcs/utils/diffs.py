@@ -84,15 +84,20 @@ class DiffProcessor(object):
     """
     _chunk_re = re.compile(r'@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)')
 
-    def __init__(self, udiff, differ='udiff'):
+    def __init__(self, diff, differ='diff', format='udiff'):
         """
-        :param udiff:   a text in udiff format
+        :param diff:   a text in diff format or generator
+        :param format: format of diff passed, `udiff` or `gitdiff`
         """
 
-        self.__udiff = udiff
+        self.__udiff = diff
         if isinstance(self.__udiff, basestring):
             self.lines = iter(self.__udiff.splitlines(1))
 
+        elif format == 'gitdiff':
+            udiff_copy = self.copy_iterator()
+            head, lines = list(udiff_copy)
+            self.lines = imap(self.escaper, lines.splitlines(1))
         else:
             udiff_copy = self.copy_iterator()
             self.lines = imap(self.escaper, udiff_copy)
