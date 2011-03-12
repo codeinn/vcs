@@ -16,10 +16,8 @@ vcs uses `Semantic Versioning <http://semver.org/>`_
 
 **Incoming**
 
-- Django_ app for mercurial_ hgserve replacement
 - Simple commit api
 - Smart and powerfull in memory Workdirs
-- VCS based wiki
 
 Documentation
 =============
@@ -40,7 +38,6 @@ Other topics
 * :ref:`search`
 
 .. _python: http://www.python.org/
-.. _django: http://www.djangoproject.com/
 .. _mercurial: http://mercurial.selenic.com/
 .. _subversion: http://subversion.tigris.org/
 .. _git: http://git-scm.com/

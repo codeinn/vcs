@@ -18,14 +18,11 @@ vcs uses `Semantic Versioning <http://semver.org/>`_
 - Common *API* for SCM backends
 - Fetching repositories data lazily
 - Simple caching mechanism so we don't hit repo too often
-- Command line client (still basic)
 
 **Incoming**
 
-- Django_ app for mercurial_ hgserve replacement
 - Simple commit api
 - Smart and powerfull in memory Workdirs
-- VCS based wiki
 
 -------------
 Documentation
@@ -39,7 +36,6 @@ You may also build documentation for yourself - go into ``docs/`` and run::
    make html
 
 .. _python: http://www.python.org/
-.. _Django: http://www.djangoproject.com/
 .. _Sphinx: http://sphinx.pocoo.org/
 .. _mercurial: http://mercurial.selenic.com/
 .. _git: http://git-scm.com/
