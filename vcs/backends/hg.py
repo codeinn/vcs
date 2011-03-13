@@ -16,6 +16,7 @@ import posixpath
 import datetime
 import errno
 import tempfile
+import threading
 
 from mercurial import ui
 from mercurial.error import RepoError, RepoLookupError, Abort
@@ -24,6 +25,7 @@ from mercurial.node import hex
 from mercurial.commands import clone, pull, nullid
 from mercurial.context import memctx, memfilectx
 from mercurial import archival
+from mercurial import hgweb
 
 from vcs.backends import ARCHIVE_SPECS
 from vcs.backends.base import BaseRepository, BaseChangeset, \
@@ -316,7 +318,7 @@ class MercurialRepository(BaseRepository):
     def get_changesets(self, start=None, end=None, start_date=None,
                        end_date=None, branch_name=None, reverse=False):
         """
-        Returns iterator of ``MercurialChangeset`` objects from start to end 
+        Returns iterator of ``MercurialChangeset`` objects from start to end
         This should behave just like a list, ie. end is not inclusive
 
         :param start: None or str
@@ -363,6 +365,35 @@ class MercurialRepository(BaseRepository):
         except Abort, err:
             # Propagate error but with vcs's type
             raise RepositoryError(str(err))
+
+    def serve(self):
+        #Create the server
+        app = hgweb.hgweb(self._repo.root, self.baseui)
+        httpd = hgweb.server.create_server(self.baseui, app)
+
+        #Compute address
+        if httpd.prefix:
+            prefix = httpd.prefix.strip('/') + '/'
+        else:
+            prefix = ''
+
+        port = ':%d' % httpd.port
+        if port == ':80':
+            port = ''
+
+        fqaddr = httpd.fqaddr
+        if ':' in fqaddr:
+            fqaddr = '[%s]' % fqaddr
+
+        httpd.http_address = 'http://%s%s/%s' % (fqaddr, port, prefix)
+
+        #Start server
+        self.thread_server = threading.Thread(target = httpd.serve_forever)
+        self.thread_server.start()
+
+        return httpd
+
+
 
 
 class MercurialChangeset(BaseChangeset):

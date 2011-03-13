@@ -75,8 +75,9 @@ class MercurialRepositoryTest(unittest2.TestCase):
         self.assertTrue(len(self.repo.revisions) > len(repo_new.revisions))
 
         server = self.repo.serve()
-        repo_new.pull(server.adress)
-        server.stop()
+        repo_new.pull(server.http_address)
+        server.shutdown()
+        
         repo_new = MercurialRepository(TEST_HG_REPO_SERVE)
         self.assertTrue(len(self.repo.revisions) == len(repo_new.revisions))
 
