@@ -91,13 +91,14 @@ class DiffProcessor(object):
         """
 
         self.__udiff = diff
+        self.__format = format
+
         if isinstance(self.__udiff, basestring):
             self.lines = iter(self.__udiff.splitlines(1))
 
-        elif format == 'gitdiff':
+        elif self.__format == 'gitdiff':
             udiff_copy = self.copy_iterator()
-            head, lines = list(udiff_copy)
-            self.lines = imap(self.escaper, lines.splitlines(1))
+            self.lines = imap(self.escaper, self._parse_gitdiff(udiff_copy))
         else:
             udiff_copy = self.copy_iterator()
             self.lines = imap(self.escaper, udiff_copy)
@@ -139,6 +140,16 @@ class DiffProcessor(object):
             pass
 
         return None, None, None
+    def _parse_gitdiff(self, diffiterator):
+        output = list(diffiterator)
+        if len(output) == 2:
+            l = []
+            l.extend(output[0])
+            l.extend(output[1].splitlines(1))
+            return map(lambda x:x.decode('utf8', 'replace'), l)
+        if len(output) == 1:
+            return  map(lambda x:x.decode('utf8', 'replace'), output[0].splitlines(1))
+        raise Exception('wrong size of diff %s' % len(output))
 
     def _highlight_line_difflib(self, line, next):
         """
@@ -344,7 +355,10 @@ class DiffProcessor(object):
         """
         Returns raw string as udiff
         """
-        return u''.join(self.copy_iterator())
+        udiff_copy = self.copy_iterator()
+        if self.__format == 'gitdiff':
+            udiff_copy = self._parse_gitdiff(udiff_copy)
+        return u''.join(udiff_copy)
 
     def as_html(self, table_class='code-difftable', line_class='line',
                 new_lineno_class='lineno old', old_lineno_class='lineno new',
