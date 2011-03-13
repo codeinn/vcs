@@ -127,7 +127,8 @@ class MercurialRepository(BaseRepository):
 
         return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
 
-    def tag(self, name, user, revision=None, message=None, date=None, **kwargs):
+    def tag(self, name, user, revision=None, message=None, date=None,
+            **kwargs):
         """
         Creates and returns a tag for the given ``revision``.
 
@@ -198,9 +199,9 @@ class MercurialRepository(BaseRepository):
     def _get_repo(self, create, src_url=None, update_after_clone=False):
         """
         Function will check for mercurial repository in given path and return
-        a localrepo object. If there is no repository in that path it will raise
-        an exception unless ``create`` parameter is set to True - in that case
-        repository would be created and returned.
+        a localrepo object. If there is no repository in that path it will
+        raise an exception unless ``create`` parameter is set to True - in
+        that case repository would be created and returned.
         If ``src_url`` is given, would try to clone repository from the
         location at given clone_point. Additionally it'll make update to
         working copy accordingly to ``update_after_clone`` flag
@@ -288,15 +289,18 @@ class MercurialRepository(BaseRepository):
         return revision
 
     def _get_archives(self, archive_name='tip'):
-        allowed = self.baseui.configlist("web", "allow_archive", untrusted=True)
+        allowed = self.baseui.configlist("web", "allow_archive",
+                                         untrusted=True)
         for i in [('zip', '.zip'), ('gz', '.tar.gz'), ('bz2', '.tar.bz2')]:
-            if i[0] in allowed or self._repo.ui.configbool("web", "allow" + i[0],
-                                                untrusted=True):
+            if i[0] in allowed or self._repo.ui.configbool("web",
+                                                           "allow" + i[0],
+                                                           untrusted=True):
                 yield {"type": i[0], "extension": i[1], "node": archive_name}
 
     def _get_url(self, url):
         """
-        Returns normalized url. If schema is not given, would fall to filesystem
+        Returns normalized url. If schema is not given, would fall
+        to filesystem
         (``file://``) schema.
         """
         url = str(url)
@@ -316,7 +320,7 @@ class MercurialRepository(BaseRepository):
     def get_changesets(self, start=None, end=None, start_date=None,
                        end_date=None, branch_name=None, reverse=False):
         """
-        Returns iterator of ``MercurialChangeset`` objects from start to end 
+        Returns iterator of ``MercurialChangeset`` objects from start to end
         This should behave just like a list, ie. end is not inclusive
 
         :param start: None or str
@@ -694,8 +698,9 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
     def commit(self, message, author, parents=None, branch=None, date=None,
             **kwargs):
         """
-        Performs in-memory commit (doesn't check workdir in any way) and returns
-        newly created ``Changeset``. Updates repository's ``revisions``.
+        Performs in-memory commit (doesn't check workdir in any way) and
+        returns newly created ``Changeset``. Updates repository's
+        ``revisions``.
 
         :param message: message of the commit
         :param author: full username, i.e. "Joe Doe <joe.doe@example.com>"
@@ -770,7 +775,8 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         commit_ctx._date = date
 
         # TODO: Catch exceptions!
-        n = self.repository._repo.commitctx(commit_ctx)  # Returns mercurial node
+        n = self.repository._repo.commitctx(commit_ctx)
+        # Returns mercurial node
         self._commit_ctx = commit_ctx  # For reference
         # Update vcs repository object & recreate mercurial _repo
         # new_ctx = self.repository._repo[node]

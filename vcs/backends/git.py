@@ -168,7 +168,7 @@ class GitRepository(BaseRepository):
 
     def _get_url(self, url):
         """
-        Returns normalized url. If schema is not given, would fall to 
+        Returns normalized url. If schema is not given, would fall to
         filesystem (``file://``) schema.
         """
         url = str(url)
@@ -305,7 +305,7 @@ class GitRepository(BaseRepository):
           branch would be filtered out from returned set
         :param reverse: if ``True``, returned generator would be reversed
 
-        :raise BranchDoesNotExistError: If given ``branch_name`` does not 
+        :raise BranchDoesNotExistError: If given ``branch_name`` does not
             exist.
         :raise ChangesetDoesNotExistError: If changeset for given ``start`` or
           ``end`` could not be found.
@@ -755,8 +755,8 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
     def commit(self, message, author, parents=None, branch=None, date=None,
             **kwargs):
         """
-        Performs in-memory commit (doesn't check workdir in any way) and 
-        returns newly created ``Changeset``. Updates repository's 
+        Performs in-memory commit (doesn't check workdir in any way) and
+        returns newly created ``Changeset``. Updates repository's
         ``revisions``.
 
         :param message: message of the commit

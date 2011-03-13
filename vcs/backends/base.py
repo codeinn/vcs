@@ -144,8 +144,8 @@ class BaseRepository(object):
     def get_changesets(self, start=None, end=None, start_date=None,
                        end_date=None, branch_name=None, reverse=False):
         """
-        Returns iterator of ``MercurialChangeset`` objects from start to end 
-        not inclusive This should behave just like a list, ie. end is not 
+        Returns iterator of ``MercurialChangeset`` objects from start to end
+        not inclusive This should behave just like a list, ie. end is not
         inclusive
 
         :param start: None or str
@@ -414,14 +414,14 @@ class BaseChangeset(object):
 
     def get_archive(self, stream=None, kind='tgz', prefix=None):
         """
-        Returns archived changeset contents, as stream. Default stream is 
+        Returns archived changeset contents, as stream. Default stream is
         tempfile as for *huge* changesets we could eat memory.
 
-        :param stream: file like object. 
+        :param stream: file like object.
             Default: new ``tempfile.TemporaryFile`` instance.
-        :param kind: one of following: ``zip``, ``tar``, ``tgz`` 
+        :param kind: one of following: ``zip``, ``tar``, ``tgz``
             or ``tbz2``. Default: ``tgz``.
-        :param prefix: name of root directory in archive. 
+        :param prefix: name of root directory in archive.
             Default is repository name and changeset's raw_id joined with dash.
 
             repo-tip.<kind>
@@ -433,7 +433,7 @@ class BaseChangeset(object):
         """
         Returns iterable archive. Tiny wrapper around ``get_archive`` method.
 
-        :param chunk_size: extra parameter which controls size of returned 
+        :param chunk_size: extra parameter which controls size of returned
             chunks. Default:8k.
         """
 
@@ -463,7 +463,7 @@ class BaseChangeset(object):
 
     def prev(self, branch=None):
         """
-        Returns previous changeset from current, if branch is gives it will 
+        Returns previous changeset from current, if branch is gives it will
         return previous changeset belonging to this branch
 
         :param branch: show changesets within the given named branch
@@ -550,7 +550,7 @@ class BaseWorkdir(object):
 
     def commit(self, message, **kwargs):
         """
-        Commits local (from working directory) changes and returns newly 
+        Commits local (from working directory) changes and returns newly
         created
         ``Changeset``. Updates repository's ``revisions`` list.
 
@@ -667,7 +667,7 @@ class BaseInMemoryChangeset(object):
 
     def reset(self):
         """
-        Resets this instance to initial state (cleans ``added``, ``changed`` 
+        Resets this instance to initial state (cleans ``added``, ``changed``
         and ``removed`` lists).
         """
         self.added = []
@@ -766,8 +766,8 @@ class BaseInMemoryChangeset(object):
     def commit(self, message, author, parents=None, branch=None, date=None,
             **kwargs):
         """
-        Performs in-memory commit (doesn't check workdir in any way) and 
-        returns newly created ``Changeset``. Updates repository's 
+        Performs in-memory commit (doesn't check workdir in any way) and
+        returns newly created ``Changeset``. Updates repository's
         ``revisions``.
 
         .. note::

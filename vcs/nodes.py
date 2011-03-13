@@ -19,15 +19,18 @@ from vcs.exceptions import RemovedFileNodeError
 
 from pygments import lexers
 
+
 class NodeKind:
     DIR = 1
     FILE = 2
+
 
 class NodeState:
     ADDED = u'added'
     CHANGED = u'changed'
     NOT_CHANGED = u'not changed'
     REMOVED = u'removed'
+
 
 class NodeGeneratorBase(object):
     """
@@ -55,16 +58,21 @@ class NodeGeneratorBase(object):
         for p in self.current_paths:
             yield self.cs.get_node(p)
 
+
 class AddedFileNodesGenerator(NodeGeneratorBase):
     """
     Class holding Added files for current changeset
     """
     pass
+
+
 class ChangedFileNodesGenerator(NodeGeneratorBase):
     """
     Class holding Changed files for current changeset
     """
     pass
+
+
 class RemovedFileNodesGenerator(NodeGeneratorBase):
     """
     Class holding removed files for current changeset
@@ -95,8 +103,8 @@ class Node(object):
                 "the beginning as only relative paths are supported")
         self.path = path.rstrip('/')
         if path == '' and kind != NodeKind.DIR:
-            raise NodeError("Only DirNode and its subclasses may be initialized"
-                " with empty path")
+            raise NodeError("Only DirNode and its subclasses may be "
+                            "initialized with empty path")
         self.kind = kind
         #self.dirs, self.files = [], []
         if self.is_root() and not self.is_dir():
@@ -407,6 +415,7 @@ class RemovedFileNode(FileNode):
     def state(self):
         return NodeState.REMOVED
 
+
 class DirNode(Node):
     """
     DirNode stores list of files and directories within this node.
@@ -470,15 +479,15 @@ class DirNode(Node):
 
         .. note::
            To access lazily (as in example above) node have to be initialized
-           with related changeset object - without it node is out of context and
-           may know nothing about anything else than nearest (located at same
-           level) nodes.
+           with related changeset object - without it node is out of
+           context and may know nothing about anything else than nearest
+           (located at same level) nodes.
         """
         try:
             path = path.rstrip('/')
             if path == '':
                 raise NodeError("Cannot retrieve node without path")
-            self.nodes # access nodes first in order to set _nodes_dict
+            self.nodes  # access nodes first in order to set _nodes_dict
             paths = path.split('/')
             if len(paths) == 1:
                 if not self.is_root():
@@ -488,7 +497,8 @@ class DirNode(Node):
                 return self._nodes_dict[path]
             elif len(paths) > 1:
                 if self.changeset is None:
-                    raise NodeError("Cannot access deeper nodes without changeset")
+                    raise NodeError("Cannot access deeper "
+                                    "nodes without changeset")
                 else:
                     path1, path2 = paths[0], '/'.join(paths[1:])
                     return self.get_node(path1).get_node(path2)
@@ -510,6 +520,7 @@ class DirNode(Node):
 
         return size
 
+
 class RootNode(DirNode):
     """
     DirNode being the root node of the repository.
@@ -521,4 +532,3 @@ class RootNode(DirNode):
 
     def __repr__(self):
         return '<%s>' % self.__class__.__name__
-
