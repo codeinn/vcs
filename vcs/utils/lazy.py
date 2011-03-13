@@ -15,7 +15,6 @@ class LazyProperty(object):
     used widely.
     """
 
-
     def __init__(self, func):
         self._func = func
         self.__name__ = func.__name__

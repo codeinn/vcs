@@ -48,7 +48,7 @@ def get_udiff(filenode_old, filenode_new):
 
 
 def get_gitdiff(filenode_old, filenode_new):
-    """Returns mercurial style git diff between given 
+    """Returns mercurial style git diff between given
     ``filenode_old`` and ``filenode_new``.
     """
 
@@ -61,7 +61,6 @@ def get_gitdiff(filenode_old, filenode_new):
 
     old_raw_id = getattr(filenode_old.changeset, 'raw_id', '0' * 40)
     new_raw_id = getattr(filenode_new.changeset, 'raw_id', '0' * 40)
-
 
     root = filenode_new.changeset.repository.path
 
@@ -114,8 +113,8 @@ class DiffProcessor(object):
 
     def copy_iterator(self):
         """
-        make a fresh copy of generator, we should not iterate thru 
-        an original as it's needed for repeating operations on 
+        make a fresh copy of generator, we should not iterate thru
+        an original as it's needed for repeating operations on
         this instance of DiffProcessor
         """
         self.__udiff, iterator_copy = tee(self.__udiff)
@@ -140,15 +139,18 @@ class DiffProcessor(object):
             pass
 
         return None, None, None
+
     def _parse_gitdiff(self, diffiterator):
+
         output = list(diffiterator)
         if len(output) == 2:
             l = []
             l.extend(output[0])
             l.extend(output[1].splitlines(1))
-            return map(lambda x:x.decode('utf8', 'replace'), l)
+            return map(lambda x: x.decode('utf8', 'replace'), l)
         if len(output) == 1:
-            return  map(lambda x:x.decode('utf8', 'replace'), output[0].splitlines(1))
+            return  map(lambda x: x.decode('utf8', 'replace'),
+                        output[0].splitlines(1))
         raise Exception('wrong size of diff %s' % len(output))
 
     def _highlight_line_difflib(self, line, next):
@@ -254,7 +256,6 @@ class DiffProcessor(object):
                     old_end += old_line
                     new_end += new_line
 
-
                     if context:
                         if not skipfirst:
                             lines.append({
@@ -326,30 +327,26 @@ class DiffProcessor(object):
         """
         return self._parse_udiff()
 
-
-
     def _safe_id(self, idstring):
         """Make a string safe for including in an id attribute.
-        
-        The HTML spec says that id attributes 'must begin with 
-        a letter ([A-Za-z]) and may be followed by any number 
-        of letters, digits ([0-9]), hyphens ("-"), underscores 
+
+        The HTML spec says that id attributes 'must begin with
+        a letter ([A-Za-z]) and may be followed by any number
+        of letters, digits ([0-9]), hyphens ("-"), underscores
         ("_"), colons (":"), and periods (".")'. These regexps
         are slightly over-zealous, in that they remove colons
         and periods unnecessarily.
-        
+
         Whitespace is transformed into underscores, and then
-        anything which is not a hyphen or a character that 
+        anything which is not a hyphen or a character that
         matches \w (alphanumerics and underscore) is removed.
-        
+
         """
         # Transform all whitespace to underscore
         idstring = re.sub(r'\s', "_", '%s' % idstring)
         # Remove everything that is not a hyphen or a member of \w
         idstring = re.sub(r'(?!-)\W', "", idstring).lower()
         return idstring
-
-
 
     def raw_diff(self):
         """
@@ -374,28 +371,28 @@ class DiffProcessor(object):
 
             if condition:
                 return '''<a href="%(url)s">%(label)s</a>''' % {'url': url,
-                                                                'label':label}
+                                                                'label': label}
             else:
                 return label
 
         diff_lines = self.prepare()
         _html_empty = True
         _html = '''<table class="%(table_class)s">\n''' \
-                                            % {'table_class':table_class}
+                                            % {'table_class': table_class}
         for diff in diff_lines:
             for line in diff['chunks']:
                 _html_empty = False
                 for change in line:
                     _html += '''<tr class="%(line_class)s %(action)s">\n''' \
-                        % {'line_class':line_class, 'action':change['action']}
+                        % {'line_class': line_class, 'action': change['action']}
                     anchor_old_id = ''
                     anchor_new_id = ''
                     anchor_old = "%(filename)s_o%(oldline_no)s" % \
-                                    {'filename':self._safe_id(diff['filename']),
-                                     'oldline_no':change['old_lineno']}
+                                    {'filename': self._safe_id(diff['filename']),
+                                     'oldline_no': change['old_lineno']}
                     anchor_new = "%(filename)s_n%(oldline_no)s" % \
-                                    {'filename':self._safe_id(diff['filename']),
-                                     'oldline_no':change['new_lineno']}
+                                    {'filename': self._safe_id(diff['filename']),
+                                     'oldline_no': change['new_lineno']}
                     cond_old = change['old_lineno'] != '...' and \
                                                         change['old_lineno']
                     cond_new = change['new_lineno'] != '...' and \
@@ -408,8 +405,8 @@ class DiffProcessor(object):
                     # OLD LINE NUMBER
                     ############################################################
                     _html += '''\t<td %(a_id)s class="%(old_lineno_cls)s">''' \
-                                    % {'a_id':anchor_old_id,
-                                       'old_lineno_cls':old_lineno_class}
+                                    % {'a_id': anchor_old_id,
+                                       'old_lineno_cls': old_lineno_class}
 
                     _html += '''<pre>%(link)s</pre>''' \
                         % {'link':
@@ -421,8 +418,8 @@ class DiffProcessor(object):
                     ############################################################
 
                     _html += '''\t<td %(a_id)s class="%(new_lineno_cls)s">''' \
-                                    % {'a_id':anchor_new_id,
-                                       'new_lineno_cls':new_lineno_class}
+                                    % {'a_id': anchor_new_id,
+                                       'new_lineno_cls': new_lineno_class}
 
                     _html += '''<pre>%(link)s</pre>''' \
                         % {'link':
@@ -433,14 +430,12 @@ class DiffProcessor(object):
                     # CODE
                     ############################################################
                     _html += '''\t<td class="%(code_class)s">''' \
-                                                    % {'code_class':code_class}
+                                                    % {'code_class': code_class}
                     _html += '''\n\t\t<pre>%(code)s</pre>\n''' \
-                                                    % {'code':change['line']}
+                                                    % {'code': change['line']}
                     _html += '''\t</td>'''
                     _html += '''\n</tr>\n'''
         _html += '''</table>'''
         if _html_empty:
             return None
         return _html
-
-

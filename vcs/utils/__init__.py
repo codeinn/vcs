@@ -5,6 +5,7 @@ output. It also includes some internal helpers.
 import time
 import datetime
 
+
 def makedate():
     lt = time.localtime()
     if lt[8] == 1 and time.daylight:
@@ -12,6 +13,7 @@ def makedate():
     else:
         tz = time.timezone
     return time.mktime(lt), tz
+
 
 def date_fromtimestamp(unixts, tzoffset=0):
     """
@@ -39,4 +41,3 @@ def safe_unicode(str):
             u_str = unicode(str(str).encode('string_escape'))
 
     return u_str
-

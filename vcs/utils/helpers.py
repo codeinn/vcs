@@ -10,6 +10,7 @@ from vcs.utils.paths import abspath
 
 ALIASES = ['hg', 'git']
 
+
 def get_scm(path, search_recursively=False, explicit_alias=None):
     """
     Returns one of alias from ``ALIASES`` (in order of precedence same as
@@ -51,6 +52,7 @@ def get_scm(path, search_recursively=False, explicit_alias=None):
 
     return found_scms[0]
 
+
 def get_scms_for_path(path):
     """
     Returns all scm's found at the given path. If no scm is recognized
@@ -86,6 +88,7 @@ def get_scms_for_path(path):
             pass
     return result
 
+
 def get_repo_paths(path):
     """
     Returns path's subdirectories which seems to be a repository.
@@ -100,6 +103,7 @@ def get_repo_paths(path):
             pass
     return repo_paths
 
+
 def run_command(cmd, *args):
     """
     Runs command on the system with given ``args``.
@@ -108,6 +112,7 @@ def run_command(cmd, *args):
     p = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
     stdout, stderr = p.communicate()
     return p.retcode, stdout, stderr
+
 
 def get_highlighted_code(name, code, type='terminal'):
     """
@@ -133,4 +138,3 @@ def get_highlighted_code(name, code, type='terminal'):
         logging.debug("Couldn't guess Lexer, will not use pygments.")
         content = code
     return content
-

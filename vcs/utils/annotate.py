@@ -5,6 +5,7 @@ from pygments import highlight
 
 import StringIO
 
+
 def annotate_highlight(filenode, annotate_from_changeset_func=None,
         order=None, headers=None, **options):
     """
@@ -12,11 +13,12 @@ def annotate_highlight(filenode, annotate_from_changeset_func=None,
     numbers, changeset information and pygmentized line of code.
 
     :param filenode: FileNode object
-    :param annotate_from_changeset_func: function taking changeset and returning
+    :param annotate_from_changeset_func: function taking changeset and
+    returning
       single annotate cell; needs break line at the end
-    :param order: ordered sequence of ``ls`` (line numbers column), ``annotate``
-      (annotate column), ``code`` (code column); Default is ``['ls', 'annotate',
-      'code']``
+    :param order: ordered sequence of ``ls`` (line numbers column),
+      ``annotate`` (annotate column), ``code`` (code column); Default is
+      ``['ls', 'annotate', 'code']``
     :param headers: dictionary with headers (keys are whats in ``order``
       parameter)
     """
@@ -27,6 +29,7 @@ def annotate_highlight(filenode, annotate_from_changeset_func=None,
     lexer = filenode.lexer
     highlighted = highlight(filenode.content, lexer, formatter)
     return highlighted
+
 
 class AnnotateHtmlFormatter(HtmlFormatter):
 
@@ -99,13 +102,16 @@ class AnnotateHtmlFormatter(HtmlFormatter):
                 if i % st == 0:
                     if i % sp == 0:
                         if aln:
-                            lines.append('<a href="#%s-%d" class="special">%*d</a>' %
+                            lines.append('<a href="#%s-%d" class="special">'
+                                         '%*d</a>' %
                                          (la, i, mw, i))
                         else:
-                            lines.append('<span class="special">%*d</span>' % (mw, i))
+                            lines.append('<span class="special">'
+                                         '%*d</span>' % (mw, i))
                     else:
                         if aln:
-                            lines.append('<a href="#%s-%d">%*d</a>' % (la, i, mw, i))
+                            lines.append('<a href="#%s-%d">'
+                                         '%*d</a>' % (la, i, mw, i))
                         else:
                             lines.append('%*d' % (mw, i))
                 else:
@@ -116,7 +122,8 @@ class AnnotateHtmlFormatter(HtmlFormatter):
             for i in range(fl, fl + lncount):
                 if i % st == 0:
                     if aln:
-                        lines.append('<a href="#%s-%d">%*d</a>' % (la, i, mw, i))
+                        lines.append('<a href="#%s-%d">%*d</a>' \
+                                     % (la, i, mw, i))
                     else:
                         lines.append('%*d' % (mw, i))
                 else:
@@ -131,9 +138,9 @@ class AnnotateHtmlFormatter(HtmlFormatter):
             annotate_changesets = annotate_changesets[:ln_ - ln_cs]
         annotate = ''.join((self.annotate_from_changeset(changeset)
             for changeset in annotate_changesets))
-        # in case you wonder about the seemingly redundant <div> here: since the
-        # content in the other cell also is wrapped in a div, some browsers in
-        # some configurations seem to mess up the formatting...
+        # in case you wonder about the seemingly redundant <div> here:
+        # since the content in the other cell also is wrapped in a div,
+        # some browsers in some configurations seem to mess up the formatting.
         '''
         yield 0, ('<table class="%stable">' % self.cssclass +
                   '<tr><td class="linenos"><div class="linenodiv"><pre>' +
@@ -169,4 +176,3 @@ class AnnotateHtmlFormatter(HtmlFormatter):
                   )
         yield 0, dummyoutfile.getvalue()
         yield 0, '</td></tr></table>'
-
