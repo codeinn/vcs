@@ -5,7 +5,7 @@ from vcs.backends.hg import MercurialRepository, MercurialChangeset
 from vcs.exceptions import RepositoryError, VCSError, NodeDoesNotExistError
 from vcs.nodes import NodeKind, NodeState
 from conf import PACKAGE_DIR, TEST_HG_REPO, TEST_HG_REPO_CLONE, \
-    TEST_HG_REPO_PULL
+    TEST_HG_REPO_PULL, TEST_HG_REPO_SERVE
 
 class MercurialRepositoryTest(unittest2.TestCase):
 
@@ -66,6 +66,19 @@ class MercurialRepositoryTest(unittest2.TestCase):
         repo_new = MercurialRepository(TEST_HG_REPO_PULL)
         self.assertTrue(len(self.repo.revisions) == len(repo_new.revisions))
 
+    def test_serve_and_pull(self):
+        if os.path.exists(TEST_HG_REPO_SERVE):
+            self.fail('Cannot test mercurial pull command as location %s '
+                      'already exists. You should manually remove it first'
+                      % TEST_HG_REPO_SERVE)
+        repo_new = MercurialRepository(TEST_HG_REPO_SERVE, create=True)
+        self.assertTrue(len(self.repo.revisions) > len(repo_new.revisions))
+
+        server = self.repo.serve()
+        repo_new.pull(server.adress)
+        server.stop()
+        repo_new = MercurialRepository(TEST_HG_REPO_SERVE)
+        self.assertTrue(len(self.repo.revisions) == len(repo_new.revisions))
 
     def test_revisions(self):
         # there are 21 revisions at bitbucket now
@@ -485,7 +498,7 @@ class MercurialChangesetTest(unittest2.TestCase):
         pass
 
     def test_archival_as_generator(self):
-        #TODO:        
+        #TODO:
         pass
 
     def test_archival_wrong_kind(self):
@@ -493,7 +506,7 @@ class MercurialChangesetTest(unittest2.TestCase):
         self.assertRaises(VCSError, tip.get_archive, kind='error')
 
     def test_archival_empty_prefix(self):
-        #TODO:        
+        #TODO:
         pass
 
 

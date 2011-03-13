@@ -35,6 +35,8 @@ TEST_HG_REPO_CLONE = os.environ.get('VCS_TEST_HG_REPO_CLONE',
                               jn(TEST_TMP_PATH, 'vcshgclone%s' % uniq_suffix))
 TEST_HG_REPO_PULL = os.environ.get('VCS_TEST_HG_REPO_PULL',
                               jn(TEST_TMP_PATH, 'vcshgpull%s' % uniq_suffix))
+TEST_HG_REPO_SERVE = os.environ.get('VCS_TEST_HG_REPO_PULL',
+                              jn(TEST_TMP_PATH, 'vcshgserve%s' % uniq_suffix))
 
 TEST_DIR = tempfile.gettempdir()
 TEST_REPO_PREFIX = 'vcs-test'
