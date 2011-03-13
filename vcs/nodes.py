@@ -4,7 +4,7 @@
     ~~~~~~~~~
 
     Module holding everything related to vcs nodes.
-    
+
     :created_on: Apr 8, 2010
     :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
@@ -100,7 +100,7 @@ class Node(object):
         self.kind = kind
         #self.dirs, self.files = [], []
         if self.is_root() and not self.is_dir():
-            raise NodeError, "Root node cannot be FILE kind"
+            raise NodeError("Root node cannot be FILE kind")
 
     @LazyProperty
     def parent(self):
@@ -124,12 +124,12 @@ class Node(object):
 
     def _set_kind(self, kind):
         if hasattr(self, '_kind'):
-            raise NodeError, "Cannot change node's kind"
+            raise NodeError("Cannot change node's kind")
         else:
             self._kind = kind
             # Post setter check (path's trailing slash)
             if self.path.endswith('/'):
-                raise NodeError, "Node's path cannot end with slash"
+                raise NodeError("Node's path cannot end with slash")
 
     kind = property(_get_kind, _set_kind)
 

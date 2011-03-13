@@ -39,6 +39,7 @@ from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils.paths import abspath
 
+
 class GitRepository(BaseRepository):
     """
     Git repository backend.
@@ -160,15 +161,15 @@ class GitRepository(BaseRepository):
     def _get_archives(self, archive_name='tip'):
 
         for i in [('zip', '.zip'), ('gz', '.tar.gz'), ('bz2', '.tar.bz2')]:
-                yield {"type" : i[0], "extension": i[1], "node": archive_name}
+                yield {"type": i[0], "extension": i[1], "node": archive_name}
 
     def _get_tree(self, id):
         return self._repo[id]
 
     def _get_url(self, url):
         """
-        Returns normalized url. If schema is not given, would fall to filesystem
-        (``file://``) schema.
+        Returns normalized url. If schema is not given, would fall to 
+        filesystem (``file://``) schema.
         """
         url = str(url)
         if url != 'default' and not '://' in url:
@@ -217,7 +218,7 @@ class GitRepository(BaseRepository):
         if not self.revisions:
             return {}
         refs = self._repo.refs.as_dict()
-        sortkey = lambda ctx:ctx[0]
+        sortkey = lambda ctx: ctx[0]
         _branches = [(ref.split('/')[-1], head)
             for ref, head in refs.items()
             if ref.startswith('refs/heads/') or
@@ -227,7 +228,7 @@ class GitRepository(BaseRepository):
     def _get_tags(self):
         if not self.revisions:
             return {}
-        sortkey = lambda ctx:ctx[0]
+        sortkey = lambda ctx: ctx[0]
         _tags = [(ref.split('/')[-1], head,) for ref, head in
             self._repo.get_refs().items() if ref.startswith('refs/tags/')]
         return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
@@ -236,7 +237,8 @@ class GitRepository(BaseRepository):
     def tags(self):
         return self._get_tags()
 
-    def tag(self, name, user, revision=None, message=None, date=None, **kwargs):
+    def tag(self, name, user, revision=None, message=None, date=None,
+            **kwargs):
         """
         Creates and returns a tag for the given ``revision``.
 
@@ -292,7 +294,7 @@ class GitRepository(BaseRepository):
         """
         Returns iterator of ``GitChangeset`` objects from start to end (both
         are inclusive).
-        
+
         :param start: changeset ID, as str; first returned changeset
         :param end: changeset ID, as str; last returned changeset
         :param start_date: if specified, changesets with commit date less than
@@ -303,7 +305,8 @@ class GitRepository(BaseRepository):
           branch would be filtered out from returned set
         :param reverse: if ``True``, returned generator would be reversed
 
-        :raise BranchDoesNotExistError: If given ``branch_name`` does not exist.
+        :raise BranchDoesNotExistError: If given ``branch_name`` does not 
+            exist.
         :raise ChangesetDoesNotExistError: If changeset for given ``start`` or
           ``end`` could not be found.
 
@@ -331,7 +334,8 @@ class GitRepository(BaseRepository):
             revs = reversed(revs)
 
         if branch_name and branch_name not in self.branches:
-            raise BranchDoesNotExistError("Branch '%s' not found" % branch_name)
+            raise BranchDoesNotExistError("Branch '%s' not found" \
+                                          % branch_name)
         elif branch_name:
             out = self.run_git_command('rev-list %s' % branch_name)[0]
             branch_revs = out.splitlines()
@@ -390,13 +394,15 @@ class GitChangeset(BaseChangeset):
         self._tree_id = commit.tree
         self.author = safe_unicode(commit.committer)
         try:
-            self.message = safe_unicode(commit.message[:-1]) # Always strip last eol
+            self.message = safe_unicode(commit.message[:-1])
+            # Always strip last eol
         except UnicodeDecodeError:
             self.message = commit.message[:-1].decode(commit.encoding
                 or 'utf-8')
         #self.branch = None
         self.tags = []
-        self.date = date_fromtimestamp(commit.commit_time, commit.commit_timezone)
+        self.date = date_fromtimestamp(commit.commit_time,
+                                       commit.commit_timezone)
         #tree = self.repository.get_object(self._tree_id)
         self.nodes = {}
         self._paths = {}
@@ -538,7 +544,8 @@ class GitChangeset(BaseChangeset):
         which is generally not good. Should be replaced with algorithm
         iterating commits.
         """
-        cmd = 'log --name-status -p %s -- "%s" | grep "^commit"' % (self.id, path)
+        cmd = 'log --name-status -p %s -- "%s" | grep "^commit"' \
+            % (self.id, path)
         so, se = self.repository.run_git_command(cmd)
         ids = re.findall(r'\w{40}', so)
         return [self.repository.get_changeset(id) for id in ids]
@@ -640,8 +647,8 @@ class GitChangeset(BaseChangeset):
             elif isinstance(obj, objects.Blob):
                 filenodes.append(FileNode(obj_path, changeset=self, mode=stat))
             else:
-                raise ChangesetError("Requested object should be Tree or Blob, "
-                    "is %r" % type(obj))
+                raise ChangesetError("Requested object should be Tree "
+                                     "or Blob, is %r" % type(obj))
         nodes = dirnodes + filenodes
         for node in nodes:
             if not node.path in self.nodes:
@@ -708,7 +715,8 @@ class GitChangeset(BaseChangeset):
         for parent in self.parents:
             try:
                 # Second param at --stat is for paths to be showed completely
-                cmd = 'diff --stat=999,999 %s %s' % (self.raw_id, parent.raw_id)
+                cmd = 'diff --stat=999,999 %s %s' % (self.raw_id,
+                                                     parent.raw_id)
                 so, se = self.repository.run_git_command(cmd)
                 for line in so.splitlines()[:-1]:
                     path = line.split()[0]
@@ -747,8 +755,9 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
     def commit(self, message, author, parents=None, branch=None, date=None,
             **kwargs):
         """
-        Performs in-memory commit (doesn't check workdir in any way) and returns
-        newly created ``Changeset``. Updates repository's ``revisions``.
+        Performs in-memory commit (doesn't check workdir in any way) and 
+        returns newly created ``Changeset``. Updates repository's 
+        ``revisions``.
 
         :param message: message of the commit
         :param author: full username, i.e. "Joe Doe <joe.doe@example.com>"
@@ -917,4 +926,3 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
             # Always append tree
             trees.append(tree)
         return trees
-

@@ -2,9 +2,9 @@
 """
     vcs.backends.base
     ~~~~~~~~~~~~~~~~~
-    
+
     Base for all available scm backends
-    
+
     :created_on: Apr 8, 2010
     :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
@@ -17,7 +17,6 @@ from vcs.exceptions import ChangesetError, EmptyRepositoryError, \
     NodeAlreadyAddedError, NodeAlreadyChangedError, NodeAlreadyExistsError, \
     NodeAlreadyRemovedError, NodeDoesNotExistError, NodeNotChangedError, \
     RepositoryError
-
 
 
 class BaseRepository(object):
@@ -58,7 +57,8 @@ class BaseRepository(object):
         :param create=False: if set to True, would try to craete repository.
         :param src_url=None: if set, should be proper url from which repository
           would be cloned; requires ``create`` parameter to be set to True -
-          raises RepositoryError if src_url is set and create evaluates to False
+          raises RepositoryError if src_url is set and create evaluates to
+          False
         """
         raise NotImplementedError
 
@@ -90,7 +90,6 @@ class BaseRepository(object):
     def description(self):
         raise NotImplementedError
 
-
     @LazyProperty
     def size(self):
         """
@@ -120,9 +119,9 @@ class BaseRepository(object):
     def get_last_change(self):
         self.get_changesets()
 
-    #===========================================================================
+    #==========================================================================
     # CHANGESETS
-    #===========================================================================
+    #==========================================================================
 
     def get_changeset(self, revision=None):
         """
@@ -146,10 +145,9 @@ class BaseRepository(object):
                        end_date=None, branch_name=None, reverse=False):
         """
         Returns iterator of ``MercurialChangeset`` objects from start to end 
-        not inclusive
-        This should behave just like a list, ie. end is not inclusive
-         
-        
+        not inclusive This should behave just like a list, ie. end is not 
+        inclusive
+
         :param start: None or str
         :param end: None or str
         :param start_date:
@@ -168,7 +166,6 @@ class BaseRepository(object):
 
     def __getitem__(self, key):
         return self.get_changeset(key)
-
 
     def count(self):
         return len(self.revisions)
@@ -248,7 +245,6 @@ class BaseRepository(object):
         containing ``FileNode`` objects.
         """
         raise NotImplementedError
-
 
     # =========== #
     # WORKDIR API #
@@ -420,24 +416,23 @@ class BaseChangeset(object):
         """
         Returns archived changeset contents, as stream. Default stream is 
         tempfile as for *huge* changesets we could eat memory.
-    
+
         :param stream: file like object. 
             Default: new ``tempfile.TemporaryFile`` instance.
         :param kind: one of following: ``zip``, ``tar``, ``tgz`` 
             or ``tbz2``. Default: ``tgz``.
         :param prefix: name of root directory in archive. 
             Default is repository name and changeset's raw_id joined with dash.
-            
+
             repo-tip.<kind>
         """
 
         raise NotImplementedError
 
-
     def get_chunked_archive(self, **kwargs):
         """
         Returns iterable archive. Tiny wrapper around ``get_archive`` method.
-    
+
         :param chunk_size: extra parameter which controls size of returned 
             chunks. Default:8k.
         """
@@ -457,7 +452,6 @@ class BaseChangeset(object):
         """
         return self.get_node('')
 
-
     def next(self, branch=None):
         """
         Returns next changeset from current, if branch is gives it will return
@@ -469,13 +463,12 @@ class BaseChangeset(object):
 
     def prev(self, branch=None):
         """
-        Returns previous changeset from current, if branch is gives it will return
-        previous changeset belonging to this branch
+        Returns previous changeset from current, if branch is gives it will 
+        return previous changeset belonging to this branch
 
         :param branch: show changesets within the given named branch
         """
         raise NotImplementedError
-
 
     @LazyProperty
     def added(self):
@@ -557,7 +550,8 @@ class BaseWorkdir(object):
 
     def commit(self, message, **kwargs):
         """
-        Commits local (from working directory) changes and returns newly created
+        Commits local (from working directory) changes and returns newly 
+        created
         ``Changeset``. Updates repository's ``revisions`` list.
 
         :raises ``CommitError``: if any error occurs while committing
@@ -673,8 +667,8 @@ class BaseInMemoryChangeset(object):
 
     def reset(self):
         """
-        Resets this instance to initial state (cleans ``added``, ``changed`` and
-        ``removed`` lists).
+        Resets this instance to initial state (cleans ``added``, ``changed`` 
+        and ``removed`` lists).
         """
         self.added = []
         self.changed = []
@@ -772,8 +766,9 @@ class BaseInMemoryChangeset(object):
     def commit(self, message, author, parents=None, branch=None, date=None,
             **kwargs):
         """
-        Performs in-memory commit (doesn't check workdir in any way) and returns
-        newly created ``Changeset``. Updates repository's ``revisions``.
+        Performs in-memory commit (doesn't check workdir in any way) and 
+        returns newly created ``Changeset``. Updates repository's 
+        ``revisions``.
 
         .. note::
             While overriding this method each backend's should call
@@ -791,4 +786,3 @@ class BaseInMemoryChangeset(object):
         :raises ``CommitError``: if any error occurs while committing
         """
         raise NotImplementedError
-

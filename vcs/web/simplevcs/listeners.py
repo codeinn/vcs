@@ -18,8 +18,8 @@ def repository_created_handler(sender, instance, **kwargs):
 def post_clone_handler(sender, repo_path, ip, username, **kwargs):
     logging.debug("Post CLONE: %s | %s | %s" % (repo_path, ip, username))
     if repo_path:
-        RepositoryInfo.objects.filter(repository__path=repo_path)\
-            .update(clone_count = F('clone_count') + 1)
+        RepositoryInfo.objects.filter(repository__path=repo_path) \
+            .update(clone_count=F('clone_count') + 1)
 
 def post_push_handler(sender, repo_path, ip, username, **kwargs):
     logging.debug("Post PUSH: %s | %s | %s" % (repo_path, ip, username))
@@ -29,14 +29,14 @@ def post_push_handler(sender, repo_path, ip, username, **kwargs):
         updated = RepositoryInfo.objects\
             .filter(repository__path=repo_path)\
             .update(
-                push_count = F('push_count') + 1,
-                size = size,
+                push_count=F('push_count') + 1,
+                size=size,
             )
         if updated == 0:
             RepositoryInfo.objects.create(
                 repository=Repository.objects.get(path=repo_path),
-                push_count = 1,
-                size = size,
+                push_count=1,
+                size=size,
             )
 
 

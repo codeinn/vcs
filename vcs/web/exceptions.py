@@ -5,4 +5,3 @@ from vcs.exceptions import VCSError
 
 class RequestError(VCSError):
     pass
-

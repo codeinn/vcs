@@ -4,7 +4,7 @@
     ~~~~~~~~~~~~~~
 
     Custom exceptions module
-    
+
     :created_on: Apr 8, 2010
     :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """

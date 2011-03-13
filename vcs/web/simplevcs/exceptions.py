@@ -8,4 +8,3 @@ from vcs.web.exceptions import RequestError
 
 class NotMercurialRequest(RequestError):
     pass
-

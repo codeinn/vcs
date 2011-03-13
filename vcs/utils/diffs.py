@@ -425,7 +425,8 @@ class DiffProcessor(object):
                     _html += '''\t</td>'''
                     _html += '''\n</tr>\n'''
         _html += '''</table>'''
-        if _html_empty:return None
+        if _html_empty:
+            return None
         return _html
 
 

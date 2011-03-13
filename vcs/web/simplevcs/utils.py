@@ -142,7 +142,7 @@ class MercurialRequest(wsgirequest):
         if QUERY_STRING:
             for pair in QUERY_STRING.split('&'):
                 key, value = pair.split('=')
-                if key == 'cmd' and HG_ACTIONS.has_key(value):
+                if key == 'cmd' and value in HG_ACTIONS:
                     return HG_ACTIONS[value]
         return UNKNOWN
 
