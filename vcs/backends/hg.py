@@ -2,9 +2,9 @@
 """
     vcs.backends.hg
     ~~~~~~~~~~~~~~~~
-    
+
     Mercurial backend implementation.
-    
+
     :created_on: Apr 8, 2010
     :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
@@ -80,7 +80,6 @@ class MercurialRepository(BaseRepository):
         """
         return self._get_all_revisions()
 
-
     @LazyProperty
     def name(self):
         return os.path.basename(self.path)
@@ -108,11 +107,10 @@ class MercurialRepository(BaseRepository):
                     bt[bn] = tip
             return bt
 
-        sortkey = lambda ctx: ctx[0] #sort by name
+        sortkey = lambda ctx: ctx[0]  # sort by name
         _branches = [(n, hex(h),) for n, h in _branchtags(self._repo).items()]
 
         return OrderedDict(sorted(_branches, key=sortkey, reverse=False))
-
 
     @LazyProperty
     def tags(self):
@@ -124,12 +122,13 @@ class MercurialRepository(BaseRepository):
         if not self.revisions:
             return {}
 
-        sortkey = lambda ctx: ctx[0] #sort by name
+        sortkey = lambda ctx: ctx[0]  # sort by name
         _tags = [(n, hex(h),) for n, h in self._repo.tags().items()]
 
         return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
 
-    def tag(self, name, user, revision=None, message=None, date=None, **kwargs):
+    def tag(self, name, user, revision=None, message=None, date=None,
+            **kwargs):
         """
         Creates and returns a tag for the given ``revision``.
 
@@ -200,9 +199,9 @@ class MercurialRepository(BaseRepository):
     def _get_repo(self, create, src_url=None, update_after_clone=False):
         """
         Function will check for mercurial repository in given path and return
-        a localrepo object. If there is no repository in that path it will raise
-        an exception unless ``create`` parameter is set to True - in that case
-        repository would be created and returned.
+        a localrepo object. If there is no repository in that path it will
+        raise an exception unless ``create`` parameter is set to True - in
+        that case repository would be created and returned.
         If ``src_url`` is given, would try to clone repository from the
         location at given clone_point. Additionally it'll make update to
         working copy accordingly to ``update_after_clone`` flag
@@ -212,7 +211,7 @@ class MercurialRepository(BaseRepository):
                 url = str(self._get_url(src_url))
                 opts = {}
                 if not update_after_clone:
-                    opts.update({'noupdate':True})
+                    opts.update({'noupdate': True})
                 try:
                     clone(self.baseui, url, self.path, **opts)
                 except urllib2.URLError:
@@ -238,6 +237,7 @@ class MercurialRepository(BaseRepository):
         undefined_description = 'unknown'
         return self._repo.ui.config('web', 'description',
                                    undefined_description, untrusted=True)
+
     @LazyProperty
     def contact(self):
         from mercurial.hgweb.common import get_contact
@@ -270,7 +270,7 @@ class MercurialRepository(BaseRepository):
         """
         Get's an ID revision given as str. This will always return a fill
         40 char revision number
-        
+
         :param revision: str or int or None
         """
 
@@ -289,15 +289,18 @@ class MercurialRepository(BaseRepository):
         return revision
 
     def _get_archives(self, archive_name='tip'):
-        allowed = self.baseui.configlist("web", "allow_archive", untrusted=True)
+        allowed = self.baseui.configlist("web", "allow_archive",
+                                         untrusted=True)
         for i in [('zip', '.zip'), ('gz', '.tar.gz'), ('bz2', '.tar.bz2')]:
-            if i[0] in allowed or self._repo.ui.configbool("web", "allow" + i[0],
-                                                untrusted=True):
-                yield {"type" : i[0], "extension": i[1], "node": archive_name}
+            if i[0] in allowed or self._repo.ui.configbool("web",
+                                                           "allow" + i[0],
+                                                           untrusted=True):
+                yield {"type": i[0], "extension": i[1], "node": archive_name}
 
     def _get_url(self, url):
         """
-        Returns normalized url. If schema is not given, would fall to filesystem
+        Returns normalized url. If schema is not given, would fall
+        to filesystem
         (``file://``) schema.
         """
         url = str(url)
@@ -317,10 +320,9 @@ class MercurialRepository(BaseRepository):
     def get_changesets(self, start=None, end=None, start_date=None,
                        end_date=None, branch_name=None, reverse=False):
         """
-        Returns iterator of ``MercurialChangeset`` objects from start to end 
+        Returns iterator of ``MercurialChangeset`` objects from start to end
         This should behave just like a list, ie. end is not inclusive
-         
-        
+
         :param start: None or str
         :param end:  None or str
         :param start_date:
@@ -335,7 +337,6 @@ class MercurialRepository(BaseRepository):
 
         if (start_pos and end_pos) and start_pos > end_pos:
             raise RepositoryError('start cannot be after end')
-
 
         if branch_name and branch_name not in self.branches.keys():
             raise BranchDoesNotExistError('Such branch %s does not exists for'
@@ -400,7 +401,6 @@ class MercurialChangeset(BaseChangeset):
     @LazyProperty
     def date(self):
         return date_fromtimestamp(*self._ctx.date())
-
 
     @LazyProperty
     def status(self):
@@ -471,7 +471,8 @@ class MercurialChangeset(BaseChangeset):
         def _prev(changeset, branch):
             try:
                 prev_ = changeset.revision - 1
-                if prev_ < 0:raise IndexError
+                if prev_ < 0:
+                    raise IndexError
                 prev_rev = changeset.repository.revisions[prev_]
             except IndexError:
                 raise ChangesetDoesNotExistError
@@ -568,7 +569,6 @@ class MercurialChangeset(BaseChangeset):
                              annotate_data[1],))
 
         return annotate
-
 
     def get_archive(self, stream=None, kind='tgz', prefix=None):
         """
@@ -678,13 +678,12 @@ class MercurialChangeset(BaseChangeset):
         """
         return AddedFileNodesGenerator([n for n in self.status[1]], self)
 
-
     @property
     def changed(self):
         """
         Returns list of modified ``FileNode`` objects.
         """
-        return ChangedFileNodesGenerator([ n for n in  self.status[0]], self)
+        return ChangedFileNodesGenerator([n for n in  self.status[0]], self)
 
     @property
     def removed(self):
@@ -699,8 +698,9 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
     def commit(self, message, author, parents=None, branch=None, date=None,
             **kwargs):
         """
-        Performs in-memory commit (doesn't check workdir in any way) and returns
-        newly created ``Changeset``. Updates repository's ``revisions``.
+        Performs in-memory commit (doesn't check workdir in any way) and
+        returns newly created ``Changeset``. Updates repository's
+        ``revisions``.
 
         :param message: message of the commit
         :param author: full username, i.e. "Joe Doe <joe.doe@example.com>"
@@ -775,15 +775,15 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         commit_ctx._date = date
 
         # TODO: Catch exceptions!
-        n = self.repository._repo.commitctx(commit_ctx) # Returns mercurial node
-        self._commit_ctx = commit_ctx # For reference
+        n = self.repository._repo.commitctx(commit_ctx)
+        # Returns mercurial node
+        self._commit_ctx = commit_ctx  # For reference
         # Update vcs repository object & recreate mercurial _repo
-        #new_ctx = self.repository._repo[node]
-        #new_tip = self.repository.get_changeset(new_ctx.hex())
+        # new_ctx = self.repository._repo[node]
+        # new_tip = self.repository.get_changeset(new_ctx.hex())
         new_id = hex(n)
         self.repository.revisions.append(new_id)
         self._repo = self.repository._get_repo(create=False)
         tip = self.repository.get_changeset()
         self.reset()
         return tip
-

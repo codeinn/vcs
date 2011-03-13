@@ -149,7 +149,6 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
             self.repo.get_changesets(reverse=True)]
         self.assertItemsEqual(changesets_id_list, reversed(self.repo.revisions))
 
-
     def test_get_changesets_raise_changesetdoesnotexist_for_wrong_start(self):
         with self.assertRaises(ChangesetDoesNotExistError):
             list(self.repo.get_changesets(start='foobar'))
@@ -163,8 +162,8 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
             list(self.repo.get_changesets(branch_name='foobar'))
 
     def test_get_changesets_raise_repositoryerror_for_wrong_start_end(self):
-        start=self.repo.revisions[-1]
-        end=self.repo.revisions[0]
+        start = self.repo.revisions[-1]
+        end = self.repo.revisions[0]
         with self.assertRaises(RepositoryError):
             list(self.repo.get_changesets(start=start, end=end))
 

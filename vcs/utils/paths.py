@@ -2,6 +2,7 @@ import os
 
 abspath = lambda * p: os.path.abspath(os.path.join(*p))
 
+
 def get_dirs_for_path(*paths):
     """
     Returns list of directories, including intermediate.
@@ -16,6 +17,7 @@ def get_dirs_for_path(*paths):
                 # We don't need to yield empty path
                 break
 
+
 def get_dir_size(path):
     root_path = path
     size = 0
@@ -26,4 +28,3 @@ def get_dir_size(path):
             except OSError:
                 pass
     return size
-

@@ -38,6 +38,7 @@ from test_tags import *
 from test_utils import *
 from test_vcs import *
 
+
 def setup_package():
     """
     Prepares whole package for tests which mainly means it would try to fetch
@@ -68,6 +69,7 @@ def setup_package():
 def collector():
     setup_package()
     return unittest2.collector()
+
 
 def main():
     collector()

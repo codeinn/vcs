@@ -1,9 +1,10 @@
 from mercurial import ui, config
 
-def make_ui(self, path='hgwebdir.config'):        
+
+def make_ui(self, path='hgwebdir.config'):
     """
     A funcion that will read python rc files and make an ui from read options
-    
+
     :param path: path to mercurial config file
     """
     #propagated from mercurial documentation
@@ -42,5 +43,5 @@ def make_ui(self, path='hgwebdir.config'):
     for section in sections:
         for k, v in cfg.items(section):
             baseui.setconfig(section, k, v)
-    
+
     return baseui

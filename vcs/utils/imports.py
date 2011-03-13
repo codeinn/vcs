@@ -1,5 +1,6 @@
 from vcs.exceptions import VCSError
 
+
 def import_class(class_path):
     """
     Returns class from the given path.
@@ -24,5 +25,3 @@ def import_class(class_path):
     cls = getattr(class_mod, class_name)
 
     return cls
-
-

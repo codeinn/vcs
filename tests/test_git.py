@@ -125,7 +125,7 @@ class GitRepositoryTest(unittest2.TestCase):
 
     def _test_single_changeset_cache(self, revision):
         chset = self.repo.get_changeset(revision)
-        self.assertTrue(self.repo.changesets.has_key(revision))
+        self.assertTrue(revision in self.repo.changesets)
         self.assertTrue(chset is self.repo.changesets[revision])
 
     def test_initial_changeset(self):

@@ -2,9 +2,9 @@
 """
     vcs.backends
     ~~~~~~~~~~~~
-    
+
     Main package for scm backends
-    
+
     :created_on: Apr 8, 2010
     :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
@@ -21,11 +21,12 @@ BACKENDS = {
 }
 
 ARCHIVE_SPECS = {
-    'tar' : ('application/x-tar', '.tar'),
+    'tar': ('application/x-tar', '.tar'),
     'tbz2': ('application/x-bzip2', '.tar.bz2'),
     'tgz': ('application/x-gzip', '.tar.gz'),
     'zip': ('application/zip', '.zip'),
 }
+
 
 def get_repo(path, alias=None, create=False):
     """
@@ -41,6 +42,7 @@ def get_repo(path, alias=None, create=False):
     repo = backend(path, create=create)
     return repo
 
+
 def get_backend(alias):
     """
     Returns ``Repository`` class identified by the given alias or raises
@@ -53,9 +55,9 @@ def get_backend(alias):
     klass = import_class(backend_path)
     return klass
 
+
 def get_supported_backends():
     """
     Returns list of aliases of supported backends.
     """
     return BACKENDS.keys()
-
