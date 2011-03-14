@@ -5,6 +5,7 @@ import zipfile
 import datetime
 import tempfile
 import unittest2
+import StringIO
 from base import BackendTestMixin
 from conf import SCM_TESTS
 from vcs.exceptions import VCSError
@@ -67,6 +68,12 @@ class ArchivesTestCaseMixin(BackendTestMixin):
             self.assertEqual(
                 open(os.path.join(outdir, 'repo/' + node_path)).read(),
                 self.tip.get_node(node_path).content)
+
+    def test_archive_default_stream(self):
+        default_archive = self.tip.get_archive()
+        mystream = StringIO.StringIO()
+        my_archive = self.tip.get_archive(stream=mystream)
+        self.assertEqual(default_archive.read(), my_archive.read())
 
     def test_archive_wrong_kind(self):
         with self.assertRaises(VCSError):
