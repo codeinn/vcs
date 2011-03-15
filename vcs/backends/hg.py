@@ -54,8 +54,8 @@ class MercurialRepository(BaseRepository):
     """
     DEFAULT_BRANCH_NAME = 'default'
 
-    def __init__(self, repo_path, create=False, baseui=None, src_url=None,
-                 update_after_clone=False):
+    def __init__(self, repo_path, create = False, baseui = None, src_url = None,
+                 update_after_clone = False):
         """
         Raises RepositoryError if repository could not be find at the given
         ``repo_path``.
@@ -112,7 +112,7 @@ class MercurialRepository(BaseRepository):
         sortkey = lambda ctx: ctx[0]  # sort by name
         _branches = [(n, hex(h),) for n, h in _branchtags(self._repo).items()]
 
-        return OrderedDict(sorted(_branches, key=sortkey, reverse=False))
+        return OrderedDict(sorted(_branches, key = sortkey, reverse = False))
 
     @LazyProperty
     def tags(self):
@@ -127,9 +127,9 @@ class MercurialRepository(BaseRepository):
         sortkey = lambda ctx: ctx[0]  # sort by name
         _tags = [(n, hex(h),) for n, h in self._repo.tags().items()]
 
-        return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
+        return OrderedDict(sorted(_tags, key = sortkey, reverse = True))
 
-    def tag(self, name, user, revision=None, message=None, date=None, **kwargs):
+    def tag(self, name, user, revision = None, message = None, date = None, **kwargs):
         """
         Creates and returns a tag for the given ``revision``.
 
@@ -163,9 +163,9 @@ class MercurialRepository(BaseRepository):
         self.tags = self._get_tags()
         tag_id = self.tags[name]
 
-        return self.get_changeset(revision=tag_id)
+        return self.get_changeset(revision = tag_id)
 
-    def remove_tag(self, name, user, message=None, date=None):
+    def remove_tag(self, name, user, message = None, date = None):
         """
         Removes tag with the given ``name``.
 
@@ -195,9 +195,9 @@ class MercurialRepository(BaseRepository):
         nodemap = self._repo.changelog.nodemap
 
         sortkey = self._repo.changelog.nodemap.get
-        return map(hex, sorted(nodemap, key=sortkey))[1:]
+        return map(hex, sorted(nodemap, key = sortkey))[1:]
 
-    def _get_repo(self, create, src_url=None, update_after_clone=False):
+    def _get_repo(self, create, src_url = None, update_after_clone = False):
         """
         Function will check for mercurial repository in given path and return
         a localrepo object. If there is no repository in that path it will raise
@@ -219,7 +219,7 @@ class MercurialRepository(BaseRepository):
                     raise Abort("Got HTTP 404 error")
                 # Don't try to create if we've already cloned repo
                 create = False
-            return localrepository(self.baseui, self.path, create=create)
+            return localrepository(self.baseui, self.path, create = create)
         except (Abort, RepoError), err:
             if create:
                 msg = "Cannot create repository at %s. Original error was %s"\
@@ -237,7 +237,7 @@ class MercurialRepository(BaseRepository):
     def description(self):
         undefined_description = 'unknown'
         return self._repo.ui.config('web', 'description',
-                                   undefined_description, untrusted=True)
+                                   undefined_description, untrusted = True)
 
     @LazyProperty
     def contact(self):
@@ -265,7 +265,7 @@ class MercurialRepository(BaseRepository):
                 return os.stat(st_path).st_mtime
 
     def _get_hidden(self):
-        return self._repo.ui.configbool("web", "hidden", untrusted=True)
+        return self._repo.ui.configbool("web", "hidden", untrusted = True)
 
     def _get_revision(self, revision):
         """
@@ -289,11 +289,11 @@ class MercurialRepository(BaseRepository):
                                     % (revision, self))
         return revision
 
-    def _get_archives(self, archive_name='tip'):
-        allowed = self.baseui.configlist("web", "allow_archive", untrusted=True)
+    def _get_archives(self, archive_name = 'tip'):
+        allowed = self.baseui.configlist("web", "allow_archive", untrusted = True)
         for i in [('zip', '.zip'), ('gz', '.tar.gz'), ('bz2', '.tar.bz2')]:
             if i[0] in allowed or self._repo.ui.configbool("web", "allow" + i[0],
-                                                untrusted=True):
+                                                untrusted = True):
                 yield {"type": i[0], "extension": i[1], "node": archive_name}
 
     def _get_url(self, url):
@@ -306,17 +306,17 @@ class MercurialRepository(BaseRepository):
             url = '://'.join(('file', url))
         return url
 
-    def get_changeset(self, revision=None):
+    def get_changeset(self, revision = None):
         """
         Returns ``MercurialChangeset`` object representing repository's
         changeset at the given ``revision``.
         """
         revision = self._get_revision(revision)
-        changeset = MercurialChangeset(repository=self, revision=revision)
+        changeset = MercurialChangeset(repository = self, revision = revision)
         return changeset
 
-    def get_changesets(self, start=None, end=None, start_date=None,
-                       end_date=None, branch_name=None, reverse=False):
+    def get_changesets(self, start = None, end = None, start_date = None,
+                       end_date = None, branch_name = None, reverse = False):
         """
         Returns iterator of ``MercurialChangeset`` objects from start to end
         This should behave just like a list, ie. end is not inclusive
@@ -367,34 +367,47 @@ class MercurialRepository(BaseRepository):
             raise RepositoryError(str(err))
 
     def serve(self):
+        return MercurialServer(self._repo, self.baseui)
+
+
+class MercurialServer(object):
+    """
+    Mercurial Repository Server.
+    """
+    def __init__(self, repository, ui):
+
         #Create the server
-        app = hgweb.hgweb(self._repo.root, self.baseui)
-        httpd = hgweb.server.create_server(self.baseui, app)
+        app = hgweb.hgweb(repository.root, ui)
+        self.httpd = hgweb.server.create_server(ui, app)
 
         #Compute address
-        if httpd.prefix:
-            prefix = httpd.prefix.strip('/') + '/'
+        if self.httpd.prefix:
+            self.prefix = self.httpd.prefix.strip('/') + '/'
         else:
-            prefix = ''
+            self.prefix = ''
 
-        port = ':%d' % httpd.port
-        if port == ':80':
-            port = ''
+        self.port = ':%d' % self.httpd.port
+        if self.port == ':80':
+            self.port = ''
 
-        fqaddr = httpd.fqaddr
-        if ':' in fqaddr:
-            fqaddr = '[%s]' % fqaddr
+        self.fqaddr = self.httpd.fqaddr
+        if ':' in self.fqaddr:
+            self.fqaddr = '[%s]' % fqaddr
 
-        httpd.http_address = 'http://%s%s/%s' % (fqaddr, port, prefix)
+        self.http_address = 'http://%s%s/%s' % (self.fqaddr, self.port,
+                                                self.prefix)
 
         #Start server
-        self.thread_server = threading.Thread(target = httpd.serve_forever)
+        self.thread_server = threading.Thread(target = self.httpd.serve_forever)
         self.thread_server.start()
 
-        return httpd
-
-
-
+    def shutdown(self):
+        """
+        Ask server to stop
+        """
+        self.httpd.shutdown()
+        print "Thread server", self.thread_server
+        self.thread_server.join()
 
 class MercurialChangeset(BaseChangeset):
     """
@@ -469,7 +482,7 @@ class MercurialChangeset(BaseChangeset):
         return [self.repository.get_changeset(parent.rev())
                 for parent in self._ctx.parents() if parent.rev() >= 0]
 
-    def next(self, branch=None):
+    def next(self, branch = None):
 
         if branch and self.branch != branch:
             raise VCSError('Branch option used on changeset not belonging '
@@ -490,7 +503,7 @@ class MercurialChangeset(BaseChangeset):
 
         return _next(self, branch)
 
-    def prev(self, branch=None):
+    def prev(self, branch = None):
         if branch and self.branch != branch:
             raise VCSError('Branch option used on changeset not belonging '
                            'to that branch')
@@ -597,7 +610,7 @@ class MercurialChangeset(BaseChangeset):
 
         return annotate
 
-    def get_archive(self, stream=None, kind='tgz', prefix=None):
+    def get_archive(self, stream = None, kind = 'tgz', prefix = None):
         """
         Returns archived changeset contents, as stream. Default stream is
         tempfile as for *huge* changesets we could eat memory.
@@ -633,7 +646,7 @@ class MercurialChangeset(BaseChangeset):
             raise VCSError("Prefix cannot be empty")
 
         archival.archive(self.repository._repo, stream, self.raw_id,
-                         kind, prefix=prefix)
+                         kind, prefix = prefix)
 
         if stream.closed and temppath:
             return open(temppath, 'rb')
@@ -654,11 +667,11 @@ class MercurialChangeset(BaseChangeset):
             raise ChangesetError("Directory does not exist for revision %r at "
                 " %r" % (self.revision, path))
         path = self._fix_path(path)
-        filenodes = [FileNode(f, changeset=self) for f in self._file_paths
+        filenodes = [FileNode(f, changeset = self) for f in self._file_paths
             if os.path.dirname(f) == path]
         dirs = path == '' and '' or [d for d in self._dir_paths
             if d and posixpath.dirname(d) == path]
-        dirnodes = [DirNode(d, changeset=self) for d in dirs
+        dirnodes = [DirNode(d, changeset = self) for d in dirs
             if os.path.dirname(d) == path]
         nodes = dirnodes + filenodes
         # cache nodes
@@ -677,12 +690,12 @@ class MercurialChangeset(BaseChangeset):
         path = self._fix_path(path)
         if not path in self.nodes:
             if path in self._file_paths:
-                node = FileNode(path, changeset=self)
+                node = FileNode(path, changeset = self)
             elif path in self._dir_paths or path in self._dir_paths:
                 if path == '':
-                    node = RootNode(changeset=self)
+                    node = RootNode(changeset = self)
                 else:
-                    node = DirNode(path, changeset=self)
+                    node = DirNode(path, changeset = self)
             else:
                 raise NodeDoesNotExistError("There is no file nor directory "
                     "at the given path: %r at revision %r"
@@ -722,7 +735,7 @@ class MercurialChangeset(BaseChangeset):
 
 class MercurialInMemoryChangeset(BaseInMemoryChangeset):
 
-    def commit(self, message, author, parents=None, branch=None, date=None,
+    def commit(self, message, author, parents = None, branch = None, date = None,
             **kwargs):
         """
         Performs in-memory commit (doesn't check workdir in any way) and returns
@@ -760,20 +773,20 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
             # check if this path is added
             for node in self.added:
                 if node.path == path:
-                    return memfilectx(path=node.path,
-                        data=node.content,
-                        islink=False,
-                        isexec=node.is_executable,
-                        copied=False)
+                    return memfilectx(path = node.path,
+                        data = node.content,
+                        islink = False,
+                        isexec = node.is_executable,
+                        copied = False)
 
             # or changed
             for node in self.changed:
                 if node.path == path:
-                    return memfilectx(path=node.path,
-                        data=node.content,
-                        islink=False,
-                        isexec=node.is_executable,
-                        copied=False)
+                    return memfilectx(path = node.path,
+                        data = node.content,
+                        islink = False,
+                        isexec = node.is_executable,
+                        copied = False)
 
             raise RepositoryError("Given path haven't been marked as added,"
                 "changed or removed (%s)" % path)
@@ -786,14 +799,14 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         if date and isinstance(date, datetime.datetime):
             date = date.ctime()
 
-        commit_ctx = memctx(repo=self.repository._repo,
-            parents=parents,
-            text='',
-            files=self.get_paths(),
-            filectxfn=filectxfn,
-            user=author,
-            date=date,
-            extra=kwargs)
+        commit_ctx = memctx(repo = self.repository._repo,
+            parents = parents,
+            text = '',
+            files = self.get_paths(),
+            filectxfn = filectxfn,
+            user = author,
+            date = date,
+            extra = kwargs)
 
         # injecting given _repo params
         commit_ctx._text = message
@@ -808,7 +821,7 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         # new_tip = self.repository.get_changeset(new_ctx.hex())
         new_id = hex(n)
         self.repository.revisions.append(new_id)
-        self._repo = self.repository._get_repo(create=False)
+        self._repo = self.repository._get_repo(create = False)
         tip = self.repository.get_changeset()
         self.reset()
         return tip

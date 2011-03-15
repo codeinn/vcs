@@ -26,7 +26,7 @@ class MercurialRepositoryTest(unittest2.TestCase):
         self.__check_for_existing_repo()
         repo = MercurialRepository(TEST_HG_REPO)
         repo_clone = MercurialRepository(TEST_HG_REPO_CLONE,
-            src_url=TEST_HG_REPO, update_after_clone=True)
+            src_url = TEST_HG_REPO, update_after_clone = True)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
         # Checking hashes of changesets should be enough
         for changeset in repo.get_changesets():
@@ -36,7 +36,7 @@ class MercurialRepositoryTest(unittest2.TestCase):
     def test_repo_clone_with_update(self):
         repo = MercurialRepository(TEST_HG_REPO)
         repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_w_update',
-            src_url=TEST_HG_REPO, update_after_clone=True)
+            src_url = TEST_HG_REPO, update_after_clone = True)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
 
         #check if current workdir was updated
@@ -48,7 +48,7 @@ class MercurialRepositoryTest(unittest2.TestCase):
     def test_repo_clone_without_update(self):
         repo = MercurialRepository(TEST_HG_REPO)
         repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_wo_update',
-            src_url=TEST_HG_REPO, update_after_clone=False)
+            src_url = TEST_HG_REPO, update_after_clone = False)
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
         self.assertEqual(os.path.isfile(os.path.join(TEST_HG_REPO_CLONE \
                                                     + '_wo_update',
@@ -59,7 +59,7 @@ class MercurialRepositoryTest(unittest2.TestCase):
             self.fail('Cannot test mercurial pull command as location %s '
                       'already exists. You should manually remove it first'
                       % TEST_HG_REPO_PULL)
-        repo_new = MercurialRepository(TEST_HG_REPO_PULL, create=True)
+        repo_new = MercurialRepository(TEST_HG_REPO_PULL, create = True)
         self.assertTrue(len(self.repo.revisions) > len(repo_new.revisions))
 
         repo_new.pull(self.repo.path)
@@ -71,13 +71,13 @@ class MercurialRepositoryTest(unittest2.TestCase):
             self.fail('Cannot test mercurial pull command as location %s '
                       'already exists. You should manually remove it first'
                       % TEST_HG_REPO_SERVE)
-        repo_new = MercurialRepository(TEST_HG_REPO_SERVE, create=True)
+        repo_new = MercurialRepository(TEST_HG_REPO_SERVE, create = True)
         self.assertTrue(len(self.repo.revisions) > len(repo_new.revisions))
 
         server = self.repo.serve()
         repo_new.pull(server.http_address)
         server.shutdown()
-        
+
         repo_new = MercurialRepository(TEST_HG_REPO_SERVE)
         self.assertTrue(len(self.repo.revisions) == len(repo_new.revisions))
 
@@ -161,7 +161,7 @@ class MercurialRepositoryTest(unittest2.TestCase):
         self.assertEqual(sorted(init_chset._dir_paths),
             sorted(['', 'vcs', 'vcs/backends']))
 
-        self.assertRaises(NodeDoesNotExistError, init_chset.get_node, path='foobar')
+        self.assertRaises(NodeDoesNotExistError, init_chset.get_node, path = 'foobar')
 
         node = init_chset.get_node('vcs/')
         self.assertTrue(hasattr(node, 'kind'))
@@ -229,7 +229,7 @@ class MercurialChangesetTest(unittest2.TestCase):
     def test_default_changeset(self):
         tip = self.repo.get_changeset('tip')
         self.assertEqual(tip, self.repo.get_changeset())
-        self.assertEqual(tip, self.repo.get_changeset(revision=None))
+        self.assertEqual(tip, self.repo.get_changeset(revision = None))
         self.assertEqual(tip, list(self.repo[-1:])[0])
 
     def test_root_node(self):
@@ -504,7 +504,7 @@ class MercurialChangesetTest(unittest2.TestCase):
 
     def test_archival_wrong_kind(self):
         tip = self.repo.get_changeset()
-        self.assertRaises(VCSError, tip.get_archive, kind='error')
+        self.assertRaises(VCSError, tip.get_archive, kind = 'error')
 
     def test_archival_empty_prefix(self):
         #TODO:
