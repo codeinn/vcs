@@ -151,6 +151,8 @@ class DiffProcessor(object):
         if len(output) == 1:
             return  map(lambda x: x.decode('utf8', 'replace'),
                         output[0].splitlines(1))
+        if len(output) == 0:
+            return []
         raise Exception('wrong size of diff %s' % len(output))
 
     def _highlight_line_difflib(self, line, next):
