@@ -29,8 +29,8 @@ class ArchivesTestCaseMixin(BackendTestMixin):
 
     def test_archive_zip(self):
         path = tempfile.mkstemp()[1]
-        azipfile = open(path, 'w+b')
-        self.tip.get_archive(stream=azipfile, kind='zip', prefix='repo')
+        with open(path, 'wb') as f:
+            self.tip.get_archive(stream=f, kind='zip', prefix='repo')
         out = zipfile.ZipFile(path)
         
         for x in xrange(5):
@@ -41,8 +41,8 @@ class ArchivesTestCaseMixin(BackendTestMixin):
 
     def test_archive_tgz(self):
         path = tempfile.mkstemp()[1]
-        arch = open(path, 'w+b')
-        self.tip.get_archive(stream=arch, kind='tgz', prefix='repo')
+        with open(path, 'wb') as f:
+            self.tip.get_archive(stream=f, kind='tgz', prefix='repo')
         outdir = tempfile.mkdtemp()
 
         outfile = tarfile.open(path, 'r|gz')
@@ -56,8 +56,8 @@ class ArchivesTestCaseMixin(BackendTestMixin):
 
     def test_archive_tbz2(self):
         path = tempfile.mkstemp()[1]
-        arch = open(path, 'w+b')
-        self.tip.get_archive(stream=arch, kind='tbz2', prefix='repo')
+        with open(path, 'w+b') as f:
+            self.tip.get_archive(stream=f, kind='tbz2', prefix='repo')
         outdir = tempfile.mkdtemp()
 
         outfile = tarfile.open(path, 'r|bz2')
@@ -70,10 +70,14 @@ class ArchivesTestCaseMixin(BackendTestMixin):
                 self.tip.get_node(node_path).content)
 
     def test_archive_default_stream(self):
-        default_archive = self.tip.get_archive()
+        tmppath = tempfile.mkstemp()[1]
+        with open(tmppath, 'w') as stream:
+            self.tip.get_archive(stream=stream)
         mystream = StringIO.StringIO()
-        my_archive = self.tip.get_archive(stream=mystream)
-        self.assertEqual(default_archive.read(), my_archive.read())
+        self.tip.get_archive(stream=mystream)
+        mystream.seek(0)
+        with open(tmppath, 'r') as f:
+            self.assertEqual(f.read(), mystream.read())
 
     def test_archive_wrong_kind(self):
         with self.assertRaises(VCSError):

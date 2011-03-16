@@ -609,12 +609,14 @@ class MercurialChangeset(BaseChangeset):
                          kind, prefix=prefix)
 
         if stream.closed and temppath:
-            return open(temppath, 'rb')
+            stream = open(temppath, 'rb')
         elif stream.closed and hasattr(stream, 'name'):
-            return open(stream.name, 'rb')
+            stream = open(stream.name, 'rb')
+        elif hasattr(stream, 'mode') and 'r' not in stream.mode:
+            stream = open(stream.name, 'rb')
         else:
             stream.seek(0)
-            return stream
+        return stream
 
     def get_nodes(self, path):
         """
