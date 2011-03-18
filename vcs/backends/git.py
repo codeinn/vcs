@@ -12,6 +12,7 @@
 import os
 import re
 import time
+import StringIO
 import datetime
 import posixpath
 import tempfile
@@ -611,19 +612,19 @@ class GitChangeset(BaseChangeset):
         if stream is None:
             arch_path = tempfile.mkstemp()[1]
             cmd += ' > %s' % arch_path
-            stream = PIPE
         else:
             arch_path = None
 
-        popen = Popen(cmd, stdout=stream, stderr=PIPE, shell=True,
+        popen = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True,
             cwd=self.repository.path)
-        popen.communicate()[0]
-        if arch_path:
-            try:
-                stream = open(arch_path, 'r')
-            except (OSError, IOError):
-                raise
-        return stream
+
+        buffer_size = 1024 * 8
+        chunk = popen.stdout.read(buffer_size)
+        while chunk:
+            stream.write(chunk)
+            chunk = popen.stdout.read(buffer_size)
+        # Make sure all descriptors would be read
+        popen.communicate()
 
     def get_nodes(self, path):
         if self._get_kind(path) != NodeKind.DIR:
