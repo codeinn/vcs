@@ -379,7 +379,6 @@ class MercurialChangeset(BaseChangeset):
         self.raw_id = revision
         self._ctx = repository._repo[revision]
         self.revision = self._ctx._rev
-        self._fctx = {}
         self.nodes = {}
 
     @LazyProperty
@@ -509,9 +508,7 @@ class MercurialChangeset(BaseChangeset):
         if self._get_kind(path) != NodeKind.FILE:
             raise ChangesetError("File does not exist for revision %r at "
                 " %r" % (self.revision, path))
-        if not path in self._fctx:
-            self._fctx[path] = self._ctx[path]
-        return self._fctx[path]
+        return self._ctx.filectx(path)
 
     def get_file_mode(self, path):
         """

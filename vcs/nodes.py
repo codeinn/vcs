@@ -299,6 +299,7 @@ class FileNode(Node):
 
     @LazyProperty
     def mimetype(self):
+
         """
         Mimetype is calculated based on the file's content. If ``_mimetype``
         attribute is available, it will be returned (backends which store
@@ -309,13 +310,7 @@ class FileNode(Node):
             return self._mimetype
 
         mtype = mimetypes.guess_type(self.name)[0]
-
-        if mtype is None:
-            if self.is_binary:
-                mtype = 'application/octet-stream'
-            else:
-                mtype = 'text/plain'
-        return mtype
+        return mtype or 'application/octet-stream'
 
     @LazyProperty
     def mimetype_main(self):
