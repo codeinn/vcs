@@ -249,7 +249,6 @@ class FileNode(Node):
         self.changeset = changeset
         self._content = content
         self._mode = mode or 0100644
-        self._binary_flag = None
 
     @LazyProperty
     def mode(self):
@@ -273,10 +272,9 @@ class FileNode(Node):
             content = self.changeset.get_file_content(self.path)
         else:
             content = self._content
+
         if bool(content and '\0' in content):
-            self._binary_flag = True
             return content
-        self._binary_flag = False
         return safe_unicode(content)
 
     @LazyProperty
@@ -312,7 +310,13 @@ class FileNode(Node):
             return self._mimetype
 
         mtype = mimetypes.guess_type(self.name)[0]
-        return mtype or 'application/octet-stream'
+
+        if mtype is None:
+            if self.is_binary:
+                mtype = 'application/octet-stream'
+            else:
+                mtype = 'text/plain'
+        return mtype
 
     @LazyProperty
     def mimetype_main(self):
@@ -373,7 +377,8 @@ class FileNode(Node):
         """
         Returns True if file has binary content.
         """
-        return bool(self.content and self._binary_flag)
+        bin = '\0' in self.changeset.get_file_content(self.path)
+        return bin
 
     @LazyProperty
     def extension(self):
