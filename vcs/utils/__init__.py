@@ -24,20 +24,20 @@ def date_fromtimestamp(unixts, tzoffset=0):
     return datetime.datetime(*time.gmtime(float(unixts) - tzoffset)[:6])
 
 
-def safe_unicode(str):
+def safe_unicode(s):
     """
     safe unicode function. In case of UnicodeDecode error we try to return
-    unicode with errors replace, if this failes we return unicode with
+    unicode with errors replace, if this fails we return unicode with
     string_escape decoding
     """
 
     try:
-        u_str = unicode(str)
+        u_str = unicode(s)
     except UnicodeDecodeError:
         try:
-            u_str = unicode(str, 'utf-8', 'replace')
+            u_str = unicode(s, 'utf-8', 'replace')
         except UnicodeDecodeError:
             # In case we have a decode error just represent as byte string
-            u_str = unicode(str(str).encode('string_escape'))
+            u_str = unicode(str(s).encode('string_escape'))
 
     return u_str
