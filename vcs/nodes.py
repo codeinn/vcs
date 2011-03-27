@@ -377,7 +377,10 @@ class FileNode(Node):
         """
         Returns True if file has binary content.
         """
-        bin = '\0' in self.changeset.get_file_content(self.path)
+        if self.changeset:
+            bin = '\0' in self.changeset.get_file_content(self.path)
+        else:
+            bin = False
         return bin
 
     @LazyProperty
