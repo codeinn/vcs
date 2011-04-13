@@ -91,6 +91,8 @@ class DiffProcessor(object):
 
         self.__udiff = diff
         self.__format = format
+        self.adds = 0
+        self.removes = 0
 
         if isinstance(self.__udiff, basestring):
             self.lines = iter(self.__udiff.splitlines(1))
@@ -141,16 +143,22 @@ class DiffProcessor(object):
         return None, None, None
 
     def _parse_gitdiff(self, diffiterator):
+        def line_decoder(l):
+            if l.startswith('+') and not l.startswith('+++'):
+                self.adds += 1
+            elif l.startswith('-') and not l.startswith('---'):
+                self.removes += 1
+            return l.decode('utf8', 'replace')
 
         output = list(diffiterator)
+
         if len(output) == 2:
             l = []
-            l.extend(output[0])
+            l.extend([output[0]])
             l.extend(output[1].splitlines(1))
-            return map(lambda x: x.decode('utf8', 'replace'), l)
+            return map(line_decoder, l)
         if len(output) == 1:
-            return  map(lambda x: x.decode('utf8', 'replace'),
-                        output[0].splitlines(1))
+            return  map(line_decoder, output[0].splitlines(1))
         if len(output) == 0:
             return []
         raise Exception('wrong size of diff %s' % len(output))
@@ -441,3 +449,9 @@ class DiffProcessor(object):
         if _html_empty:
             return None
         return _html
+
+    def stat(self):
+        """
+        Returns tuple of adde,and removed lines for this instance
+        """
+        return self.adds, self.removes
