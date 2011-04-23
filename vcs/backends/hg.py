@@ -488,10 +488,15 @@ class MercurialChangeset(BaseChangeset):
     def _fix_path(self, path):
         """
         Paths are stored without trailing slash so we need to get rid off it if
-        needed.
+        needed. Also mercurial keeps filenodes as str so we need to decode
+        from unicode to str
         """
         if path.endswith('/'):
             path = path.rstrip('/')
+
+        if isinstance(path, unicode):
+            path = path.encode('utf-8')
+
         return path
 
     def _get_kind(self, path):
@@ -505,6 +510,7 @@ class MercurialChangeset(BaseChangeset):
                 % (path))
 
     def _get_filectx(self, path):
+        path = self._fix_path(path)
         if self._get_kind(path) != NodeKind.FILE:
             raise ChangesetError("File does not exist for revision %r at "
                 " %r" % (self.revision, path))
@@ -644,8 +650,7 @@ class MercurialChangeset(BaseChangeset):
         Returns ``Node`` object from the given ``path``. If there is no node at
         the given ``path``, ``ChangesetError`` would be raised.
         """
-        if isinstance(path, unicode):
-            path = path.encode('utf-8')
+
         path = self._fix_path(path)
         if not path in self.nodes:
             if path in self._file_paths:
