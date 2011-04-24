@@ -262,7 +262,7 @@ class FileNode(Node):
             mode = self._mode
         return mode
 
-    @LazyProperty
+    @property
     def content(self):
         """
         Returns lazily content of the FileNode. If possible, would try to
@@ -372,15 +372,12 @@ class FileNode(Node):
         else:
             return NodeState.NOT_CHANGED
 
-    @LazyProperty
+    @property
     def is_binary(self):
         """
         Returns True if file has binary content.
         """
-        if self.changeset:
-            bin = '\0' in self.changeset.get_file_content(self.path)
-        else:
-            bin = False
+        bin = '\0' in self.content
         return bin
 
     @LazyProperty
