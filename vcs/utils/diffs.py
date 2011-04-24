@@ -1,17 +1,21 @@
 # -*- coding: utf-8 -*-
 # original copyright: 2007-2008 by Armin Ronacher
 # licensed under the BSD license.
+
+import re
+import difflib
+import logging
+
 from difflib import unified_diff
+from itertools import tee,imap
+
 from mercurial import patch
 from mercurial.mdiff import diffopts
 from mercurial.match import match
-from itertools import tee
+
 from vcs.exceptions import VCSError
 from vcs.nodes import FileNode, NodeError
-import difflib
-import logging
-import re
-from itertools import imap
+from vcs.backends.hg import MercurialRepository
 
 
 def get_udiff(filenode_old, filenode_new):
@@ -66,11 +70,16 @@ def get_gitdiff(filenode_old, filenode_new):
 
     file_filter = match(root, '', [filenode_new.path])
 
-    vcs_gitdiff = patch.diff(repo._repo,
-                      old_raw_id,
-                      new_raw_id,
-                      match=file_filter,
-                      opts=diffopts(git=True))
+    if isinstance(repo, MercurialRepository):
+
+        vcs_gitdiff = patch.diff(repo._repo,
+                          old_raw_id,
+                          new_raw_id,
+                          match=file_filter,
+                          opts=diffopts(git=True))
+
+    else:
+        vcs_gitdiff = repo._get_diff(old_raw_id, new_raw_id, filenode_new.path)
 
     return vcs_gitdiff
 
@@ -88,6 +97,8 @@ class DiffProcessor(object):
         :param diff:   a text in diff format or generator
         :param format: format of diff passed, `udiff` or `gitdiff`
         """
+        if isinstance(diff, basestring):
+            diff = [diff]
 
         self.__udiff = diff
         self.__format = format
@@ -151,17 +162,19 @@ class DiffProcessor(object):
             return l.decode('utf8', 'replace')
 
         output = list(diffiterator)
+        size = len(output)
 
-        if len(output) == 2:
+        if size == 2:
             l = []
             l.extend([output[0]])
             l.extend(output[1].splitlines(1))
             return map(line_decoder, l)
-        if len(output) == 1:
+        elif size == 1:
             return  map(line_decoder, output[0].splitlines(1))
-        if len(output) == 0:
+        elif size == 0:
             return []
-        raise Exception('wrong size of diff %s' % len(output))
+
+        raise Exception('wrong size of diff %s' % size)
 
     def _highlight_line_difflib(self, line, next):
         """
@@ -203,7 +216,7 @@ class DiffProcessor(object):
             start += 1
         end = -1
         limit -= start
-        while - end <= limit and line['line'][end] == next['line'][end]:
+        while -end <= limit and line['line'][end] == next['line'][end]:
             end -= 1
         end += 1
         if start or end:
