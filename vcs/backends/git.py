@@ -97,6 +97,13 @@ class GitRepository(BaseRepository):
                 "stderr:\n%s" % (cmd, se))
         return so, se
 
+
+    def _get_diff(self, rev1, rev2, path):
+        cmd = 'diff %s %s %s' % (rev1, rev2, path)
+        so, se = self.run_git_command(cmd)
+
+        return so
+
     def _get_repo(self, create, src_url=None, update_after_clone=False):
         if create and os.path.exists(self.path):
             raise RepositoryError("Location already exist")
@@ -131,30 +138,34 @@ class GitRepository(BaseRepository):
         For git backend we always return integer here. This way we ensure
         that changset's revision attribute would become integer.
         """
+        pattern = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
+
         if len(self.revisions) == 0:
             raise EmptyRepositoryError("There are no changesets yet")
+
         if revision in (None, 'tip', 'HEAD', 'head', -1):
-            #return self.revisions[-1]
-            revision = len(self.revisions) - 1
-        if isinstance(revision, (str, unicode)) and revision.isdigit() \
-            and len(revision) < 12:
-            revision = int(revision)
-        if isinstance(revision, int) and (
-            revision < 0 or revision >= len(self.revisions)):
+            revision = self.revisions[-1]
+
+        if (isinstance(revision, (str, unicode)) and revision.isdigit() \
+            and len(revision) < 12) or isinstance(revision, int):
+            try:
+                revision = self.revisions[int(revision)]
+            except:
                 raise ChangesetDoesNotExistError("Revision %r does not exist "
                     "for this repository %s" % (revision, self))
+
         elif isinstance(revision, (str, unicode)):
-            pattern = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
             if not pattern.match(revision):
                 raise ChangesetDoesNotExistError("Revision %r does not exist "
                     "for this repository %s" % (revision, self))
             try:
-                revision = self.revisions.index(revision)
+                revision = self.revisions[self.revisions.index(revision)]
             except ValueError:
                 raise ChangesetDoesNotExistError("Revision %r does not exist "
                     "for this repository %s" % (revision, self))
-        # Ensure we return integer
-        if not isinstance(revision, int):
+
+        # Ensure we return full id
+        if not pattern.match(str(revision)):
             raise ChangesetDoesNotExistError("Given revision %r not recognized"
                 % revision)
         return revision
@@ -312,24 +323,15 @@ class GitRepository(BaseRepository):
           ``end`` could not be found.
 
         """
-        if start is not None:
-            try:
-                start = self.revisions.index(start)
-            except ValueError:
-                raise ChangesetDoesNotExistError("Changeset for revision '%s' "
-                    "could not be found" % start)
-        if end is not None:
-            # If last changeset is specified, include it
-            try:
-                end = self.revisions.index(end) + 1
-            except ValueError:
-                raise ChangesetDoesNotExistError("Changeset for revision '%s' "
-                    "could not be found" % end)
+        start_raw_id = self._get_revision(start)
+        start_pos = self.revisions.index(start_raw_id) if start else None
+        end_raw_id = self._get_revision(end)
+        end_pos = self.revisions.index(end_raw_id) + 1  if end else None
 
-        if start and end and start > end:
+        if (start_pos and end_pos) and start_pos > end_pos:
             raise RepositoryError('start cannot be after end')
 
-        revs = self.revisions[start:end]
+        revs = self.revisions[start_pos:end_pos]
 
         if reverse:
             revs = reversed(revs)
@@ -383,8 +385,9 @@ class GitChangeset(BaseChangeset):
     def __init__(self, repository, revision):
         self._stat_modes = {}
         self.repository = repository
-        self.revision = repository._get_revision(revision)
-        self.raw_id = self.repository.revisions[revision]
+        self.raw_id = revision
+        self.revision = repository.revisions.index(revision)
+
         self.short_id = self.raw_id[:12]
         self.id = self.raw_id
         try:
@@ -393,7 +396,7 @@ class GitChangeset(BaseChangeset):
             raise RepositoryError("Cannot get object with id %s" % self.raw_id)
         self._commit = commit
         self._tree_id = commit.tree
-        self.author = safe_unicode(commit.committer)
+
         try:
             self.message = safe_unicode(commit.message[:-1])
             # Always strip last eol
@@ -402,11 +405,25 @@ class GitChangeset(BaseChangeset):
                 or 'utf-8')
         #self.branch = None
         self.tags = []
-        self.date = date_fromtimestamp(commit.commit_time,
-                                       commit.commit_timezone)
         #tree = self.repository.get_object(self._tree_id)
         self.nodes = {}
         self._paths = {}
+
+    @LazyProperty
+    def author(self):
+        return safe_unicode(self._commit.committer)
+
+    @LazyProperty
+    def date(self):
+        return date_fromtimestamp(self._commit.commit_time,
+                                  self._commit.commit_timezone)
+
+    @LazyProperty
+    def status(self):
+        """
+        Returns modified, added, removed, deleted files for current changeset
+        """
+        return self.changed, self.added, self.removed
 
     @LazyProperty
     def branch(self):
@@ -504,6 +521,50 @@ class GitChangeset(BaseChangeset):
         """
         return [self.repository.get_changeset(parent)
             for parent in self._commit.parents]
+
+    def next(self, branch=None):
+
+        if branch and self.branch != branch:
+            raise VCSError('Branch option used on changeset not belonging '
+                           'to that branch')
+
+        def _next(changeset, branch):
+            try:
+                next_ = changeset.revision + 1
+                next_rev = changeset.repository.revisions[next_]
+            except IndexError:
+                raise ChangesetDoesNotExistError
+            cs = changeset.repository.get_changeset(next_rev)
+
+            if branch and branch != cs.branch:
+                return _next(cs, branch)
+
+            return cs
+
+        return _next(self, branch)
+
+    def prev(self, branch=None):
+        if branch and self.branch != branch:
+            raise VCSError('Branch option used on changeset not belonging '
+                           'to that branch')
+
+        def _prev(changeset, branch):
+            try:
+                prev_ = changeset.revision - 1
+                if prev_ < 0:
+                    raise IndexError
+                prev_rev = changeset.repository.revisions[prev_]
+            except IndexError:
+                raise ChangesetDoesNotExistError
+
+            cs = changeset.repository.get_changeset(prev_rev)
+
+            if branch and branch != cs.branch:
+                return _prev(cs, branch)
+
+            return cs
+
+        return _prev(self, branch)
 
     def get_file_mode(self, path):
         """
@@ -635,7 +696,7 @@ class GitChangeset(BaseChangeset):
         tree = self.repository._repo[id]
         dirnodes = []
         filenodes = []
-        for stat, name, id in tree.entries():
+        for name, stat, id in tree.iteritems():
             obj = self.repository._repo.get_object(id)
             if path != '':
                 obj_path = '/'.join((path, name))
@@ -684,6 +745,14 @@ class GitChangeset(BaseChangeset):
             # cache node
             self.nodes[path] = node
         return self.nodes[path]
+
+    @LazyProperty
+    def affected_files(self):
+        """
+        Get's a fast accessible file changes for given changeset
+        """
+
+        return self.added + self.changed
 
     @LazyProperty
     def added(self):

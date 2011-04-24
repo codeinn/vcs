@@ -321,10 +321,10 @@ class MercurialRepository(BaseRepository):
                        end_date=None, branch_name=None, reverse=False):
         """
         Returns iterator of ``MercurialChangeset`` objects from start to end
-        This should behave just like a list, ie. end is not inclusive
+        (both are inclusive)
 
-        :param start: None or str
-        :param end:  None or str
+        :param start: None, str, int or mercurial lookup format
+        :param end:  None, str, int or mercurial lookup format
         :param start_date:
         :param end_date:
         :param branch_name:
