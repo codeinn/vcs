@@ -108,7 +108,7 @@ class MercurialRepository(BaseRepository):
             return bt
 
         sortkey = lambda ctx: ctx[0]  # sort by name
-        _branches = [(n, hex(h),) for n, h in _branchtags(self._repo).items()]
+        _branches = [(safe_unicode(n), hex(h),) for n, h in _branchtags(self._repo).items()]
 
         return OrderedDict(sorted(_branches, key=sortkey, reverse=False))
 
@@ -123,7 +123,7 @@ class MercurialRepository(BaseRepository):
             return {}
 
         sortkey = lambda ctx: ctx[0]  # sort by name
-        _tags = [(n, hex(h),) for n, h in self._repo.tags().items()]
+        _tags = [(safe_unicode(n), hex(h),) for n, h in self._repo.tags().items()]
 
         return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
 
@@ -573,13 +573,11 @@ class MercurialChangeset(BaseChangeset):
 
         return annotate
 
-    def get_archive(self, stream=None, kind='tgz', prefix=None):
+    def fill_archive(self, stream=None, kind='tgz', prefix=None):
         """
-        Returns archived changeset contents, as stream. Default stream is
-        tempfile as for *huge* changesets we could eat memory.
+        Fills up given stream.
 
         :param stream: file like object.
-            Default: new ``tempfile.TemporaryFile`` instance.
         :param kind: one of following: ``zip``, ``tgz`` or ``tbz2``.
             Default: ``tgz``.
         :param prefix: name of root directory in archive.
@@ -587,7 +585,7 @@ class MercurialChangeset(BaseChangeset):
             (``repo-tip.<KIND>``).
 
         :raise ImproperArchiveTypeError: If given kind is wrong.
-
+        :raise VcsError: If given stream is None
         """
 
         allowed_kinds = ARCHIVE_SPECS.keys()
@@ -596,10 +594,8 @@ class MercurialChangeset(BaseChangeset):
                 'of %s', allowed_kinds)
 
         if stream is None:
-            temppath = tempfile.mkstemp()[1]
-            stream = open(temppath, 'wb')
-        else:
-            temppath = None
+            raise VCSError('You need to pass in a valid stream for filling'
+                           ' with archival data')
 
         if prefix is None:
             prefix = '%s-%s' % (self.repository.name, self.short_id)
@@ -611,15 +607,14 @@ class MercurialChangeset(BaseChangeset):
         archival.archive(self.repository._repo, stream, self.raw_id,
                          kind, prefix=prefix)
 
-        if stream.closed and temppath:
-            stream = open(temppath, 'rb')
-        elif stream.closed and hasattr(stream, 'name'):
+        #stream.close()
+
+        if stream.closed and hasattr(stream, 'name'):
             stream = open(stream.name, 'rb')
         elif hasattr(stream, 'mode') and 'r' not in stream.mode:
             stream = open(stream.name, 'rb')
         else:
             stream.seek(0)
-        return stream
 
     def get_nodes(self, path):
         """
@@ -719,7 +714,10 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         """
         self.check_integrity(parents)
 
-        author = safe_unicode(author)
+        if not isinstance(message, str) or not isinstance(author, str):
+            raise RepositoryError('Given message and author needs to be '
+                                  'an <str> instance')
+
         if branch is None:
             branch = MercurialRepository.DEFAULT_BRANCH_NAME
         kwargs['branch'] = branch
@@ -739,7 +737,7 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
             for node in self.added:
                 if node.path == path:
                     return memfilectx(path=node.path,
-                        data=node.content,
+                        data=node.content.encode('utf8'),
                         islink=False,
                         isexec=node.is_executable,
                         copied=False)
@@ -748,7 +746,7 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
             for node in self.changed:
                 if node.path == path:
                     return memfilectx(path=node.path,
-                        data=node.content,
+                        data=node.content.encode('utf8'),
                         islink=False,
                         isexec=node.is_executable,
                         copied=False)

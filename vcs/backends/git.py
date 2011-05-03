@@ -632,13 +632,11 @@ class GitChangeset(BaseChangeset):
             annotate.append((ln_no, self.repository.get_changeset(id), line))
         return annotate
 
-    def get_archive(self, stream=None, kind='tgz', prefix=None):
+    def fill_archive(self, stream=None, kind='tgz', prefix=None):
         """
-        Returns archived changeset contents, as stream. Default stream is
-        tempfile as for *huge* changesets we could eat memory.
+        Fills up given stream.
 
         :param stream: file like object.
-            Default: new ``tempfile.TemporaryFile`` instance.
         :param kind: one of following: ``zip``, ``tgz`` or ``tbz2``.
             Default: ``tgz``.
         :param prefix: name of root directory in archive.
@@ -646,6 +644,7 @@ class GitChangeset(BaseChangeset):
             (``repo-tip.<KIND>``).
 
         :raise ImproperArchiveTypeError: If given kind is wrong.
+        :raise VcsError: If given stream is None
 
         """
         allowed_kinds = ARCHIVE_SPECS.keys()
@@ -670,9 +669,10 @@ class GitChangeset(BaseChangeset):
             cmd += ' | gzip -9'
         elif kind == 'tbz2':
             cmd += ' | bzip2 -9'
+
         if stream is None:
-            arch_path = tempfile.mkstemp()[1]
-            cmd += ' > %s' % arch_path
+            raise VCSError('You need to pass in a valid stream for filling'
+                           ' with archival data')
         else:
             arch_path = None
 

@@ -490,7 +490,7 @@ class MercurialChangesetTest(unittest2.TestCase):
 
     def test_archival_wrong_kind(self):
         tip = self.repo.get_changeset()
-        self.assertRaises(VCSError, tip.get_archive, kind='error')
+        self.assertRaises(VCSError, tip.fill_archive, kind='error')
 
     def test_archival_empty_prefix(self):
         #TODO:        

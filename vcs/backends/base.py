@@ -412,13 +412,11 @@ class BaseChangeset(object):
         """
         raise NotImplementedError
 
-    def get_archive(self, stream=None, kind='tgz', prefix=None):
+    def fill_archive(self, stream=None, kind='tgz', prefix=None):
         """
-        Returns archived changeset contents, as stream. Default stream is
-        tempfile as for *huge* changesets we could eat memory.
+        Fills up given stream.
 
         :param stream: file like object.
-            Default: new ``tempfile.TemporaryFile`` instance.
         :param kind: one of following: ``zip``, ``tar``, ``tgz``
             or ``tbz2``. Default: ``tgz``.
         :param prefix: name of root directory in archive.
@@ -431,16 +429,17 @@ class BaseChangeset(object):
 
     def get_chunked_archive(self, **kwargs):
         """
-        Returns iterable archive. Tiny wrapper around ``get_archive`` method.
+        Returns iterable archive. Tiny wrapper around ``fill_archive`` method.
 
         :param chunk_size: extra parameter which controls size of returned
             chunks. Default:8k.
         """
 
         chunk_size = kwargs.pop('chunk_size', 8192)
-        archive = self.get_archive(**kwargs)
+        stream = kwargs.get('stream')
+        self.fill_archive(**kwargs)
         while True:
-            data = archive.read(chunk_size)
+            data = stream.read(chunk_size)
             if not data:
                 break
             yield data

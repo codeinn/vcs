@@ -30,7 +30,7 @@ class ArchivesTestCaseMixin(BackendTestMixin):
     def test_archive_zip(self):
         path = tempfile.mkstemp()[1]
         with open(path, 'wb') as f:
-            self.tip.get_archive(stream=f, kind='zip', prefix='repo')
+            self.tip.fill_archive(stream=f, kind='zip', prefix='repo')
         out = zipfile.ZipFile(path)
         
         for x in xrange(5):
@@ -42,7 +42,7 @@ class ArchivesTestCaseMixin(BackendTestMixin):
     def test_archive_tgz(self):
         path = tempfile.mkstemp()[1]
         with open(path, 'wb') as f:
-            self.tip.get_archive(stream=f, kind='tgz', prefix='repo')
+            self.tip.fill_archive(stream=f, kind='tgz', prefix='repo')
         outdir = tempfile.mkdtemp()
 
         outfile = tarfile.open(path, 'r|gz')
@@ -57,7 +57,7 @@ class ArchivesTestCaseMixin(BackendTestMixin):
     def test_archive_tbz2(self):
         path = tempfile.mkstemp()[1]
         with open(path, 'w+b') as f:
-            self.tip.get_archive(stream=f, kind='tbz2', prefix='repo')
+            self.tip.fill_archive(stream=f, kind='tbz2', prefix='repo')
         outdir = tempfile.mkdtemp()
 
         outfile = tarfile.open(path, 'r|bz2')
@@ -72,24 +72,24 @@ class ArchivesTestCaseMixin(BackendTestMixin):
     def test_archive_default_stream(self):
         tmppath = tempfile.mkstemp()[1]
         with open(tmppath, 'w') as stream:
-            self.tip.get_archive(stream=stream)
+            self.tip.fill_archive(stream=stream)
         mystream = StringIO.StringIO()
-        self.tip.get_archive(stream=mystream)
+        self.tip.fill_archive(stream=mystream)
         mystream.seek(0)
         with open(tmppath, 'r') as f:
             self.assertEqual(f.read(), mystream.read())
 
     def test_archive_wrong_kind(self):
         with self.assertRaises(VCSError):
-            self.tip.get_archive(kind='wrong kind')
+            self.tip.fill_archive(kind='wrong kind')
 
     def test_archive_empty_prefix(self):
         with self.assertRaises(VCSError):
-            self.tip.get_archive(prefix='')
+            self.tip.fill_archive(prefix='')
     
     def test_archive_prefix_with_leading_slash(self):
         with self.assertRaises(VCSError):
-            self.tip.get_archive(prefix='/any')
+            self.tip.fill_archive(prefix='/any')
 
 # For each backend create test case class
 for alias in SCM_TESTS:
