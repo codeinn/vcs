@@ -72,6 +72,14 @@ class MercurialRepository(BaseRepository):
         # We've set path and ui, now we can set _repo itself
         self._repo = self._get_repo(create, src_url, update_after_clone)
 
+
+    @LazyProperty
+    def _empty(self):
+        """
+        Checks if repository is empty without any changesets
+        """
+        return self._repo.changelog.node(0) == nullid
+
     @LazyProperty
     def revisions(self):
         """
@@ -86,10 +94,11 @@ class MercurialRepository(BaseRepository):
 
     @LazyProperty
     def branches(self):
-        """Get's branches for this repository
+        """
+        Get's branches for this repository
         """
 
-        if not self.revisions:
+        if self._empty:
             return {}
 
         def _branchtags(localrepo):
@@ -115,12 +124,13 @@ class MercurialRepository(BaseRepository):
 
     @LazyProperty
     def tags(self):
-        """Get's tags for this repository
+        """
+        Get's tags for this repository
         """
         return self._get_tags()
 
     def _get_tags(self):
-        if not self.revisions:
+        if self._empty:
             return {}
 
         sortkey = lambda ctx: ctx[0]  # sort by name
@@ -273,7 +283,7 @@ class MercurialRepository(BaseRepository):
         :param revision: str or int or None
         """
 
-        if len(self.revisions) == 0:
+        if self._empty:
             raise EmptyRepositoryError("There are no changesets yet")
 
         if revision in [-1, 'tip', None]:
