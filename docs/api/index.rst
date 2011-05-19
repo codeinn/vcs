@@ -9,6 +9,3 @@ API Reference
    nodes
    backends/index
    utils/index
-
-   web/index
-
