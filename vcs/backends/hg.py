@@ -191,10 +191,7 @@ class MercurialRepository(BaseRepository):
 
     def _get_all_revisions(self):
 
-        nodemap = self._repo.changelog.nodemap
-
-        sortkey = self._repo.changelog.nodemap.get
-        return map(hex, sorted(nodemap, key=sortkey))[1:]
+        return map(lambda x:hex(x[7]), self._repo.changelog.index)[:-1]
 
     def _get_repo(self, create, src_url=None, update_after_clone=False):
         """

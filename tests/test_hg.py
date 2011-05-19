@@ -92,6 +92,44 @@ class MercurialRepositoryTest(unittest2.TestCase):
                 ])
         self.assertTrue(subset.issubset(set(self.repo.revisions)))
 
+
+
+    def test_revisions_order(self):
+        # check if we have the proper order of revisions
+        org = ['b986218ba1c9b0d6a259fac9b050b1724ed8e545',
+                '3d8f361e72ab303da48d799ff1ac40d5ac37c67e',
+                '6cba7170863a2411822803fa77a0a264f1310b35',
+                '56349e29c2af3ac913b28bde9a2c6154436e615b',
+                '2dda4e345facb0ccff1a191052dd1606dba6781d',
+                '6fff84722075f1607a30f436523403845f84cd9e',
+                '7d4bc8ec6be56c0f10425afb40b6fc315a4c25e7',
+                '3803844fdbd3b711175fc3da9bdacfcd6d29a6fb',
+                'dc5d2c0661b61928834a785d3e64a3f80d3aad9c',
+                'be90031137367893f1c406e0a8683010fd115b79',
+                'db8e58be770518cbb2b1cdfa69146e47cd481481',
+                '84478366594b424af694a6c784cb991a16b87c21',
+                '17f8e105dddb9f339600389c6dc7175d395a535c',
+                '20a662e756499bde3095ffc9bc0643d1def2d0eb',
+                '2e319b85e70a707bba0beff866d9f9de032aa4f9',
+                '786facd2c61deb9cf91e9534735124fb8fc11842',
+                '94593d2128d38210a2fcd1aabff6dda0d6d9edf8',
+                'aa6a0de05b7612707db567078e130a6cd114a9a7',
+                'eada5a770da98ab0dd7325e29d00e0714f228d09',
+                '2c1885c735575ca478bf9e17b0029dca68824458',
+                'd9bcd465040bf869799b09ad732c04e0eea99fe9',
+                '469e9c847fe1f6f7a697b8b25b4bc5b48780c1a7',
+                '4fb8326d78e5120da2c7468dcf7098997be385da',
+                '62b4a097164940bd66030c4db51687f3ec035eed',
+                '536c1a19428381cfea92ac44985304f6a8049569',
+                '965e8ab3c44b070cdaa5bf727ddef0ada980ecc4',
+                '9bb326a04ae5d98d437dece54be04f830cf1edd9',
+                'f8940bcb890a98c4702319fbe36db75ea309b475',
+                'ff5ab059786ebc7411e559a2cc309dfae3625a3b',
+                '6b6ad5f82ad5bb6190037671bd254bd4e1f4bf08',
+                'ee87846a61c12153b51543bf860e1026c6d3dcba', ]
+        self.assertEqual(org, self.repo.revisions[:31])
+
+
     def test_iter_slice(self):
         sliced = list(self.repo[:10])
         itered = list(self.repo)[:10]
