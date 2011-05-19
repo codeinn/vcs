@@ -108,7 +108,8 @@ class MercurialRepository(BaseRepository):
             return bt
 
         sortkey = lambda ctx: ctx[0]  # sort by name
-        _branches = [(safe_unicode(n), hex(h),) for n, h in _branchtags(self._repo).items()]
+        _branches = [(safe_unicode(n), hex(h),) for n, h in
+                     _branchtags(self._repo).items()]
 
         return OrderedDict(sorted(_branches, key=sortkey, reverse=False))
 
@@ -123,7 +124,8 @@ class MercurialRepository(BaseRepository):
             return {}
 
         sortkey = lambda ctx: ctx[0]  # sort by name
-        _tags = [(safe_unicode(n), hex(h),) for n, h in self._repo.tags().items()]
+        _tags = [(safe_unicode(n), hex(h),) for n, h in
+                 self._repo.tags().items()]
 
         return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
 
@@ -191,7 +193,7 @@ class MercurialRepository(BaseRepository):
 
     def _get_all_revisions(self):
 
-        return map(lambda x:hex(x[7]), self._repo.changelog.index)[:-1]
+        return map(lambda x: hex(x[7]), self._repo.changelog.index)[:-1]
 
     def _get_repo(self, create, src_url=None, update_after_clone=False):
         """
@@ -339,7 +341,6 @@ class MercurialRepository(BaseRepository):
             raise BranchDoesNotExistError('Such branch %s does not exists for'
                                   ' this repository' % branch_name)
 
-        #print 'getcs', start, end, self.revisions[start:end]
         slice = reversed(self.revisions[start_pos:end_pos]) if reverse else \
             self.revisions[start_pos:end_pos]
 

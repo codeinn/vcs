@@ -7,7 +7,7 @@ import difflib
 import logging
 
 from difflib import unified_diff
-from itertools import tee,imap
+from itertools import tee, imap
 
 from mercurial import patch
 from mercurial.mdiff import diffopts
@@ -407,15 +407,16 @@ class DiffProcessor(object):
                 _html_empty = False
                 for change in line:
                     _html += '''<tr class="%(line_class)s %(action)s">\n''' \
-                        % {'line_class': line_class, 'action': change['action']}
+                        % {'line_class': line_class,
+                           'action': change['action']}
                     anchor_old_id = ''
                     anchor_new_id = ''
                     anchor_old = "%(filename)s_o%(oldline_no)s" % \
-                                    {'filename': self._safe_id(diff['filename']),
-                                     'oldline_no': change['old_lineno']}
+                                {'filename': self._safe_id(diff['filename']),
+                                 'oldline_no': change['old_lineno']}
                     anchor_new = "%(filename)s_n%(oldline_no)s" % \
-                                    {'filename': self._safe_id(diff['filename']),
-                                     'oldline_no': change['new_lineno']}
+                                {'filename': self._safe_id(diff['filename']),
+                                 'oldline_no': change['new_lineno']}
                     cond_old = change['old_lineno'] != '...' and \
                                                         change['old_lineno']
                     cond_new = change['new_lineno'] != '...' and \
@@ -424,9 +425,9 @@ class DiffProcessor(object):
                         anchor_old_id = 'id="%s"' % anchor_old
                     if cond_new:
                         anchor_new_id = 'id="%s"' % anchor_new
-                    ############################################################
+                    ###########################################################
                     # OLD LINE NUMBER
-                    ############################################################
+                    ###########################################################
                     _html += '''\t<td %(a_id)s class="%(old_lineno_cls)s">''' \
                                     % {'a_id': anchor_old_id,
                                        'old_lineno_cls': old_lineno_class}
@@ -436,9 +437,9 @@ class DiffProcessor(object):
                         _link_to_if(cond_old, change['old_lineno'], '#%s' \
                                                                 % anchor_old)}
                     _html += '''</td>\n'''
-                    ############################################################
+                    ###########################################################
                     # NEW LINE NUMBER
-                    ############################################################
+                    ###########################################################
 
                     _html += '''\t<td %(a_id)s class="%(new_lineno_cls)s">''' \
                                     % {'a_id': anchor_new_id,
@@ -449,13 +450,13 @@ class DiffProcessor(object):
                         _link_to_if(cond_new, change['new_lineno'], '#%s' \
                                                                 % anchor_new)}
                     _html += '''</td>\n'''
-                    ############################################################
+                    ###########################################################
                     # CODE
-                    ############################################################
+                    ###########################################################
                     _html += '''\t<td class="%(code_class)s">''' \
-                                                    % {'code_class': code_class}
+                                                % {'code_class': code_class}
                     _html += '''\n\t\t<pre>%(code)s</pre>\n''' \
-                                                    % {'code': change['line']}
+                                                % {'code': change['line']}
                     _html += '''\t</td>'''
                     _html += '''\n</tr>\n'''
         _html += '''</table>'''
