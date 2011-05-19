@@ -1,2 +1,0 @@
-# Empty django settings module
-
