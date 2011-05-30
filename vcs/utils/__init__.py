@@ -2,6 +2,7 @@
 This module provides some useful tools for ``vcs`` like annotate/diff html
 output. It also includes some internal helpers.
 """
+import sys
 import time
 import datetime
 
@@ -41,3 +42,9 @@ def safe_unicode(s):
             u_str = unicode(str(s).encode('string_escape'))
 
     return u_str
+
+if sys.version_info >= (2, 7):
+    unittest = __import__('unittest')
+else:
+    unittest = __import__('unittest2')
+

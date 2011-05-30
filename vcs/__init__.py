@@ -32,10 +32,9 @@ def get_version():
 def main(argv=None):
     if argv is None:
         argv = sys.argv
-    print "foobar"
-    import os
-    from vcs.utils.paths import abspath
-    print abspath(os.curdir)
+    from vcs.cli import ExecutionManager
+    manager = ExecutionManager(argv)
+    manager.execute()
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
