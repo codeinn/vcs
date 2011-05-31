@@ -1,37 +1,61 @@
+import os
 import sys
 import vcs
-from vcs.exceptions import CommandError
-from optparse import make_option
 from optparse import OptionParser
+from optparse import make_option
+from vcs.exceptions import CommandError
+from vcs.exceptions import VCSError
+from vcs.utils.helpers import get_scm
+from vcs.utils.imports import import_class
+from vcs.utils.ordered_dict import OrderedDict
+from vcs.utils.paths import abspath
 
+
+registry = {
+    'log': 'vcs.commands.log.LogCommand',
+}
 
 class ExecutionManager(object):
 
     def __init__(self, argv=None, stdout=None, stderr=None):
-        self.prog_name = argv and argv[0] or sys.argv[0]
-        self.argv = argv and argv[1:] or sys.argv[1:]
+        if argv:
+            self.prog_name = argv[0]
+            self.argv = argv[1:]
+        else:
+            self.prog_name = sys.argv[0]
+            self.argv = sys.argv[1:]
         self.stdout = stdout or sys.stdout
         self.stderr = stderr or sys.stderr
 
+    def get_argv_for_command(self):
+        argv = [a for a in self.argv]
+        argv.insert(0, self.prog_name)
+        return argv
+
     def execute(self):
-        if len(self.argv) > 1:
+        if len(self.argv):
             cmd = self.argv[0]
-            argv = self.argv[1:]
-            self.run_command(cmd, argv)
+            cmd_argv = self.get_argv_for_command()
+            self.run_command(cmd, cmd_argv)
         else:
             self.show_help()
+
+    def get_command_class(self, cmd):
+        cmdpath = registry[cmd]
+        Command = import_class(cmdpath)
+        return Command
+
+    def get_commands(self):
+        commands = OrderedDict()
+        for cmd in sorted(registry.keys()):
+            commands[cmd] = self.get_command_class(cmd)
+        return commands
 
     def run_command(self, cmd, argv):
         Command = self.get_command_class(cmd)
         command = Command(stdout=self.stdout, stderr=self.stderr)
         command.run_from_argv(argv)
     
-    def get_commands(self):
-        return ['foo', 'bar']
-
-    def get_command_class(self, cmd):
-        return BaseCommand
-
     def show_help(self):
         output = [
             'Usage: {prog} subcommand [options] [args]'.format(
@@ -97,5 +121,51 @@ class BaseCommand(object):
             self.stderr.write('ERROR: {error}'.format(error=e))
             sys.exit(1)
 
+    def handle(self, *args, **options):
+        raise NotImplementedError()
 
+
+class RepositoryCommand(BaseCommand):
+
+    def __init__(self, stdout=None, stderr=None, repo=None):
+        if repo is None:
+            curdir = abspath(os.curdir)
+            try:
+                scm, path = get_scm(curdir, search_recursively=True)
+                self.repo = vcs.get_repo(path, scm)
+            except VCSError:
+                raise CommandError('Repository not found')
+        else:
+            self.repo = repo
+        super(RepositoryCommand, self).__init__(stdout, stderr)
+
+    def handle(self, *args, **options):
+        return self.handle_repo(self.repo, **options)
+
+    def handle_repo(self, repo, *args, **options):
+        raise NotImplementedError()
+
+
+class ChangesetCommand(RepositoryCommand):
+    args = '<commit1> [<commit2> ...]'
+
+    def handle_repo(self, repo, *args, **options):
+        for changeset_id in args:
+            changeset = repo.get_changeset(changeset_id)
+            self.handle_changeset(changeset, **options)
+
+    def handle_changeset(self, changeset, **options):
+        raise NotImplementedError()
+
+
+class SingleChangesetCommand(RepositoryCommand):
+
+    option_list = RepositoryCommand.option_list + (
+        make_option('-c', '--commit', action='store', dest='changeset_id',
+            default=None, help='Use specific commit. By default we use HEAD/tip'),
+    )
+
+    def get_changeset(self, **options):
+        cid = options.get('changeset_id', None)
+        return self.repo.get_changeset(cid)
 
