@@ -55,7 +55,7 @@ class ExecutionManager(object):
         Command = self.get_command_class(cmd)
         command = Command(stdout=self.stdout, stderr=self.stderr)
         command.run_from_argv(argv)
-    
+
     def show_help(self):
         output = [
             'Usage: {prog} subcommand [options] [args]'.format(
@@ -68,14 +68,14 @@ class ExecutionManager(object):
             output.append('  {cmd}'.format(cmd=cmd))
         output += ['', '']
         self.stdout.write(u'\n'.join(output))
-        
+
 
 class BaseCommand(object):
 
     help = ''
     args = ''
     option_list = (
-        make_option('--debug', action='store_true', dest='traceback',
+        make_option('--debug', action='store_true', dest='debug',
             default=False, help='Enter debug mode before raising exception'),
     )
 
@@ -87,7 +87,9 @@ class BaseCommand(object):
         return vcs.get_version()
 
     def usage(self, subcommand):
-        usage = '%%prog %s [options] %s' % (subcommand, self.args)
+        usage = '%prog {subcommand} [options]'.format(subcommand=subcommand)
+        if self.args:
+            usage = '{usage} {args}'.format(usage=usage, args=self.args)
         return usage
 
     def get_parser(self, prog_name, subcommand):
@@ -111,14 +113,14 @@ class BaseCommand(object):
         try:
             self.handle(*args, **options)
         except CommandError, e:
-            if options['traceback']:
+            if options['debug']:
                 try:
                     import ipdb
                     ipdb.set_trace()
                 except ImportError:
                     import pdb
                     pdb.set_trace()
-            self.stderr.write('ERROR: {error}'.format(error=e))
+            self.stderr.write('ERROR: {error}\n'.format(error=e))
             sys.exit(1)
 
     def handle(self, *args, **options):
@@ -140,7 +142,7 @@ class RepositoryCommand(BaseCommand):
         super(RepositoryCommand, self).__init__(stdout, stderr)
 
     def handle(self, *args, **options):
-        return self.handle_repo(self.repo, **options)
+        return self.handle_repo(self.repo, *args, **options)
 
     def handle_repo(self, repo, *args, **options):
         raise NotImplementedError()
