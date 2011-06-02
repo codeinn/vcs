@@ -2,6 +2,8 @@
 Utitlites aimed to help achieve mostly basic tasks.
 """
 import re
+import time
+import datetime
 import os.path
 from subprocess import Popen, PIPE
 from vcs.exceptions import VCSError
@@ -169,4 +171,28 @@ def parse_changesets(text):
             result['main'] = None
             return result
     raise ValueError("IDs not recognized")
+
+def parse_datetime(text):
+    """
+    Parses given text and returns ``datetime.datetime`` instance or raises
+    ``ValueError``.
+    """
+
+    INPUT_FORMATS = (
+        '%Y-%m-%d %H:%M:%S',
+        '%Y-%m-%d %H:%M',
+        '%Y-%m-%d',
+        '%m/%d/%Y %H:%M:%S',
+        '%m/%d/%Y %H:%M',
+        '%m/%d/%Y',
+        '%m/%d/%y %H:%M:%S',
+        '%m/%d/%y %H:%M',
+        '%m/%d/%y',
+    )
+    for format in INPUT_FORMATS:
+        try:
+            return datetime.datetime(*time.strptime(text, format)[:6])
+        except ValueError:
+            pass
+    raise ValueError
 

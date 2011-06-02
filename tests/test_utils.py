@@ -1,17 +1,17 @@
+import os
+import shutil
 import time
 import tempfile
+import datetime
 import unittest2
-
 from vcs.utils.paths import get_dirs_for_path
 from vcs.utils.helpers import get_scm
 from vcs.utils.helpers import get_scms_for_path
 from vcs.utils.helpers import parse_changesets
-
+from vcs.utils.helpers import parse_datetime
 from conf import TEST_HG_REPO, TEST_GIT_REPO, TEST_TMP_PATH
 from vcs.exceptions import VCSError
 
-import os
-import shutil
 
 class PathsTest(unittest2.TestCase):
 
@@ -109,6 +109,25 @@ class TestParseChangesets(unittest2.TestCase):
     def test_non_alphanumeric_raises_exception(self):
         with self.assertRaises(ValueError):
             parse_changesets('aaa@bbb')
+
+
+class TestParseDatetime(unittest2.TestCase):
+
+    def test_datetime_text(self):
+        self.assertEqual(parse_datetime('2010-04-07 21:29:41'),
+            datetime.datetime(2010, 4, 7, 21, 29, 41))
+
+    def test_no_seconds(self):
+        self.assertEqual(parse_datetime('2010-04-07 21:29'),
+            datetime.datetime(2010, 4, 7, 21, 29))
+
+    def test_date_only(self):
+        self.assertEqual(parse_datetime('2010-04-07'),
+            datetime.datetime(2010, 4, 7))
+
+    def test_another_format(self):
+        self.assertEqual(parse_datetime('04/07/10 21:29:41'),
+            datetime.datetime(2010, 4, 7, 21, 29, 41))
 
 
 if __name__ == '__main__':
