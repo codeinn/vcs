@@ -1,11 +1,15 @@
 import os
 import sys
 import vcs
+import copy
+import errno
 from optparse import OptionParser
 from optparse import make_option
 from vcs.exceptions import CommandError
 from vcs.exceptions import VCSError
 from vcs.utils.helpers import get_scm
+from vcs.utils.helpers import parse_changesets
+from vcs.utils.helpers import parse_datetime
 from vcs.utils.imports import import_class
 from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils.paths import abspath
@@ -77,6 +81,8 @@ class BaseCommand(object):
     option_list = (
         make_option('--debug', action='store_true', dest='debug',
             default=False, help='Enter debug mode before raising exception'),
+        make_option('--traceback', action='store_true', dest='traceback',
+            default=False, help='Print traceback in case of an error'),
     )
 
     def __init__(self, stdout=None, stderr=None):
@@ -97,7 +103,7 @@ class BaseCommand(object):
             prog=prog_name,
             usage=self.usage(subcommand),
             version=self.get_version(),
-            option_list=self.option_list)
+            option_list=sorted(self.option_list))
         return parser
 
     def print_help(self, prog_name, subcommand):
@@ -120,6 +126,26 @@ class BaseCommand(object):
                 except ImportError:
                     import pdb
                     pdb.set_trace()
+            self.stderr.write('ERROR: {error}\n'.format(error=e))
+            sys.exit(1)
+        except Exception, e:
+            if isinstance(e, IOError) and getattr(e, 'errno') == errno.EPIPE:
+                sys.exit(0)
+            if options['debug']:
+                try:
+                    import ipdb
+                    ipdb.set_trace()
+                except ImportError:
+                    import pdb
+                    pdb.set_trace()
+            if options.get('traceback'):
+                import traceback
+                self.stderr.write(u'\n'.join((
+                    '=========',
+                    'TRACEBACK',
+                    '=========', '', '',
+                )))
+                traceback.print_exc(file=self.stderr)
             self.stderr.write('ERROR: {error}\n'.format(error=e))
             sys.exit(1)
 
@@ -149,12 +175,66 @@ class RepositoryCommand(BaseCommand):
 
 
 class ChangesetCommand(RepositoryCommand):
-    args = '<commit1> [<commit2> ...]'
+
+    option_list = RepositoryCommand.option_list + (
+        make_option('--author', action='store', dest='author',
+            help='Show changes committed by specified author only.'),
+        make_option('-r', '--reversed', action='store_true', dest='reversed',
+            default=False, help='Iterates in asceding order.'),
+        make_option('-b', '--branch', action='store', dest='branch',
+            help='Narrow changesets to chosen branch. If not given, '
+                 'SCM default branch is picked up automatically.'),
+        make_option('--all', action='store_true', dest='all',
+            default='all', help='Show changesets across all branches.'),
+
+        make_option('--start-date', action='store', dest='start_date',
+            help='Show only changesets not younger than specified '
+                 'start date.'),
+        make_option('--end-date', action='store', dest='end_date',
+            help='Show only changesets not older than specified '
+                 'end date.'),
+    )
+
+    def show_changeset(self, changeset, **options):
+        author = options.get('author')
+        if author:
+            if author.startswith('*') and author.endswith('*') and \
+                author.strip('*') in changeset.author:
+                return True
+            if author.startswith('*') and changeset.author.endswith(
+                author.strip('*')):
+                return True
+            if author.endswith('*') and changeset.author.startswith(
+                author.strip('*')):
+                return True
+            return changeset.author == author
+        return True
+
+    def get_changesets(self, repo, **options):
+        if options.get('start_date'):
+            options['start_date'] = parse_datetime(options['start_date'])
+        if options.get('end_date'):
+            options['end_date'] = parse_datetime(options['end_date'])
+        changesets = repo.get_changesets(
+            start=options.get('start'),
+            end=options.get('end', options.get('main')),
+            start_date=options.get('start_date'),
+            end_date=options.get('end_date'),
+            branch_name=options.get('branch'),
+            reverse=not options.get('reversed', False),
+        )
+        return changesets
 
     def handle_repo(self, repo, *args, **options):
-        for changeset_id in args:
-            changeset = repo.get_changeset(changeset_id)
-            self.handle_changeset(changeset, **options)
+        opts = copy.copy(options)
+        if len(args) == 1:
+            opts.update(parse_changesets(args[0]))
+        elif len(args) > 1:
+            raise CommandError("Wrong changeset ID(s) given")
+        changesets = self.get_changesets(repo, **opts)
+        for changeset in changesets:
+            if self.show_changeset(changeset, **options):
+                self.handle_changeset(changeset, **options)
 
     def handle_changeset(self, changeset, **options):
         raise NotImplementedError()
