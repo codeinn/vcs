@@ -73,7 +73,7 @@ class MercurialRepository(BaseRepository):
         self._repo = self._get_repo(create, src_url, update_after_clone)
 
 
-    @LazyProperty
+    @property
     def _empty(self):
         """
         Checks if repository is empty without any changesets

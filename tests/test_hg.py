@@ -535,7 +535,21 @@ class MercurialChangesetTest(unittest2.TestCase):
         pass
 
 
+    def test_author_email(self):
+        self.assertEqual('marcin@python-blog.com',
+                         self.repo.get_changeset('b986218ba1c9').author_email)
+        self.assertEqual('lukasz.balcerzak@python-center.pl',
+                         self.repo.get_changeset('3803844fdbd3').author_email)
+        self.assertEqual('',
+                         self.repo.get_changeset('84478366594b').author_email)
 
+    def test_author_username(self):
+        self.assertEqual('Marcin Kuzminski',
+                         self.repo.get_changeset('b986218ba1c9').author_name)
+        self.assertEqual('Lukasz Balcerzak',
+                         self.repo.get_changeset('3803844fdbd3').author_name)
+        self.assertEqual('marcink',
+                         self.repo.get_changeset('84478366594b').author_name)
 
 
 

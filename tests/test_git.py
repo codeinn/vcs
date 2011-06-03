@@ -523,6 +523,29 @@ class GitChangesetTest(unittest2.TestCase):
         tip = self.repo.get_changeset()
         self.assertRaises(VCSError, tip.get_node, path)
 
+    def test_author_email(self):
+        self.assertEqual('marcin@python-blog.com',
+          self.repo.get_changeset('c1214f7e79e02fc37156ff215cd71275450cffc3')\
+          .author_email)
+        self.assertEqual('lukasz.balcerzak@python-center.pl',
+          self.repo.get_changeset('ff7ca51e58c505fec0dd2491de52c622bb7a806b')\
+          .author_email)
+        self.assertEqual('',
+          self.repo.get_changeset('8430a588b43b5d6da365400117c89400326e7992')\
+          .author_email)
+
+    def test_author_username(self):
+        self.assertEqual('Marcin Kuzminski',
+          self.repo.get_changeset('c1214f7e79e02fc37156ff215cd71275450cffc3')\
+          .author_name)
+        self.assertEqual('Lukasz Balcerzak',
+          self.repo.get_changeset('ff7ca51e58c505fec0dd2491de52c622bb7a806b')\
+          .author_name)
+        self.assertEqual('marcink',
+          self.repo.get_changeset('8430a588b43b5d6da365400117c89400326e7992')\
+          .author_name)
+
+
 if __name__ == '__main__':
     unittest2.main()
 
