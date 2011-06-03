@@ -149,6 +149,11 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
             self.repo.get_changesets(reverse=True)]
         self.assertItemsEqual(changesets_id_list, reversed(self.repo.revisions))
 
+    def test_get_filenodes_generator(self):
+        tip = self.repo.get_changeset()
+        filepaths = [node.path for node in tip.get_filenodes_generator()]
+        self.assertItemsEqual(filepaths, ['file_%d.txt' % x for x in xrange(5)])
+
     def test_get_changesets_raise_changesetdoesnotexist_for_wrong_start(self):
         with self.assertRaises(ChangesetDoesNotExistError):
             list(self.repo.get_changesets(start='foobar'))
@@ -166,6 +171,7 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
         end = self.repo.revisions[0]
         with self.assertRaises(RepositoryError):
             list(self.repo.get_changesets(start=start, end=end))
+
 
 # For each backend create test case class
 for alias in SCM_TESTS:

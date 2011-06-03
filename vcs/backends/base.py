@@ -502,6 +502,14 @@ class BaseChangeset(object):
             for tup in self.walk(dirnode.path):
                 yield tup
 
+    def get_filenodes_generator(self):
+        """
+        Returns generator that yields *all* file nodes.
+        """
+        for topnode, dirs, files in self.walk():
+            for node in files:
+                yield node
+
 
 class BaseWorkdir(object):
     """
