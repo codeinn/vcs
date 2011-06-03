@@ -386,7 +386,6 @@ class DiffProcessor(object):
         """
         Return udiff as html table with customized css classes
         """
-
         def _link_to_if(condition, label, url):
             """
             Generates a link if condition is meet or just the label if not.
@@ -397,18 +396,18 @@ class DiffProcessor(object):
                                                                 'label': label}
             else:
                 return label
-
         diff_lines = self.prepare()
         _html_empty = True
-        _html = '''<table class="%(table_class)s">\n''' \
-                                            % {'table_class': table_class}
+        _html = []
+        _html.append('''<table class="%(table_class)s">\n''' \
+                                            % {'table_class': table_class})
         for diff in diff_lines:
             for line in diff['chunks']:
                 _html_empty = False
                 for change in line:
-                    _html += '''<tr class="%(line_class)s %(action)s">\n''' \
+                    _html.append('''<tr class="%(line_class)s %(action)s">\n''' \
                         % {'line_class': line_class,
-                           'action': change['action']}
+                           'action': change['action']})
                     anchor_old_id = ''
                     anchor_new_id = ''
                     anchor_old = "%(filename)s_o%(oldline_no)s" % \
@@ -428,41 +427,41 @@ class DiffProcessor(object):
                     ###########################################################
                     # OLD LINE NUMBER
                     ###########################################################
-                    _html += '''\t<td %(a_id)s class="%(old_lineno_cls)s">''' \
+                    _html.append('''\t<td %(a_id)s class="%(old_lineno_cls)s">''' \
                                     % {'a_id': anchor_old_id,
-                                       'old_lineno_cls': old_lineno_class}
+                                       'old_lineno_cls': old_lineno_class})
 
-                    _html += '''<pre>%(link)s</pre>''' \
+                    _html.append('''<pre>%(link)s</pre>''' \
                         % {'link':
                         _link_to_if(cond_old, change['old_lineno'], '#%s' \
-                                                                % anchor_old)}
-                    _html += '''</td>\n'''
+                                                                % anchor_old)})
+                    _html.append('''</td>\n''')
                     ###########################################################
                     # NEW LINE NUMBER
                     ###########################################################
 
-                    _html += '''\t<td %(a_id)s class="%(new_lineno_cls)s">''' \
+                    _html.append('''\t<td %(a_id)s class="%(new_lineno_cls)s">''' \
                                     % {'a_id': anchor_new_id,
-                                       'new_lineno_cls': new_lineno_class}
+                                       'new_lineno_cls': new_lineno_class})
 
-                    _html += '''<pre>%(link)s</pre>''' \
+                    _html.append('''<pre>%(link)s</pre>''' \
                         % {'link':
                         _link_to_if(cond_new, change['new_lineno'], '#%s' \
-                                                                % anchor_new)}
-                    _html += '''</td>\n'''
+                                                                % anchor_new)})
+                    _html.append('''</td>\n''')
                     ###########################################################
                     # CODE
                     ###########################################################
-                    _html += '''\t<td class="%(code_class)s">''' \
-                                                % {'code_class': code_class}
-                    _html += '''\n\t\t<pre>%(code)s</pre>\n''' \
-                                                % {'code': change['line']}
-                    _html += '''\t</td>'''
-                    _html += '''\n</tr>\n'''
-        _html += '''</table>'''
+                    _html.append('''\t<td class="%(code_class)s">''' \
+                                                % {'code_class': code_class})
+                    _html.append('''\n\t\t<pre>%(code)s</pre>\n''' \
+                                                % {'code': change['line']})
+                    _html.append('''\t</td>''')
+                    _html.append('''\n</tr>\n''')
+        _html.append('''</table>''')
         if _html_empty:
             return None
-        return _html
+        return ''.join(_html)
 
     def stat(self):
         """
