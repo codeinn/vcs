@@ -8,42 +8,48 @@
     :created_on: Apr 8, 2010
     :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
-
 import os
 import time
-import urllib2
-import posixpath
-import datetime
 import errno
-import tempfile
-
+import urllib2
+import datetime
+import posixpath
+from mercurial import archival
 from mercurial import ui
+from mercurial.commands import clone
+from mercurial.commands import nullid
+from mercurial.commands import pull
+from mercurial.context import memctx
+from mercurial.context import memfilectx
 from mercurial.error import RepoError, RepoLookupError, Abort
 from mercurial.localrepo import localrepository
 from mercurial.node import hex
-from mercurial.commands import clone, pull, nullid
-from mercurial.context import memctx, memfilectx
-from mercurial import archival
-
 from vcs.backends import ARCHIVE_SPECS
-from vcs.backends.base import BaseRepository, BaseChangeset, \
-    BaseInMemoryChangeset
-from vcs.exceptions import RepositoryError, VCSError
-from vcs.exceptions import EmptyRepositoryError
-from vcs.exceptions import ChangesetError
+from vcs.backends.base import BaseChangeset
+from vcs.backends.base import BaseInMemoryChangeset
+from vcs.backends.base import BaseRepository
+from vcs.exceptions import BranchDoesNotExistError
 from vcs.exceptions import ChangesetDoesNotExistError
+from vcs.exceptions import ChangesetError
+from vcs.exceptions import EmptyRepositoryError
+from vcs.exceptions import ImproperArchiveTypeError
 from vcs.exceptions import NodeDoesNotExistError
+from vcs.exceptions import RepositoryError, VCSError
 from vcs.exceptions import TagAlreadyExistError
 from vcs.exceptions import TagDoesNotExistError
-from vcs.exceptions import ImproperArchiveTypeError
-from vcs.exceptions import BranchDoesNotExistError
-from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, \
-    RemovedFileNodesGenerator, ChangedFileNodesGenerator, \
-    AddedFileNodesGenerator
+from vcs.nodes import AddedFileNodesGenerator
+from vcs.nodes import ChangedFileNodesGenerator
+from vcs.nodes import DirNode
+from vcs.nodes import FileNode
+from vcs.nodes import NodeKind
+from vcs.nodes import RemovedFileNodesGenerator
+from vcs.nodes import RootNode
+from vcs.utils import date_fromtimestamp
+from vcs.utils import makedate
+from vcs.utils import safe_unicode
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils.paths import abspath, get_dirs_for_path
-from vcs.utils import safe_unicode, makedate, date_fromtimestamp
 
 
 class MercurialRepository(BaseRepository):
