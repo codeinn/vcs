@@ -530,7 +530,7 @@ class GitChangesetTest(unittest2.TestCase):
         self.assertEqual('lukasz.balcerzak@python-center.pl',
           self.repo.get_changeset('ff7ca51e58c505fec0dd2491de52c622bb7a806b')\
           .author_email)
-        self.assertEqual('',
+        self.assertEqual('none@none',
           self.repo.get_changeset('8430a588b43b5d6da365400117c89400326e7992')\
           .author_email)
 
