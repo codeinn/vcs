@@ -1,7 +1,10 @@
 import stat
 import unittest2
-
-from vcs.nodes import Node, NodeKind, NodeError, FileNode, DirNode
+from vcs.nodes import DirNode
+from vcs.nodes import FileNode
+from vcs.nodes import Node
+from vcs.nodes import NodeError
+from vcs.nodes import NodeKind
 
 class NodeBasicTest(unittest2.TestCase):
 

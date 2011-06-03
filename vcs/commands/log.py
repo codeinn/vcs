@@ -1,5 +1,7 @@
+from vcs.nodes import FileNode
 from vcs.cli import ChangesetCommand
 from vcs.cli import make_option
+from vcs.utils.diffs import get_udiff
 
 
 class LogCommand(ChangesetCommand):
@@ -27,4 +29,20 @@ class LogCommand(ChangesetCommand):
         output = template.format(cs=changeset)
         output = u'{output}\n'.format(output=output)
         self.stdout.write(output)
+
+        if options.get('show_patches'):
+
+            def show_diff(old_node, new_node):
+                diff = get_udiff(old_node, new_node)
+                self.stdout.write(u''.join(diff))
+
+            for node in changeset.added:
+                show_diff(FileNode('null', content=''), node)
+            for node in changeset.changed:
+                old_node = node.history[0].get_node(node.path)
+                show_diff(old_node, node)
+            for node in changeset.removed:
+                old_node = changeset.parents[0].get_node(node.path)
+                new_node = FileNode(node.path, content='')
+                show_diff(old_node, new_node)
 

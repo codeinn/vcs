@@ -178,6 +178,11 @@ def parse_datetime(text):
     ``ValueError``.
     """
 
+    text = text.strip().lower()
+
+    if text == 'ye':
+        pass
+
     INPUT_FORMATS = (
         '%Y-%m-%d %H:%M:%S',
         '%Y-%m-%d %H:%M',
@@ -194,5 +199,5 @@ def parse_datetime(text):
             return datetime.datetime(*time.strptime(text, format)[:6])
         except ValueError:
             pass
-    raise ValueError
+    raise ValueError('Wrong date: "{text}"'.format(text=text))
 

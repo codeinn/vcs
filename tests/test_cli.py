@@ -129,7 +129,6 @@ class TestBaseCommand(unittest.TestCase):
         self.assertEqual(options.__dict__['foo'], 'FOOBAR')
         self.assertEqual(args, ['arg1', 'arg2'])
 
-
     def test_execute(self):
         command = BaseCommand()
         command.handle = mock.Mock()
@@ -140,11 +139,11 @@ class TestBaseCommand(unittest.TestCase):
 
     def test_run_from_argv(self):
         command = BaseCommand()
-        argv = ['vcs', 'foo', '--debug', 'bar']
+        argv = ['vcs', 'foo', '--debug', 'bar', '--traceback']
         command.handle = mock.Mock()
         command.run_from_argv(argv)
         args = ['bar']
-        kwargs = {'debug': True}
+        kwargs = {'debug': True, 'traceback': True}
         command.handle.assert_called_once_with(*args, **kwargs)
 
 

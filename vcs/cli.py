@@ -13,11 +13,13 @@ from vcs.utils.helpers import parse_datetime
 from vcs.utils.imports import import_class
 from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils.paths import abspath
+from vcs.utils.progressbar import ColoredProgressBar
 
 
 registry = {
-    'cat': 'vcs.commands.cat.CatCommand',
-    'log': 'vcs.commands.log.LogCommand',
+    'cat':      'vcs.commands.cat.CatCommand',
+    'log':      'vcs.commands.log.LogCommand',
+    'summary':  'vcs.commands.summary.SummaryCommand',
 }
 
 class ExecutionManager(object):
@@ -57,6 +59,10 @@ class ExecutionManager(object):
         return commands
 
     def run_command(self, cmd, argv):
+        if cmd not in registry:
+            self.stderr.write(u'No such command: {cmd}\n'.format(cmd=cmd))
+            self.show_help()
+            sys.exit(1)
         Command = self.get_command_class(cmd)
         command = Command(stdout=self.stdout, stderr=self.stderr)
         command.run_from_argv(argv)
@@ -179,6 +185,7 @@ class RepositoryCommand(BaseCommand):
 
 
 class ChangesetCommand(RepositoryCommand):
+    show_progress_bar = False
 
     option_list = RepositoryCommand.option_list + (
         make_option('--author', action='store', dest='author',
@@ -197,6 +204,9 @@ class ChangesetCommand(RepositoryCommand):
         make_option('--end-date', action='store', dest='end_date',
             help='Show only changesets not older than specified '
                  'end date.'),
+
+        make_option('--limit', action='store', dest='limit', default=None,
+            help='Limit number of showed changesets.'),
     )
 
     def show_changeset(self, changeset, **options):
@@ -224,10 +234,23 @@ class ChangesetCommand(RepositoryCommand):
             end=options.get('end', options.get('main')),
             start_date=options.get('start_date'),
             end_date=options.get('end_date'),
-            branch_name=options.get('branch'),
+            branch_name=options.get('branch') or repo.DEFAULT_BRANCH_NAME,
             reverse=not options.get('reversed', False),
         )
-        return changesets
+        try:
+            limit = int(options.get('limit'))
+        except (ValueError, TypeError):
+            limit = None
+
+        result = []
+        count = 0
+        for changeset in changesets:
+            if self.show_changeset(changeset, **options):
+                result.append(changeset)
+                count += 1
+                if count == limit:
+                    break
+        return result
 
     def handle_repo(self, repo, *args, **options):
         opts = copy.copy(options)
@@ -235,13 +258,36 @@ class ChangesetCommand(RepositoryCommand):
             opts.update(parse_changesets(args[0]))
         elif len(args) > 1:
             raise CommandError("Wrong changeset ID(s) given")
+        if options.get('limit') and not options['limit'].isdigit():
+            raise CommandError("Limit must be a number")
         changesets = self.get_changesets(repo, **opts)
+        self.iter_changesets(repo, changesets, **options)
+        self.post_process(repo, **options)
+
+    def iter_changesets(self, repo, changesets, **options):
+        if self.show_progress_bar:
+            progressbar = self.get_progressbar(len(changesets), **options)
+            progressbar.render(0)
+        else:
+            progressbar = None
+        i = 0
         for changeset in changesets:
-            if self.show_changeset(changeset, **options):
-                self.handle_changeset(changeset, **options)
+            self.handle_changeset(changeset, **options)
+            i += 1
+            if progressbar:
+                progressbar.render(i)
+
+    def get_progressbar(self, total, **options):
+        progressbar = ColoredProgressBar(total)
+        progressbar.steps_label = 'Commit'
+        progressbar.elements += ['eta', 'time']
+        return progressbar
 
     def handle_changeset(self, changeset, **options):
         raise NotImplementedError()
+
+    def post_process(self, repo, **options):
+        pass
 
 
 class SingleChangesetCommand(RepositoryCommand):

@@ -129,6 +129,21 @@ class TestParseDatetime(unittest2.TestCase):
         self.assertEqual(parse_datetime('04/07/10 21:29:41'),
             datetime.datetime(2010, 4, 7, 21, 29, 41))
 
+    def test_now(self):
+        self.assertAlmostEqual(parse_datetime('now'), datetime.datetime.now(),
+            datetime.timedelta(seconds=1))
+
+    def test_today(self):
+        today = datetime.date.today()
+        self.assertEqual(parse_datetime('today'),
+            datetime.datetime(*today.timetuple()[:3]))
+
+    def test_yesterday(self):
+        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+        self.assertEqual(parse_datetime('yesterday'),
+            datetime.datetime(*yesterday.timetuple()[:3]))
+
+
 
 if __name__ == '__main__':
     unittest2.main()
