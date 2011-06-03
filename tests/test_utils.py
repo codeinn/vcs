@@ -1,16 +1,17 @@
+import os
+import shutil
 import time
 import tempfile
+import datetime
 import unittest2
-
 from vcs.utils.paths import get_dirs_for_path
 from vcs.utils.helpers import get_scm
 from vcs.utils.helpers import get_scms_for_path
-
+from vcs.utils.helpers import parse_changesets
+from vcs.utils.helpers import parse_datetime
 from conf import TEST_HG_REPO, TEST_GIT_REPO, TEST_TMP_PATH
 from vcs.exceptions import VCSError
 
-import os
-import shutil
 
 class PathsTest(unittest2.TestCase):
 
@@ -65,6 +66,68 @@ class PathsTest(unittest2.TestCase):
 
         os.mkdir(os.path.join(new, '.hg'))
         self.assertEqual(set(get_scms_for_path(new)), set(['git', 'hg']))
+
+
+class TestParseChangesets(unittest2.TestCase):
+
+    def test_main_is_returned_correctly(self):
+        self.assertEqual(parse_changesets('123456'), {
+            'start': None,
+            'main': '123456',
+            'end': None,
+        })
+
+    def test_start_is_returned_correctly(self):
+        self.assertEqual(parse_changesets('aaabbb..'), {
+            'start': 'aaabbb',
+            'main': None,
+            'end': None,
+        })
+
+    def test_end_is_returned_correctly(self):
+        self.assertEqual(parse_changesets('..cccddd'), {
+            'start': None,
+            'main': None,
+            'end': 'cccddd',
+        })
+
+    def test_that_two_or_three_dots_are_allowed(self):
+        text1 = 'a..b'
+        text2 = 'a...b'
+        self.assertEqual(parse_changesets(text1), parse_changesets(text2))
+
+    def test_that_input_is_stripped_first(self):
+        text1 = 'a..bb'
+        text2 = '  a..bb\t\n\t '
+        self.assertEqual(parse_changesets(text1), parse_changesets(text2))
+
+    def test_that_exception_is_raised(self):
+        text = '123456.789012' # single dot is not recognized
+        with self.assertRaises(ValueError):
+            parse_changesets(text)
+
+    def test_non_alphanumeric_raises_exception(self):
+        with self.assertRaises(ValueError):
+            parse_changesets('aaa@bbb')
+
+
+class TestParseDatetime(unittest2.TestCase):
+
+    def test_datetime_text(self):
+        self.assertEqual(parse_datetime('2010-04-07 21:29:41'),
+            datetime.datetime(2010, 4, 7, 21, 29, 41))
+
+    def test_no_seconds(self):
+        self.assertEqual(parse_datetime('2010-04-07 21:29'),
+            datetime.datetime(2010, 4, 7, 21, 29))
+
+    def test_date_only(self):
+        self.assertEqual(parse_datetime('2010-04-07'),
+            datetime.datetime(2010, 4, 7))
+
+    def test_another_format(self):
+        self.assertEqual(parse_datetime('04/07/10 21:29:41'),
+            datetime.datetime(2010, 4, 7, 21, 29, 41))
 
 
 if __name__ == '__main__':

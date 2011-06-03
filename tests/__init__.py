@@ -27,6 +27,7 @@ from utils import VCSTestError, SCMFetcher
 from base import *
 from test_branches import *
 from test_changesets import *
+from test_cli import *
 from test_filenodes_unicode_path import *
 from test_getitem import *
 from test_getslice import *

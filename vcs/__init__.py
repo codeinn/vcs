@@ -18,6 +18,7 @@ __all__ = [
     'get_version', 'get_repo', 'get_backend', 'BACKENDS',
     'VCSError', 'RepositoryError', 'ChangesetError']
 
+import sys
 from vcs.backends import get_repo, get_backend, BACKENDS
 from vcs.exceptions import VCSError, RepositoryError, ChangesetError
 
@@ -27,3 +28,15 @@ def get_version():
     Returns shorter version (digit parts only) as string.
     """
     return '.'.join((str(each) for each in VERSION[:3]))
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
+    from vcs.cli import ExecutionManager
+    manager = ExecutionManager(argv)
+    manager.execute()
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
+

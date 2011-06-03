@@ -1,8 +1,10 @@
 """
 Utitlites aimed to help achieve mostly basic tasks.
 """
+import re
+import time
+import datetime
 import os.path
-
 from subprocess import Popen, PIPE
 from vcs.exceptions import VCSError
 from vcs.exceptions import RepositoryError
@@ -138,3 +140,59 @@ def get_highlighted_code(name, code, type='terminal'):
         logging.debug("Couldn't guess Lexer, will not use pygments.")
         content = code
     return content
+
+def parse_changesets(text):
+    """
+    Returns dictionary with *start*, *main* and *end* ids.
+
+    Examples::
+
+        >>> parse_changesets('aaabbb')
+        {'start': None, 'main': 'aaabbb', 'end': None}
+        >>> parse_changesets('aaabbb..cccddd')
+        {'start': 'aaabbb', 'main': None, 'end': 'cccddd'}
+
+    """
+    text = text.strip()
+    CID_RE = r'[a-zA-Z0-9]+'
+    if not '..' in text:
+        m = re.match(r'^(?P<cid>%s)$' % CID_RE, text)
+        if m:
+            return {
+                'start': None,
+                'main': text,
+                'end': None,
+            }
+    else:
+        RE = r'^(?P<start>%s)?\.{2,3}(?P<end>%s)?$' % (CID_RE, CID_RE)
+        m = re.match(RE, text)
+        if m:
+            result = m.groupdict()
+            result['main'] = None
+            return result
+    raise ValueError("IDs not recognized")
+
+def parse_datetime(text):
+    """
+    Parses given text and returns ``datetime.datetime`` instance or raises
+    ``ValueError``.
+    """
+
+    INPUT_FORMATS = (
+        '%Y-%m-%d %H:%M:%S',
+        '%Y-%m-%d %H:%M',
+        '%Y-%m-%d',
+        '%m/%d/%Y %H:%M:%S',
+        '%m/%d/%Y %H:%M',
+        '%m/%d/%Y',
+        '%m/%d/%y %H:%M:%S',
+        '%m/%d/%y %H:%M',
+        '%m/%d/%y',
+    )
+    for format in INPUT_FORMATS:
+        try:
+            return datetime.datetime(*time.strptime(text, format)[:6])
+        except ValueError:
+            pass
+    raise ValueError
+
