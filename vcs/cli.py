@@ -16,6 +16,7 @@ from vcs.utils.paths import abspath
 
 
 registry = {
+    'cat': 'vcs.commands.cat.CatCommand',
     'log': 'vcs.commands.log.LogCommand',
 }
 
@@ -98,12 +99,15 @@ class BaseCommand(object):
             usage = '{usage} {args}'.format(usage=usage, args=self.args)
         return usage
 
+    def get_option_list(self):
+        return self.option_list
+
     def get_parser(self, prog_name, subcommand):
         parser = OptionParser(
             prog=prog_name,
             usage=self.usage(subcommand),
             version=self.get_version(),
-            option_list=sorted(self.option_list))
+            option_list=sorted(self.get_option_list()))
         return parser
 
     def print_help(self, prog_name, subcommand):
@@ -242,6 +246,8 @@ class ChangesetCommand(RepositoryCommand):
 
 class SingleChangesetCommand(RepositoryCommand):
 
+    min_args = 1
+
     option_list = RepositoryCommand.option_list + (
         make_option('-c', '--commit', action='store', dest='changeset_id',
             default=None, help='Use specific commit. By default we use HEAD/tip'),
@@ -250,4 +256,15 @@ class SingleChangesetCommand(RepositoryCommand):
     def get_changeset(self, **options):
         cid = options.get('changeset_id', None)
         return self.repo.get_changeset(cid)
+
+    def handle_repo(self, repo, *args, **options):
+        if len(args) < self.min_args:
+            raise CommandError("At least {min_args} arguments required".format(
+                min_args=self.min_args))
+        changeset = self.get_changeset(**options)
+        for arg in args:
+            self.handle_arg(changeset, arg, **options)
+
+    def handle_arg(self, changeset, arg, **options):
+        raise NotImplementedError()
 
