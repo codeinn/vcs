@@ -11,6 +11,7 @@
 
 
 from itertools import chain
+from vcs.utils import author_name, author_email
 from vcs.utils.lazy import LazyProperty
 
 from vcs.exceptions import ChangesetError, EmptyRepositoryError, \
@@ -361,6 +362,31 @@ class BaseChangeset(object):
 
         """
         raise NotImplementedError
+
+    @LazyProperty
+    def author(self):
+        """
+        Returns Author for given commit
+        """
+
+        raise NotImplementedError
+
+    @LazyProperty
+    def author_name(self):
+        """
+        Returns Author name for given commit
+        """
+
+        return author_name(self.author)
+
+    @LazyProperty
+    def author_email(self):
+        """
+        Returns Author email address for given commit
+        """
+
+        return author_email(self.author)
+
 
     def get_file_mode(self, path):
         """

@@ -9,6 +9,7 @@ from vcs.utils.helpers import get_scm
 from vcs.utils.helpers import get_scms_for_path
 from vcs.utils.helpers import parse_changesets
 from vcs.utils.helpers import parse_datetime
+from vcs.utils import author_email, author_name
 from conf import TEST_HG_REPO, TEST_GIT_REPO, TEST_TMP_PATH
 from vcs.exceptions import VCSError
 
@@ -143,6 +144,41 @@ class TestParseDatetime(unittest2.TestCase):
         self.assertEqual(parse_datetime('yesterday'),
             datetime.datetime(*yesterday.timetuple()[:3]))
 
+
+
+class TestAuthorExtractors(unittest2.TestCase):
+    TEST_AUTHORS = [('Marcin Kuzminski <marcin@python-works.com>',
+                    ('Marcin Kuzminski', 'marcin@python-works.com')),
+                  ('Marcin Kuzminski Spaces < marcin@python-works.com >',
+                    ('Marcin Kuzminski Spaces', 'marcin@python-works.com')),
+                  ('Marcin Kuzminski <marcin.kuzminski@python-works.com>',
+                    ('Marcin Kuzminski', 'marcin.kuzminski@python-works.com')),
+                  ('mrf RFC_SPEC <marcin+kuzminski@python-works.com>',
+                    ('mrf RFC_SPEC', 'marcin+kuzminski@python-works.com')),
+                  ('username <user@email.com>',
+                    ('username', 'user@email.com')),
+                  ('username <user@email.com',
+                   ('username', 'user@email.com')),
+                  ('broken missing@email.com',
+                   ('broken', 'missing@email.com')),
+                  ('<justemail@mail.com>',
+                   ('', 'justemail@mail.com')),
+                  ('justname',
+                   ('justname', '')),
+                  ('Mr Double Name withemail@email.com ',
+                   ('Mr Double Name', 'withemail@email.com')),
+                  ]
+
+    def test_author_email(self):
+
+        for test_str, result in self.TEST_AUTHORS:
+            self.assertEqual(result[1], author_email(test_str))
+
+
+    def test_author_name(self):
+
+        for test_str, result in self.TEST_AUTHORS:
+            self.assertEqual(result[0], author_name(test_str))
 
 
 if __name__ == '__main__':
