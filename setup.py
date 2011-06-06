@@ -22,7 +22,7 @@ setup(
     zip_safe=False,
     packages=find_packages(),
     scripts=[],
-    test_suite='tests.collector',
+    test_suite='vcs.tests.collector',
     install_requires=['unittest2', 'Pygments'],
     include_package_data=True,
     classifiers=[
