@@ -84,7 +84,9 @@ class MercurialRepository(BaseRepository):
         """
         Checks if repository is empty without any changesets
         """
-        return self._repo.changelog.node(0) == nullid
+        # TODO: Following raises errors when using InMemoryChangeset...
+        # return len(self._repo.changelog) == 0
+        return len(self.revisions) == 0
 
     @LazyProperty
     def revisions(self):
