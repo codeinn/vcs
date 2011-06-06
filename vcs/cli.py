@@ -59,10 +59,6 @@ class ExecutionManager(object):
         return commands
 
     def run_command(self, cmd, argv):
-        if cmd not in registry:
-            self.stderr.write(u'No such command: {cmd}\n'.format(cmd=cmd))
-            self.show_help()
-            sys.exit(1)
         Command = self.get_command_class(cmd)
         command = Command(stdout=self.stdout, stderr=self.stderr)
         command.run_from_argv(argv)
