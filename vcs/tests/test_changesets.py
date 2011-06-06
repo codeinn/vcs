@@ -160,6 +160,18 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
         size = 5 * len('Foobar N') # Size of 5 files
         self.assertEqual(tip.size, size)
 
+    def test_author(self):
+        tip = self.repo.get_changeset()
+        self.assertEqual(tip.author, u'Joe Doe <joe.doe@example.com>')
+
+    def test_author_name(self):
+        tip = self.repo.get_changeset()
+        self.assertEqual(tip.author_name, u'Joe Doe')
+
+    def test_author_email(self):
+        tip = self.repo.get_changeset()
+        self.assertEqual(tip.author_email, u'joe.doe@example.com')
+
     def test_get_changesets_raise_changesetdoesnotexist_for_wrong_start(self):
         with self.assertRaises(ChangesetDoesNotExistError):
             list(self.repo.get_changesets(start='foobar'))
