@@ -131,7 +131,7 @@ class TestParseDatetime(unittest2.TestCase):
             datetime.datetime(2010, 4, 7, 21, 29, 41))
 
     def test_now(self):
-        self.assertAlmostEqual(parse_datetime('now'), datetime.datetime.now(),
+        self.assertTrue(parse_datetime('now') - datetime.datetime.now() < 
             datetime.timedelta(seconds=1))
 
     def test_today(self):
@@ -144,6 +144,37 @@ class TestParseDatetime(unittest2.TestCase):
         self.assertEqual(parse_datetime('yesterday'),
             datetime.datetime(*yesterday.timetuple()[:3]))
 
+    def test_tomorrow(self):
+        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
+        args = tomorrow.timetuple()[:3] + (23, 59, 59)
+        self.assertEqual(parse_datetime('tomorrow'), datetime.datetime(*args))
+
+    def test_days(self):
+        timestamp = datetime.datetime.today() - datetime.timedelta(days=3)
+        args = timestamp.timetuple()[:3] + (0, 0, 0, 0)
+        expected = datetime.datetime(*args)
+        self.assertEqual(parse_datetime('3d'), expected)
+        self.assertEqual(parse_datetime('3 d'), expected)
+        self.assertEqual(parse_datetime('3 day'), expected)
+        self.assertEqual(parse_datetime('3 days'), expected)
+
+    def test_weeks(self):
+        timestamp = datetime.datetime.today() - datetime.timedelta(days=3 * 7)
+        args = timestamp.timetuple()[:3] + (0, 0, 0, 0)
+        expected = datetime.datetime(*args)
+        self.assertEqual(parse_datetime('3w'), expected)
+        self.assertEqual(parse_datetime('3 w'), expected)
+        self.assertEqual(parse_datetime('3 week'), expected)
+        self.assertEqual(parse_datetime('3 weeks'), expected)
+
+    def test_mixed(self):
+        timestamp = datetime.datetime.today() - datetime.timedelta(days=2 * 7 + 3)
+        args = timestamp.timetuple()[:3] + (0, 0, 0, 0)
+        expected = datetime.datetime(*args)
+        self.assertEqual(parse_datetime('2w3d'), expected)
+        self.assertEqual(parse_datetime('2w 3d'), expected)
+        self.assertEqual(parse_datetime('2w 3 days'), expected)
+        self.assertEqual(parse_datetime('2 weeks 3 days'), expected)
 
 
 class TestAuthorExtractors(unittest2.TestCase):

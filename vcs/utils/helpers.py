@@ -176,12 +176,12 @@ def parse_datetime(text):
     """
     Parses given text and returns ``datetime.datetime`` instance or raises
     ``ValueError``.
+
+    :param text: string of desired date/datetime or something more verbose,
+      like *yesterday*, *2weeks 3days*, etc.
     """
 
     text = text.strip().lower()
-
-    if text == 'ye':
-        pass
 
     INPUT_FORMATS = (
         '%Y-%m-%d %H:%M:%S',
@@ -199,5 +199,31 @@ def parse_datetime(text):
             return datetime.datetime(*time.strptime(text, format)[:6])
         except ValueError:
             pass
+
+    # Try descriptive texts
+    if text == 'tomorrow':
+        future = datetime.datetime.now() + datetime.timedelta(days=1)
+        args = future.timetuple()[:3] + (23, 59, 59)
+        return datetime.datetime(*args)
+    elif text == 'today':
+        return datetime.datetime(*datetime.datetime.today().timetuple()[:3])
+    elif text == 'now':
+        return datetime.datetime.now()
+    elif text == 'yesterday':
+        past = datetime.datetime.now() - datetime.timedelta(days=1)
+        return datetime.datetime(*past.timetuple()[:3])
+    else:
+        days = 0
+        matched = re.match(
+            r'^((?P<weeks>\d+) ?w(eeks?)?)? ?((?P<days>\d+) ?d(ays?)?)?$', text)
+        if matched:
+            groupdict = matched.groupdict()
+            if groupdict['days']:
+                days += int(matched.groupdict()['days'])
+            if groupdict['weeks']:
+                days += int(matched.groupdict()['weeks']) * 7
+            past = datetime.datetime.now() - datetime.timedelta(days=days)
+            return datetime.datetime(*past.timetuple()[:3])
+
     raise ValueError('Wrong date: "{text}"'.format(text=text))
 
