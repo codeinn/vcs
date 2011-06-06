@@ -3,12 +3,12 @@ import tarfile
 import zipfile
 import datetime
 import tempfile
-import unittest2
 import StringIO
 from base import BackendTestMixin
 from conf import SCM_TESTS
 from vcs.exceptions import VCSError
 from vcs.nodes import FileNode
+from vcs.utils.compat import unittest
 
 class ArchivesTestCaseMixin(BackendTestMixin):
 
@@ -96,9 +96,9 @@ for alias in SCM_TESTS:
         'backend_alias': alias,
     }
     cls_name = ''.join(('%s archive test' % alias).title().split())
-    bases = (ArchivesTestCaseMixin, unittest2.TestCase)
+    bases = (ArchivesTestCaseMixin, unittest.TestCase)
     globals()[cls_name] = type(cls_name, bases, attrs)
 
 if __name__ == '__main__':
-    unittest2.main()
+    unittest.main()
 

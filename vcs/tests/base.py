@@ -5,7 +5,7 @@ InMemoryChangeset class is working properly at backend class.
 import vcs
 import time
 import datetime
-import unittest2
+from vcs.utils.compat import unittest
 
 from conf import SCM_TESTS, get_new_dir
 
@@ -89,10 +89,10 @@ for alias in SCM_TESTS:
         'backend_alias': alias,
     }
     cls_name = ''.join(('%s base backend test' % alias).title().split())
-    bases = (BackendTestMixin, unittest2.TestCase)
+    bases = (BackendTestMixin, unittest.TestCase)
     globals()[cls_name] = type(cls_name, bases, attrs)
 
 
 if __name__ == '__main__':
-    unittest2.main()
+    unittest.main()
 

@@ -2,13 +2,13 @@ from __future__ import with_statement
 
 import vcs
 import datetime
-import unittest2
 from base import BackendTestMixin
 from conf import SCM_TESTS
 from vcs.nodes import FileNode
 from vcs.exceptions import BranchDoesNotExistError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import RepositoryError
+from vcs.utils.compat import unittest
 
 
 class ChangesetsWithCommitsTestCaseixin(BackendTestMixin):
@@ -186,15 +186,15 @@ for alias in SCM_TESTS:
     }
     # tests with additional commits
     cls_name = ''.join(('%s changesets with commits test' % alias).title().split())
-    bases = (ChangesetsWithCommitsTestCaseixin, unittest2.TestCase)
+    bases = (ChangesetsWithCommitsTestCaseixin, unittest.TestCase)
     globals()[cls_name] = type(cls_name, bases, attrs)
 
     # tests without additional commits
     cls_name = ''.join(('%s changesets test' % alias).title().split())
-    bases = (ChangesetsTestCaseMixin, unittest2.TestCase)
+    bases = (ChangesetsTestCaseMixin, unittest.TestCase)
     globals()[cls_name] = type(cls_name, bases, attrs)
 
 
 if __name__ == '__main__':
-    unittest2.main()
+    unittest.main()
 

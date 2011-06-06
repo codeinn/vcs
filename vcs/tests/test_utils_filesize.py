@@ -1,5 +1,5 @@
-import unittest
 from vcs.utils.filesize import filesizeformat
+from vcs.utils.compat import unittest
 
 
 class TestFilesizeformat(unittest.TestCase):

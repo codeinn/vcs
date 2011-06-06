@@ -1,8 +1,8 @@
 import datetime
-import unittest2
 from base import BackendTestMixin
 from conf import SCM_TESTS
 from vcs.nodes import FileNode
+from vcs.utils.compat import unittest
 
 
 class GetitemTestCaseMixin(BackendTestMixin):
@@ -34,10 +34,10 @@ for alias in SCM_TESTS:
         'backend_alias': alias,
     }
     cls_name = ''.join(('%s getitem test' % alias).title().split())
-    bases = (GetitemTestCaseMixin, unittest2.TestCase)
+    bases = (GetitemTestCaseMixin, unittest.TestCase)
     globals()[cls_name] = type(cls_name, bases, attrs)
 
 
 if __name__ == '__main__':
-    unittest2.main()
+    unittest.main()
 

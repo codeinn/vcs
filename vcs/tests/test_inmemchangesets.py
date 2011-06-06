@@ -4,10 +4,7 @@ Tests so called "in memory changesets" commit API of vcs.
 import vcs
 import time
 import datetime
-import unittest2
-
 from conf import SCM_TESTS, get_new_dir
-
 from vcs.exceptions import EmptyRepositoryError
 from vcs.exceptions import NodeAlreadyAddedError
 from vcs.exceptions import NodeAlreadyExistsError
@@ -16,6 +13,7 @@ from vcs.exceptions import NodeAlreadyChangedError
 from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import NodeNotChangedError
 from vcs.nodes import FileNode
+from vcs.utils.compat import unittest
 
 
 class InMemoryChangesetTestMixin(object):
@@ -236,7 +234,7 @@ class InMemoryChangesetTestMixin(object):
 
 
 
-class BackendBaseTestCase(unittest2.TestCase):
+class BackendBaseTestCase(unittest.TestCase):
     """
     Base test class for tests which requires repository.
     """
@@ -300,10 +298,10 @@ for alias in SCM_TESTS:
         'backend_alias': alias,
     }
     cls_name = ''.join(('%s in memory changeset test' % alias).title().split())
-    bases = (InMemoryChangesetTestMixin, unittest2.TestCase)
+    bases = (InMemoryChangesetTestMixin, unittest.TestCase)
     globals()[cls_name] = type(cls_name, bases, attrs)
 
 
 if __name__ == '__main__':
-    unittest2.main()
+    unittest.main()
 

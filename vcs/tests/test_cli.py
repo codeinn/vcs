@@ -3,7 +3,7 @@ import sys
 import mock
 import vcs
 import vcs.cli
-from vcs.utils import unittest
+from vcs.utils.compat import unittest
 from vcs.cli import make_option
 from vcs.cli import BaseCommand
 from vcs.cli import ExecutionManager

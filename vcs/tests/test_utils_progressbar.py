@@ -1,8 +1,8 @@
 import sys
 import datetime
-import unittest
 from vcs.utils.progressbar import AlreadyFinishedError
 from vcs.utils.progressbar import ProgressBar
+from vcs.utils.compat import unittest
 
 
 class TestProgressBar(unittest.TestCase):

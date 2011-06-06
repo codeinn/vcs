@@ -12,14 +12,14 @@ certain location exists, if not we would try to fetch them. At ``test_vcs`` or
 ``test_common`` we run unit tests common for each repository type and for
 example specific mercurial tests are located at ``test_hg`` module.
 
-Oh, and tests are run with ``unittest2.collector`` wrapped by ``collector``
+Oh, and tests are run with ``unittest.collector`` wrapped by ``collector``
 function at ``tests/__init__.py``.
 
 .. _vcs: http://bitbucket.org/marcinkuzminski/vcs
-.. _unittest2: http://pypi.python.org/pypi/unittest2
+.. _unittest: http://pypi.python.org/pypi/unittest
 
 """
-import unittest2
+from vcs.utils.compat import unittest
 from conf import *
 from utils import VCSTestError, SCMFetcher
 
@@ -69,12 +69,13 @@ def setup_package():
 
 def collector():
     setup_package()
-    return unittest2.collector()
+    start_dir = os.path.abspath(os.path.dirname(__file__))
+    return unittest.defaultTestLoader.discover(start_dir)
 
 
 def main():
     collector()
-    unittest2.main()
+    unittest.main()
 
 if __name__ == '__main__':
     main()

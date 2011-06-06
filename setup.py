@@ -11,6 +11,10 @@ except IOError, err:
         "long_description (%s)\n" % readme_file)
     sys.exit(1)
 
+install_requires = ['Pygments', 'mock']
+if sys.version_info < (2, 7):
+    install_requires.append('unittest2')
+
 setup(
     name='vcs',
     version=vcs.get_version(),
@@ -23,7 +27,7 @@ setup(
     packages=find_packages(),
     scripts=[],
     test_suite='vcs.tests.collector',
-    install_requires=['unittest2', 'Pygments'],
+    install_requires=install_requires,
     include_package_data=True,
     classifiers=[
         'Development Status :: 4 - Beta',

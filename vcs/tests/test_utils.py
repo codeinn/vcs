@@ -3,7 +3,7 @@ import shutil
 import time
 import tempfile
 import datetime
-import unittest2
+from vcs.utils.compat import unittest
 from vcs.utils.paths import get_dirs_for_path
 from vcs.utils.helpers import get_scm
 from vcs.utils.helpers import get_scms_for_path
@@ -14,7 +14,7 @@ from conf import TEST_HG_REPO, TEST_GIT_REPO, TEST_TMP_PATH
 from vcs.exceptions import VCSError
 
 
-class PathsTest(unittest2.TestCase):
+class PathsTest(unittest.TestCase):
 
     def _test_get_dirs_for_path(self, path, expected):
         """
@@ -69,7 +69,7 @@ class PathsTest(unittest2.TestCase):
         self.assertEqual(set(get_scms_for_path(new)), set(['git', 'hg']))
 
 
-class TestParseChangesets(unittest2.TestCase):
+class TestParseChangesets(unittest.TestCase):
 
     def test_main_is_returned_correctly(self):
         self.assertEqual(parse_changesets('123456'), {
@@ -112,7 +112,7 @@ class TestParseChangesets(unittest2.TestCase):
             parse_changesets('aaa@bbb')
 
 
-class TestParseDatetime(unittest2.TestCase):
+class TestParseDatetime(unittest.TestCase):
 
     def test_datetime_text(self):
         self.assertEqual(parse_datetime('2010-04-07 21:29:41'),
@@ -177,7 +177,7 @@ class TestParseDatetime(unittest2.TestCase):
         self.assertEqual(parse_datetime('2 weeks 3 days'), expected)
 
 
-class TestAuthorExtractors(unittest2.TestCase):
+class TestAuthorExtractors(unittest.TestCase):
     TEST_AUTHORS = [('Marcin Kuzminski <marcin@python-works.com>',
                     ('Marcin Kuzminski', 'marcin@python-works.com')),
                   ('Marcin Kuzminski Spaces < marcin@python-works.com >',
@@ -213,5 +213,5 @@ class TestAuthorExtractors(unittest2.TestCase):
 
 
 if __name__ == '__main__':
-    unittest2.main()
+    unittest.main()
 

@@ -1,13 +1,12 @@
 import os
-import unittest2
-
 from vcs.backends.hg import MercurialRepository, MercurialChangeset
 from vcs.exceptions import RepositoryError, VCSError, NodeDoesNotExistError
 from vcs.nodes import NodeKind, NodeState
 from conf import PACKAGE_DIR, TEST_HG_REPO, TEST_HG_REPO_CLONE, \
     TEST_HG_REPO_PULL
+from vcs.utils.compat import unittest
 
-class MercurialRepositoryTest(unittest2.TestCase):
+class MercurialRepositoryTest(unittest.TestCase):
 
     def __check_for_existing_repo(self):
         if os.path.exists(TEST_HG_REPO_CLONE):
@@ -234,7 +233,7 @@ TODO: To be written...
         self.assertEqual(node.kind, NodeKind.FILE)
         self.assertEqual(node.content, README)
 
-class MercurialChangesetTest(unittest2.TestCase):
+class MercurialChangesetTest(unittest.TestCase):
 
     def setUp(self):
         self.repo = MercurialRepository(TEST_HG_REPO)

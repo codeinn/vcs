@@ -1,7 +1,7 @@
 # encoding: utf8
 import datetime
-import unittest2
 from vcs.nodes import FileNode
+from vcs.utils.compat import unittest
 from test_inmemchangesets import BackendBaseTestCase
 from conf import SCM_TESTS
 
@@ -43,5 +43,5 @@ for alias in SCM_TESTS:
 
 
 if __name__ == '__main__':
-    unittest2.main()
+    unittest.main()
 

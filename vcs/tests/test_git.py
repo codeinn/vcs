@@ -1,13 +1,12 @@
 import os
-import unittest2
-
 from vcs.backends.git import GitRepository, GitChangeset
 from vcs.exceptions import RepositoryError, VCSError, NodeDoesNotExistError
 from vcs.nodes import NodeKind, FileNode, DirNode, NodeState
-
+from vcs.utils.compat import unittest
 from conf import TEST_GIT_REPO, TEST_GIT_REPO_CLONE
 
-class GitRepositoryTest(unittest2.TestCase):
+
+class GitRepositoryTest(unittest.TestCase):
 
     def __check_for_existing_repo(self):
         if os.path.exists(TEST_GIT_REPO_CLONE):
@@ -179,7 +178,7 @@ TODO: To be written...
         self.assertEqual(node.content, README)
 
 
-class GitChangesetTest(unittest2.TestCase):
+class GitChangesetTest(unittest.TestCase):
 
     def setUp(self):
         self.repo = GitRepository(TEST_GIT_REPO)
@@ -547,5 +546,5 @@ class GitChangesetTest(unittest2.TestCase):
 
 
 if __name__ == '__main__':
-    unittest2.main()
+    unittest.main()
 
