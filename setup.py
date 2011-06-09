@@ -1,8 +1,10 @@
+import os
 import sys
 from setuptools import setup, find_packages
 
 vcs = __import__('vcs')
-readme_file = 'README.rst'
+readme_file = os.path.abspath(os.path.join(os.path.dirname(__file__),
+    'README.rst'))
 
 try:
     long_description = open(readme_file).read()
