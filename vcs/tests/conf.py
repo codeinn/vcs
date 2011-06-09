@@ -20,7 +20,7 @@ uniq_suffix = str(int(time.mktime(datetime.datetime.now().timetuple())))
 
 GIT_REMOTE_REPO = 'git://github.com/codeinn/vcs.git'
 
-TEST_TMP_PATH = '/tmp'
+TEST_TMP_PATH = os.environ.get('VCS_TEST_ROOT', '/tmp')
 TEST_GIT_REPO = os.environ.get('VCS_TEST_GIT_REPO',
                               jn(TEST_TMP_PATH, 'vcs-git'))
 TEST_GIT_REPO_CLONE = os.environ.get('VCS_TEST_GIT_REPO_CLONE',
@@ -36,7 +36,7 @@ TEST_HG_REPO_CLONE = os.environ.get('VCS_TEST_HG_REPO_CLONE',
 TEST_HG_REPO_PULL = os.environ.get('VCS_TEST_HG_REPO_PULL',
                               jn(TEST_TMP_PATH, 'vcshgpull%s' % uniq_suffix))
 
-TEST_DIR = tempfile.gettempdir()
+TEST_DIR = os.environ.get('VCS_TEST_ROOT', tempfile.gettempdir())
 TEST_REPO_PREFIX = 'vcs-test'
 
 def get_new_dir(title):
