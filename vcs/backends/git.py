@@ -345,12 +345,12 @@ class GitRepository(BaseRepository):
             branch_revs = None
 
         for rev in revs:
+            if branch_revs and rev not in branch_revs:
+                continue
             cs = self.get_changeset(rev)
             if start_date and cs.date < start_date:
                 continue
             if end_date and cs.date > end_date:
-                continue
-            if branch_revs and cs.raw_id not in branch_revs:
                 continue
             yield cs
 
