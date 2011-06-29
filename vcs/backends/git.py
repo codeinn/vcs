@@ -119,7 +119,7 @@ class GitRepository(BaseRepository):
             else:
                 return Repo(self.path)
         except (NotGitRepository, OSError), err:
-            raise RepositoryError(str(err))
+            raise RepositoryError(err)
 
     def _get_all_revisions(self):
         cmd = 'rev-list --all --date-order'

@@ -73,7 +73,12 @@ class MercurialRepository(BaseRepository):
           making a clone
         """
 
-        self.path = str(abspath(repo_path))
+        if not isinstance(repo_path, str):
+            raise VCSError('Mercurial backend requires repository path to '
+                           'be instance of <str> got %s instead' %
+                           type(repo_path))
+
+        self.path = abspath(repo_path)
         self.baseui = baseui or ui.ui()
         # We've set path and ui, now we can set _repo itself
         self._repo = self._get_repo(create, src_url, update_after_clone)
