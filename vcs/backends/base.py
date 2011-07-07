@@ -554,6 +554,18 @@ class BaseWorkdir(object):
     def __init__(self, repository):
         self.repository = repository
 
+    def get_branch(self):
+        """
+        Returns name of current branch.
+        """
+        raise NotImplementedError
+
+    def get_changeset(self):
+        """
+        Returns current changeset.
+        """
+        raise NotImplementedError
+
     def get_added(self):
         """
         Returns list of ``FileNode`` objects marked as *new* in working

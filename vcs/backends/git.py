@@ -22,6 +22,7 @@ from vcs.backends import ARCHIVE_SPECS
 from vcs.backends.base import BaseChangeset
 from vcs.backends.base import BaseInMemoryChangeset
 from vcs.backends.base import BaseRepository
+from vcs.backends.base import BaseWorkdir
 from vcs.exceptions import BranchDoesNotExistError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import ChangesetError
@@ -372,6 +373,13 @@ class GitRepository(BaseRepository):
         cmd += '-- "%s" "%s"' % (url, self.path)
         # If error occurs run_git_command raises RepositoryError already
         self.run_git_command(cmd)
+
+    @LazyProperty
+    def workdir(self):
+        """
+        Returns ``Workdir`` instance for this repository.
+        """
+        return GitWorkdir(self)
 
 
 class GitChangeset(BaseChangeset):
@@ -993,3 +1001,21 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
             # Always append tree
             trees.append(tree)
         return trees
+
+
+class GitWorkdir(BaseWorkdir):
+
+    def get_branch(self):
+        refs = self.repository._repo.refs.as_dict()
+        head = refs.get('HEAD')
+        for branch, ref in refs.iteritems():
+            if branch == 'HEAD':
+                continue
+            if ref == head:
+                return branch[len('refs/heads/'):]
+        raise RepositoryError("Couldn't compute workdir's branch")
+
+    def get_changeset(self):
+        return self.repository.get_changeset(
+            self.repository._repo.refs.as_dict().get('HEAD'))
+
