@@ -12,10 +12,8 @@
 import os
 import re
 import time
-import StringIO
 import datetime
 import posixpath
-import tempfile
 from dulwich import objects
 from dulwich.repo import Repo, NotGitRepository
 from itertools import chain
