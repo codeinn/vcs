@@ -1012,7 +1012,7 @@ class GitWorkdir(BaseWorkdir):
             if branch == 'HEAD':
                 continue
             if ref == head:
-                return branch[len('refs/heads/'):]
+                return branch.split('/')[-1]
         raise RepositoryError("Couldn't compute workdir's branch")
 
     def get_changeset(self):
