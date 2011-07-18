@@ -173,9 +173,6 @@ class GitRepository(BaseRepository):
         for i in [('zip', '.zip'), ('gz', '.tar.gz'), ('bz2', '.tar.bz2')]:
                 yield {"type": i[0], "extension": i[1], "node": archive_name}
 
-    def _get_tree(self, id):
-        return self._repo[id]
-
     def _get_url(self, url):
         """
         Returns normalized url. If schema is not given, would fall to
@@ -857,16 +854,16 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         DIRMOD = 040000
 
         # Create tree and populates it with blobs
-        tree = self.parents[0] and repo[self.parents[0]._commit.tree] or \
+        commit_tree = self.parents[0] and repo[self.parents[0]._commit.tree] or\
             objects.Tree()
-        object_store.add_object(tree)
-        for node in self.added:
+        for node in self.added + self.changed:
             # Compute subdirs if needed
             dirpath, nodename = posixpath.split(node.path)
             dirnames = dirpath and dirpath.split('/') or []
-            parent = tree
+            parent = commit_tree
+            ancestors = [('', parent)]
 
-            # Tries to dig for the deepset existing tree
+            # Tries to dig for the deepest existing tree
             while dirnames:
                 curdir = dirnames.pop(0)
                 try:
@@ -878,58 +875,46 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
                 else:
                     # If found, updates parent
                     parent = self.repository._repo[dir_id]
+                    ancestors.append((curdir, parent))
             # Now parent is deepest exising tree and we need to create subtrees
-            # for dirnames (in reverse order)
+            # for dirnames (in reverse order) [this only applies for nodes from added]
             new_trees = []
             blob = objects.Blob.from_string(node.content.encode(ENCODING))
             node_path = node.name.encode(ENCODING)
             if dirnames:
                 # If there are trees which should be created we need to build
-                # now
+                # them now (in reverse order)
                 reversed_dirnames = list(reversed(dirnames))
                 curtree = objects.Tree()
-                curtree.add(node.mode, node_path, blob.id)
+                curtree[node_path] = node.mode, blob.id
                 new_trees.append(curtree)
                 for dirname in reversed_dirnames[:-1]:
                     newtree = objects.Tree()
-                    newtree.add(DIRMOD, dirname, curtree.id)
+                    #newtree.add(DIRMOD, dirname, curtree.id)
+                    newtree[dirname] = DIRMOD, curtree.id
                     new_trees.append(newtree)
                     curtree = newtree
                 parent[reversed_dirnames[-1]] = DIRMOD, curtree.id
             else:
                 parent.add(node.mode, node_path, blob.id)
+            new_trees.append(parent)
+            # Update ancestors
+            for parent, tree, path in reversed([(a[1], b[1], b[0]) for a, b in
+                zip(ancestors, ancestors[1:])]):
+                parent[path] = DIRMOD, tree.id
+                object_store.add_object(tree)
 
             object_store.add_object(blob)
-            for t in new_trees:
-                object_store.add_object(t)
-        for node in self.changed:
-            # Compute subdirs if needed
-            dirpath, nodename = posixpath.split(node.path)
-            dirnames = dirpath and dirpath.split('/') or []
-            parent = tree
-            trees = [parent]
-            for dirname in dirnames:
-                try:
-                    dir_id = parent[dirname][1]
-                    parent = self.repository._repo[dir_id]
-                except KeyError:
-                    subdir = objects.Tree()
-                    parent.add(DIRMOD, dirname, subdir.id)
-                    parent = subdir
-                trees.append(parent)
-            blob = objects.Blob.from_string(node.content.encode(ENCODING))
-            parent[nodename] = node.mode, blob.id
-            object_store.add_object(blob)
-            for t in trees:
-                object_store.add_object(t)
+            for tree in new_trees:
+                object_store.add_object(tree)
         for node in self.removed:
-            del tree[node.path]
+            del commit_tree[node.path]
 
-        object_store.add_object(tree)
+        object_store.add_object(commit_tree)
 
         # Create commit
         commit = objects.Commit()
-        commit.tree = tree.id
+        commit.tree = commit_tree.id
         commit.parents = [p._commit.id for p in self.parents if p]
         commit.author = commit.committer = author
         commit.encoding = ENCODING

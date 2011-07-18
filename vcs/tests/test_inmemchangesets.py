@@ -12,6 +12,7 @@ from vcs.exceptions import NodeAlreadyRemovedError
 from vcs.exceptions import NodeAlreadyChangedError
 from vcs.exceptions import NodeDoesNotExistError
 from vcs.exceptions import NodeNotChangedError
+from vcs.nodes import DirNode
 from vcs.nodes import FileNode
 from vcs.utils.compat import unittest
 
@@ -82,6 +83,31 @@ class InMemoryChangesetTestMixin(object):
         for node in to_add:
             self.assertEqual(newtip.get_node(node.path).content, node.content)
 
+    def test_add_actually_adds_all_nodes_at_second_commit_too(self):
+        self.imc.add(FileNode('foo/bar/image.png', content='\0'))
+        self.imc.add(FileNode('foo/README.txt', content='readme!'))
+        changeset = self.imc.commit('Initial', 'joe.doe@example.com')
+        self.assertTrue(isinstance(changeset.get_node('foo'), DirNode))
+        self.assertTrue(isinstance(changeset.get_node('foo/bar'), DirNode))
+        self.assertEqual(changeset.get_node('foo/bar/image.png').content, '\0')
+        self.assertEqual(changeset.get_node('foo/README.txt').content, 'readme!')
+
+        # commit some more files again
+        to_add = [
+            FileNode('foo/bar/foobaz/bar', content='foo'),
+            FileNode('foo/bar/another/bar', content='foo'),
+            FileNode('foo/baz.txt', content='foo'),
+            FileNode('foobar/foobaz/file', content='foo'),
+            FileNode('foobar/barbaz', content='foo'),
+        ]
+        self.imc.add(*to_add)
+        changeset = self.imc.commit('Another', 'joe.doe@example.com')
+        self.assertEqual(changeset.get_node('foo/bar/foobaz/bar').content, 'foo')
+        self.assertEqual(changeset.get_node('foo/bar/another/bar').content, 'foo')
+        self.assertEqual(changeset.get_node('foo/baz.txt').content, 'foo')
+        self.assertEqual(changeset.get_node('foobar/foobaz/file').content, 'foo')
+        self.assertEqual(changeset.get_node('foobar/barbaz').content, 'foo')
+
     def test_add_raise_already_added(self):
         node = FileNode('foobar', content='baz')
         self.imc.add(node)
@@ -97,22 +123,20 @@ class InMemoryChangesetTestMixin(object):
             author=str(self))
 
     def test_change(self):
-        self.test_add() # Performs first commit
-
-        tip = self.repo.get_changeset()
-        node = self.nodes[0]
-        self.assertEqual(node.content, tip.get_node(node.path).content)
+        self.imc.add(FileNode('foo/bar/baz', content='foo'))
+        self.imc.add(FileNode('foo/fbar', content='foobar'))
+        tip = self.imc.commit('Initial', 'joe.doe@example.com')
 
         # Change node's content
-        node = FileNode(self.nodes[0].path, content='My **changed** content')
+        node = FileNode('foo/bar/baz', content='My **changed** content')
         self.imc.change(node)
-        self.imc.commit(message='Changed %s' % node.path, author=str(self))
+        self.imc.commit('Changed %s' % node.path, 'joe.doe@example.com')
 
         newtip = self.repo.get_changeset()
         self.assertNotEqual(tip, newtip)
         self.assertNotEqual(tip.id, newtip.id)
-        newnode = newtip.get_node(node.path)
-        self.assertEqual(node.content, newnode.content)
+        self.assertEqual(newtip.get_node('foo/bar/baz').content,
+            'My **changed** content')
 
     def test_change_raise_empty_repository(self):
         node = FileNode('foobar')
