@@ -1,4 +1,5 @@
 import os
+import mock
 from vcs.backends.git import GitRepository, GitChangeset
 from vcs.exceptions import RepositoryError, VCSError, NodeDoesNotExistError
 from vcs.nodes import NodeKind, FileNode, DirNode, NodeState
@@ -543,6 +544,30 @@ class GitChangesetTest(unittest.TestCase):
         self.assertEqual('marcink',
           self.repo.get_changeset('8430a588b43b5d6da365400117c89400326e7992')\
           .author_name)
+
+
+class GitSpecificTest(unittest.TestCase):
+
+    def test_error_is_raised_for_added_if_diff_name_status_is_wrong(self):
+        repo = mock.MagicMock()
+        changeset = GitChangeset(repo, 'foobar')
+        changeset._diff_name_status = 'foobar'
+        with self.assertRaises(VCSError):
+            changeset.added
+
+    def test_error_is_raised_for_changed_if_diff_name_status_is_wrong(self):
+        repo = mock.MagicMock()
+        changeset = GitChangeset(repo, 'foobar')
+        changeset._diff_name_status = 'foobar'
+        with self.assertRaises(VCSError):
+            changeset.added
+
+    def test_error_is_raised_for_removed_if_diff_name_status_is_wrong(self):
+        repo = mock.MagicMock()
+        changeset = GitChangeset(repo, 'foobar')
+        changeset._diff_name_status = 'foobar'
+        with self.assertRaises(VCSError):
+            changeset.added
 
 
 if __name__ == '__main__':

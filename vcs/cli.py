@@ -194,10 +194,10 @@ class ChangesetCommand(RepositoryCommand):
         make_option('--all', action='store_true', dest='all',
             default='all', help='Show changesets across all branches.'),
 
-        make_option('--start-date', action='store', dest='start_date',
+        make_option('--since', '--start-date', action='store', dest='start_date',
             help='Show only changesets not younger than specified '
                  'start date.'),
-        make_option('--end-date', action='store', dest='end_date',
+        make_option('--until', '--end-date', action='store', dest='end_date',
             help='Show only changesets not older than specified '
                  'end date.'),
 
@@ -230,7 +230,8 @@ class ChangesetCommand(RepositoryCommand):
             end=options.get('end', options.get('main')),
             start_date=options.get('start_date'),
             end_date=options.get('end_date'),
-            branch_name=options.get('branch') or repo.DEFAULT_BRANCH_NAME,
+            branch_name=options.get('all') and None or
+                options.get('branch') or repo.workdir.get_branch(),
             reverse=not options.get('reversed', False),
         )
         try:
