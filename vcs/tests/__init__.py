@@ -38,6 +38,7 @@ from test_nodes import *
 from test_tags import *
 from test_utils import *
 from test_vcs import *
+from test_workdirs import *
 
 
 def setup_package():
