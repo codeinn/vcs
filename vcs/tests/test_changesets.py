@@ -191,6 +191,58 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
             list(self.repo.get_changesets(start=start, end=end))
 
 
+class ChangesetsChangesTestCaseMixin(BackendTestMixin):
+    recreate_repo_per_test = False
+
+    @classmethod
+    def _get_commits(cls):
+        return [
+            {
+                'message': 'Initial',
+                'author': 'Joe Doe <joe.doe@example.com>',
+                'date': datetime.datetime(2010, 1, 1, 20),
+                'added': [
+                    FileNode('foo/bar', content='foo'),
+                    FileNode('foobar', content='foo'),
+                    FileNode('qwe', content='foo'),
+                ],
+            },
+            {
+                'message': 'Massive changes',
+                'author': 'Joe Doe <joe.doe@example.com>',
+                'date': datetime.datetime(2010, 1, 1, 22),
+                'added': [FileNode('fallout', content='War never changes')],
+                'changed': [
+                    FileNode('foo/bar', content='baz'),
+                    FileNode('foobar', content='baz'),
+                ],
+                'removed': [FileNode('qwe')],
+            },
+        ]
+
+    def test_initial_commit(self):
+        changeset = self.repo.get_changeset(0)
+        self.assertItemsEqual(changeset.added, [
+            changeset.get_node('foo/bar'),
+            changeset.get_node('foobar'),
+            changeset.get_node('qwe'),
+        ])
+        self.assertItemsEqual(changeset.changed, [])
+        self.assertItemsEqual(changeset.removed, [])
+
+    def test_head_added(self):
+        changeset = self.repo.get_changeset()
+        self.assertItemsEqual(changeset.added, [
+            changeset.get_node('fallout'),
+        ])
+        self.assertItemsEqual(changeset.changed, [
+            changeset.get_node('foo/bar'),
+            changeset.get_node('foobar'),
+        ])
+        self.assertEqual(len(changeset.removed), 1)
+        self.assertEqual(list(changeset.removed)[0].path, 'qwe')
+
+
 # For each backend create test case class
 for alias in SCM_TESTS:
     attrs = {
@@ -204,6 +256,11 @@ for alias in SCM_TESTS:
     # tests without additional commits
     cls_name = ''.join(('%s changesets test' % alias).title().split())
     bases = (ChangesetsTestCaseMixin, unittest.TestCase)
+    globals()[cls_name] = type(cls_name, bases, attrs)
+
+    # tests changes
+    cls_name = ''.join(('%s changesets changes test' % alias).title().split())
+    bases = (ChangesetsChangesTestCaseMixin, unittest.TestCase)
     globals()[cls_name] = type(cls_name, bases, attrs)
 
 

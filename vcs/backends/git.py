@@ -757,23 +757,42 @@ class GitChangeset(BaseChangeset):
         return self.added + self.changed
 
     @LazyProperty
+    def _diff_name_status(self):
+        output = []
+        for parent in self.parents:
+            cmd = 'diff --name-status %s %s' % (parent.raw_id, self.raw_id)
+            so, se = self.repository.run_git_command(cmd)
+            output.append(so.strip())
+        return '\n'.join(output)
+
+    def _get_paths_for_status(self, status):
+        """
+        Returns sorted list of paths for given ``status``.
+
+        :param status: one of: *added*, *modified* or *deleted*
+        """
+        paths = set()
+        char = status[0].upper()
+        for line in self._diff_name_status.splitlines():
+            if not line:
+                continue
+            if line.startswith(char):
+                splitted = line.split()
+                if not len(splitted) == 2:
+                    raise VCSError("Couldn't parse diff result:\n%s\n\n and "
+                        "particularly that line: %s" % (self._diff_name_status,
+                        line))
+                paths.add(splitted[1])
+        return sorted(paths)
+
+    @LazyProperty
     def added(self):
         """
         Returns list of added ``FileNode`` objects.
         """
         if not self.parents:
             return list(self._get_file_nodes())
-        added_nodes = []
-        old_files = set()
-        for parent in self.parents:
-            for f in parent._get_file_nodes():
-                old_files.add(f.path)
-
-        files = set([f.path for f in self._get_file_nodes()])
-        for path in (files - old_files):
-            added_nodes.append(self.get_node(path))
-
-        return added_nodes
+        return [self.get_node(path) for path in self._get_paths_for_status('added')]
 
     @LazyProperty
     def changed(self):
@@ -782,24 +801,7 @@ class GitChangeset(BaseChangeset):
         """
         if not self.parents:
             return []
-        changed_nodes = []
-        not_changed_paths = [f.path for f in self.added + self.removed]
-        for parent in self.parents:
-            try:
-                # Second param at --stat is for paths to be showed completely
-                cmd = 'diff --stat=999,999 %s %s' % (self.raw_id,
-                                                     parent.raw_id)
-                so, se = self.repository.run_git_command(cmd)
-                for line in so.splitlines()[:-1]:
-                    path = line.split()[0]
-                    if path in not_changed_paths:
-                        continue
-                    node = self.get_node(path)
-                    changed_nodes.append(node)
-            except ChangesetError:
-                # If node cannot be found, just continue
-                pass
-        return changed_nodes
+        return [self.get_node(path) for path in self._get_paths_for_status('modified')]
 
     @LazyProperty
     def removed(self):
@@ -808,18 +810,7 @@ class GitChangeset(BaseChangeset):
         """
         if not self.parents:
             return []
-        removed_nodes = []
-        old_files = set()
-        for parent in self.parents:
-            for f in parent._get_file_nodes():
-                old_files.add(f.path)
-
-        files = set([f.path for f in self._get_file_nodes()])
-        for path in (old_files - files):
-            node = RemovedFileNode(path)
-            removed_nodes.append(node)
-
-        return removed_nodes
+        return [RemovedFileNode(path) for path in self._get_paths_for_status('deleted')]
 
 
 class GitInMemoryChangeset(BaseInMemoryChangeset):
