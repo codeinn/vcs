@@ -1,9 +1,11 @@
 import os
 import mock
+import datetime
 from vcs.backends.git import GitRepository, GitChangeset
 from vcs.exceptions import RepositoryError, VCSError, NodeDoesNotExistError
 from vcs.nodes import NodeKind, FileNode, DirNode, NodeState
 from vcs.utils.compat import unittest
+from vcs.tests.base import BackendTestMixin
 from conf import TEST_GIT_REPO, TEST_GIT_REPO_CLONE
 
 
@@ -569,6 +571,35 @@ class GitSpecificTest(unittest.TestCase):
         with self.assertRaises(VCSError):
             changeset.added
 
+
+class GitSpecificWithRepoTest(BackendTestMixin, unittest.TestCase):
+    backend_alias = 'git'
+    
+    @classmethod
+    def _get_commits(cls):
+        return [
+            {
+                'message': 'Initial',
+                'author': 'Joe Doe <joe.doe@example.com>',
+                'date': datetime.datetime(2010, 1, 1, 20),
+                'added': [
+                    FileNode('foobar/static/js/admin/base.js', content='foo'),
+                    FileNode('foobar/static/admin', content='foo',
+                        mode=0120000), # this is a link
+                    FileNode('foo', content='foo'),
+                ],
+            },
+        ]
+
+    def test_paths_slow_traversing(self):
+        cs = self.repo.get_changeset()
+        self.assertEqual(cs.get_node('foobar').get_node('static').get_node('js')
+            .get_node('admin').get_node('base.js').content, 'foo')
+
+    def test_paths_fast_traversing(self):
+        cs = self.repo.get_changeset()
+        self.assertEqual(cs.get_node('foobar/static/js/admin/base.js').content,
+            'foo')
 
 if __name__ == '__main__':
     unittest.main()
