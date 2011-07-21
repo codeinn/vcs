@@ -102,6 +102,20 @@ class GitRepository(BaseRepository):
 
         return so
 
+    def _check_url(self, url):
+        """
+        Functon will check given url and try to verify if it's a valid
+        link. Sometimes it may happened that mercurial will issue basic
+        auth request that can cause whole API to hang when used from python
+        or other external calls.
+        
+        On failures it'll raise urllib2.HTTPError
+        """
+
+        #TODO: implement this
+        pass
+
+
     def _get_repo(self, create, src_url=None, update_after_clone=False):
         if create and os.path.exists(self.path):
             raise RepositoryError("Location already exist")
@@ -110,6 +124,7 @@ class GitRepository(BaseRepository):
                                   "given (clone operation creates repository)")
         try:
             if create and src_url:
+                self._check_url(src_url)
                 self.clone(src_url, update_after_clone)
                 return Repo(self.path)
             elif create:

@@ -11,6 +11,7 @@
 import os
 import time
 import errno
+import urllib
 import urllib2
 import datetime
 import posixpath
@@ -219,6 +220,56 @@ class MercurialRepository(BaseRepository):
 
         return map(lambda x: hex(x[7]), self._repo.changelog.index)[:-1]
 
+
+    def _check_url(self, url):
+        """
+        Functon will check given url and try to verify if it's a valid
+        link. Sometimes it may happened that mercurial will issue basic
+        auth request that can cause whole API to hang when used from python
+        or other external calls.
+        
+        On failures it'll raise urllib2.HTTPError, return code 200 if url
+        is valid or True if it's a local path
+        """
+
+        from mercurial.util import url as Url
+
+        # those authnadlers are patched for python 2.6.5 bug an 
+        # infinit looping when given invalid resources
+        from mercurial.url import httpbasicauthhandler, httpdigestauthhandler
+
+        # check first if it's not an local url
+        if os.path.isdir(url) or url.startswith('file:'):
+            return True
+
+        handlers = []
+        test_uri, authinfo = Url(url).authinfo()
+
+        if authinfo:
+            #create a password manager
+            passmgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+            passmgr.add_password(*authinfo)
+
+            handlers.extend((httpbasicauthhandler(passmgr),
+                             httpdigestauthhandler(passmgr)))
+
+        o = urllib2.build_opener(*handlers)
+        o.addheaders = [('Content-Type', 'application/mercurial-0.1'),
+                        ('Accept', 'application/mercurial-0.1')]
+
+        q = {"cmd": 'between'}
+        q.update({'pairs':"%s-%s" % ('0' * 40, '0' * 40)})
+        qs = '?%s' % urllib.urlencode(q)
+        cu = "%s%s" % (test_uri, qs)
+        req = urllib2.Request(cu, None, {})
+
+        try:
+            resp = o.open(req)
+            return resp.code == 200
+        except Exception, e:
+            # means it cannot be cloned
+            raise urllib2.URLError(e)
+
     def _get_repo(self, create, src_url=None, update_after_clone=False):
         """
         Function will check for mercurial repository in given path and return
@@ -236,9 +287,12 @@ class MercurialRepository(BaseRepository):
                 if not update_after_clone:
                     opts.update({'noupdate': True})
                 try:
+                    self._check_url(url)
                     clone(self.baseui, url, self.path, **opts)
-                except urllib2.URLError:
-                    raise Abort("Got HTTP 404 error")
+#                except urllib2.URLError:
+#                    raise Abort("Got HTTP 404 error")
+                except Exception:
+                    raise
                 # Don't try to create if we've already cloned repo
                 create = False
             return localrepository(self.baseui, self.path, create=create)
@@ -821,7 +875,7 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
 
 
 class MercurialWorkdir(BaseWorkdir):
-    
+
     def get_branch(self):
         raw_id = self.get_changeset().raw_id
         for branch, branch_id in self.repository.branches.iteritems():
