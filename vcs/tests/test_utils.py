@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import os
 import shutil
 import time
@@ -131,7 +133,7 @@ class TestParseDatetime(unittest.TestCase):
             datetime.datetime(2010, 4, 7, 21, 29, 41))
 
     def test_now(self):
-        self.assertTrue(parse_datetime('now') - datetime.datetime.now() < 
+        self.assertTrue(parse_datetime('now') - datetime.datetime.now() <
             datetime.timedelta(seconds=1))
 
     def test_today(self):

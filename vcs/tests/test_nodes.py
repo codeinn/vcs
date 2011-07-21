@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import stat
 from vcs.nodes import DirNode
 from vcs.nodes import FileNode

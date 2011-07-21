@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import os
 import mock
 from vcs.backends.git import GitRepository, GitChangeset

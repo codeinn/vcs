@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import os
 from vcs.backends.hg import MercurialRepository, MercurialChangeset
 from vcs.exceptions import RepositoryError, VCSError, NodeDoesNotExistError
