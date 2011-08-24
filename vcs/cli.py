@@ -240,15 +240,13 @@ class ChangesetCommand(RepositoryCommand):
         except (ValueError, TypeError):
             limit = None
 
-        result = []
         count = 0
         for changeset in changesets:
             if self.show_changeset(changeset, **options):
-                result.append(changeset)
+                yield changeset
                 count += 1
                 if count == limit:
                     break
-        return result
 
     def handle_repo(self, repo, *args, **options):
         opts = copy.copy(options)
