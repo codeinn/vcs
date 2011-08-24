@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import sys
 import datetime
 from vcs.utils.progressbar import AlreadyFinishedError

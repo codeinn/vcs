@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import vcs
 import datetime
 from vcs.utils.compat import unittest

@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import datetime
 from base import BackendTestMixin
 from conf import SCM_TESTS

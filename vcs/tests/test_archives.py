@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import os
 import tarfile
 import zipfile
@@ -31,7 +33,7 @@ class ArchivesTestCaseMixin(BackendTestMixin):
         with open(path, 'wb') as f:
             self.tip.fill_archive(stream=f, kind='zip', prefix='repo')
         out = zipfile.ZipFile(path)
-        
+
         for x in xrange(5):
             node_path = '%d/file_%d.txt' % (x, x)
             self.assertEqual(
@@ -46,7 +48,7 @@ class ArchivesTestCaseMixin(BackendTestMixin):
 
         outfile = tarfile.open(path, 'r|gz')
         outfile.extractall(outdir)
-        
+
         for x in xrange(5):
             node_path = '%d/file_%d.txt' % (x, x)
             self.assertEqual(
@@ -61,7 +63,7 @@ class ArchivesTestCaseMixin(BackendTestMixin):
 
         outfile = tarfile.open(path, 'r|bz2')
         outfile.extractall(outdir)
-        
+
         for x in xrange(5):
             node_path = '%d/file_%d.txt' % (x, x)
             self.assertEqual(
@@ -85,7 +87,7 @@ class ArchivesTestCaseMixin(BackendTestMixin):
     def test_archive_empty_prefix(self):
         with self.assertRaises(VCSError):
             self.tip.fill_archive(prefix='')
-    
+
     def test_archive_prefix_with_leading_slash(self):
         with self.assertRaises(VCSError):
             self.tip.fill_archive(prefix='/any')

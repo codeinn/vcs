@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 from vcs import VCSError, get_repo, get_backend
 from vcs.backends.hg import MercurialRepository
 from vcs.utils.compat import unittest
