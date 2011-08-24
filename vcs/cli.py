@@ -190,7 +190,8 @@ class ChangesetCommand(RepositoryCommand):
             default=False, help='Iterates in asceding order.'),
         make_option('-b', '--branch', action='store', dest='branch',
             help='Narrow changesets to chosen branch. If not given, '
-                 'SCM default branch is picked up automatically.'),
+                 'working directory branch is used. For bare repository '
+                 'default would be SCM\'s default branch (i.e. master for git)'),
         make_option('--all', action='store_true', dest='all',
             default='all', help='Show changesets across all branches.'),
 

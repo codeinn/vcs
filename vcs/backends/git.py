@@ -17,6 +17,7 @@ import posixpath
 from dulwich import objects
 from dulwich.repo import Repo, NotGitRepository
 from itertools import chain
+from string import Template
 from subprocess import Popen, PIPE
 from vcs.backends import ARCHIVE_SPECS
 from vcs.backends.base import BaseChangeset
@@ -300,7 +301,7 @@ class GitRepository(BaseRepository):
            end_date=None, branch_name=None, reverse=False):
         """
         Returns iterator of ``GitChangeset`` objects from start to end (both
-        are inclusive).
+        are inclusive), in ascending date order (unless ``reverse`` is set).
 
         :param start: changeset ID, as str; first returned changeset
         :param end: changeset ID, as str; last returned changeset
@@ -311,6 +312,7 @@ class GitRepository(BaseRepository):
         :param branch_name: if specified, changesets not reachable from given
           branch would be filtered out from returned set
         :param reverse: if ``True``, returned generator would be reversed
+          (meaning that returned changesets would have descending date order)
 
         :raise BranchDoesNotExistError: If given ``branch_name`` does not
             exist.
@@ -318,37 +320,47 @@ class GitRepository(BaseRepository):
           ``end`` could not be found.
 
         """
-        start_raw_id = self._get_revision(start)
-        start_pos = self.revisions.index(start_raw_id) if start else None
-        end_raw_id = self._get_revision(end)
-        end_pos = self.revisions.index(end_raw_id) + 1  if end else None
-
-        if (start_pos and end_pos) and start_pos > end_pos:
-            raise RepositoryError('start cannot be after end')
-
-        revs = self.revisions[start_pos:end_pos]
-
-        if reverse:
-            revs = reversed(revs)
-
         if branch_name and branch_name not in self.branches:
             raise BranchDoesNotExistError("Branch '%s' not found" \
                                           % branch_name)
-        elif branch_name:
-            out = self.run_git_command('rev-list %s' % branch_name)[0]
-            branch_revs = out.splitlines()
-        else:
-            branch_revs = None
+        # %H at format means (full) commit hash, initial hashes are retrieved
+        # in ascending date order
+        cmd_template = 'log --date-order --reverse --pretty=format:"%H"'
+        cmd_params = {}
+        if start_date:
+            cmd_template += ' --since "$since"'
+            cmd_params['since'] = start_date.strftime('%m/%d/%y %H:%M:%S')
+        if end_date:
+            cmd_template += ' --until "$until"'
+            cmd_params['until'] = end_date.strftime('%m/%d/%y %H:%M:%S')
+        if branch_name:
+            cmd_template += ' $branch_name'
+            cmd_params['branch_name'] = branch_name
 
+        cmd = Template(cmd_template).safe_substitute(**cmd_params)
+        revs = self.run_git_command(cmd)[0].splitlines()
+        start_pos = 0
+        end_pos = len(revs)
+        if start:
+            self._get_revision(start)
+            try:
+                start_pos = revs.index(start)
+            except ValueError:
+                pass
+        if end:
+            self._get_revision(end)
+            try:
+                end_pos = revs.index(end) + 1
+            except ValueError:
+                pass
+        if (start_pos and end_pos) and start_pos > end_pos:
+            raise RepositoryError('start cannot be after end')
+
+        revs = revs[start_pos:end_pos]
+        if reverse:
+            revs = reversed(revs)
         for rev in revs:
-            if branch_revs and rev not in branch_revs:
-                continue
-            cs = self.get_changeset(rev)
-            if start_date and cs.date < start_date:
-                continue
-            if end_date and cs.date > end_date:
-                continue
-            yield cs
+            yield self.get_changeset(rev)
 
     @LazyProperty
     def in_memory_changeset(self):
