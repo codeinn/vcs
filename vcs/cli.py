@@ -261,6 +261,7 @@ class ChangesetCommand(RepositoryCommand):
         self.post_process(repo, **options)
 
     def iter_changesets(self, repo, changesets, **options):
+        changesets = list(changesets)
         if self.show_progress_bar:
             progressbar = self.get_progressbar(len(changesets), **options)
             progressbar.render(0)
