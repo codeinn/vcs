@@ -661,7 +661,8 @@ class GitChangeset(BaseChangeset):
             annotate.append((ln_no, self.repository.get_changeset(id), line))
         return annotate
 
-    def fill_archive(self, stream=None, kind='tgz', prefix=None):
+    def fill_archive(self, stream=None, kind='tgz', prefix=None,
+                     subrepos=False):
         """
         Fills up given stream.
 
@@ -671,7 +672,8 @@ class GitChangeset(BaseChangeset):
         :param prefix: name of root directory in archive.
             Default is repository name and changeset's raw_id joined with dash
             (``repo-tip.<KIND>``).
-
+        :param subrepos: include subrepos in this archive.
+        
         :raise ImproperArchiveTypeError: If given kind is wrong.
         :raise VcsError: If given stream is None
 

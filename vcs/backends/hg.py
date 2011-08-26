@@ -656,7 +656,8 @@ class MercurialChangeset(BaseChangeset):
 
         return annotate
 
-    def fill_archive(self, stream=None, kind='tgz', prefix=None):
+    def fill_archive(self, stream=None, kind='tgz', prefix=None,
+                     subrepos=False):
         """
         Fills up given stream.
 
@@ -666,7 +667,8 @@ class MercurialChangeset(BaseChangeset):
         :param prefix: name of root directory in archive.
             Default is repository name and changeset's raw_id joined with dash
             (``repo-tip.<KIND>``).
-
+        :param subrepos: include subrepos in this archive.
+    
         :raise ImproperArchiveTypeError: If given kind is wrong.
         :raise VcsError: If given stream is None
         """
@@ -688,7 +690,7 @@ class MercurialChangeset(BaseChangeset):
             raise VCSError("Prefix cannot be empty")
 
         archival.archive(self.repository._repo, stream, self.raw_id,
-                         kind, prefix=prefix)
+                         kind, prefix=prefix, subrepos=subrepos)
 
         #stream.close()
 
