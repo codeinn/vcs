@@ -109,6 +109,9 @@ class MercurialRepository(BaseRepository):
 
     @LazyProperty
     def branches(self):
+        return self._get_branches()
+
+    def _get_branches(self):
         """
         Get's branches for this repository
         """
@@ -871,6 +874,7 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         new_id = hex(n)
         self.repository.revisions.append(new_id)
         self._repo = self.repository._get_repo(create=False)
+        self.repository.branches = self.repository._get_branches()
         tip = self.repository.get_changeset()
         self.reset()
         return tip
