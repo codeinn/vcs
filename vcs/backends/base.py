@@ -617,6 +617,14 @@ class BaseWorkdir(object):
         """
         raise NotImplementedError
 
+    def checkout_branch(self, branch=None):
+        """
+        Checks out ``branch`` or the backend's default branch.
+
+        Raises ``BranchDoesNotExistError`` if the branch does not exist.
+        """
+        raise NotImplementedError
+
 
 class BaseInMemoryChangeset(object):
     """
