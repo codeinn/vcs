@@ -28,7 +28,6 @@ class ChangesetsWithCommitsTestCaseixin(BackendTestMixin):
             }
 
     def test_new_branch(self):
-        self.assertFalse('foobar' in self.repo.branches)
         self.imc.add(vcs.nodes.FileNode('docs/index.txt',
             content='Documentation\n'))
         foobar_tip = self.imc.commit(
@@ -38,6 +37,8 @@ class ChangesetsWithCommitsTestCaseixin(BackendTestMixin):
         )
         self.assertTrue('foobar' in self.repo.branches)
         self.assertEqual(foobar_tip.branch, 'foobar')
+        # 'foobar' should be the only branch that contains the new commit
+        self.assertNotEqual(*self.repo.branches.values())
 
     def test_new_head_in_default_branch(self):
         tip = self.repo.get_changeset()
