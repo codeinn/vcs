@@ -109,7 +109,7 @@ class GitRepository(BaseRepository):
         link. Sometimes it may happened that mercurial will issue basic
         auth request that can cause whole API to hang when used from python
         or other external calls.
-        
+
         On failures it'll raise urllib2.HTTPError
         """
 
@@ -169,12 +169,7 @@ class GitRepository(BaseRepository):
                     "for this repository %s" % (revision, self))
 
         elif isinstance(revision, (str, unicode)):
-            if not pattern.match(revision):
-                raise ChangesetDoesNotExistError("Revision %r does not exist "
-                    "for this repository %s" % (revision, self))
-            try:
-                revision = self.revisions[self.revisions.index(revision)]
-            except ValueError:
+            if not pattern.match(revision) or revision not in self.revisions:
                 raise ChangesetDoesNotExistError("Revision %r does not exist "
                     "for this repository %s" % (revision, self))
 
