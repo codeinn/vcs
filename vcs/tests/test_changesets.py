@@ -28,6 +28,7 @@ class ChangesetsWithCommitsTestCaseixin(BackendTestMixin):
             }
 
     def test_new_branch(self):
+        self.assertFalse('foobar' in self.repo.branches)
         self.imc.add(vcs.nodes.FileNode('docs/index.txt',
             content='Documentation\n'))
         foobar_tip = self.imc.commit(

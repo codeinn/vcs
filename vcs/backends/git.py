@@ -109,7 +109,7 @@ class GitRepository(BaseRepository):
         link. Sometimes it may happened that mercurial will issue basic
         auth request that can cause whole API to hang when used from python
         or other external calls.
-        
+
         On failures it'll raise urllib2.HTTPError
         """
 
@@ -169,12 +169,7 @@ class GitRepository(BaseRepository):
                     "for this repository %s" % (revision, self))
 
         elif isinstance(revision, (str, unicode)):
-            if not pattern.match(revision):
-                raise ChangesetDoesNotExistError("Revision %r does not exist "
-                    "for this repository %s" % (revision, self))
-            try:
-                revision = self.revisions[self.revisions.index(revision)]
-            except ValueError:
+            if not pattern.match(revision) or revision not in self.revisions:
                 raise ChangesetDoesNotExistError("Revision %r does not exist "
                     "for this repository %s" % (revision, self))
 
@@ -238,6 +233,9 @@ class GitRepository(BaseRepository):
 
     @LazyProperty
     def branches(self):
+        return self._get_branches()
+
+    def _get_branches(self):
         if not self.revisions:
             return {}
         refs = self._repo.refs.as_dict()
@@ -963,6 +961,7 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         # Update vcs repository object & recreate dulwich repo
         self.repository.revisions.append(commit.id)
         self.repository._repo = Repo(self.repository.path)
+        self.repository.branches = self.repository._get_branches()
         tip = self.repository.get_changeset()
         self.reset()
         return tip
