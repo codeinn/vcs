@@ -62,6 +62,23 @@ class WorkdirTestCaseMixin(BackendTestMixin):
         )
         self.assertEqual(self.repo.workdir.get_changeset(), head)
 
+    def test_checkout_branch(self):
+        from vcs.exceptions import BranchDoesNotExistError
+        # first, 'foobranch' does not exist.
+        self.assertRaises(BranchDoesNotExistError, self.repo.workdir.checkout_branch,
+                          branch='foobranch')
+        # create new branch 'foobranch'.
+        self.imc.add(FileNode('file1', content='blah'))
+        foobranch_head = self.imc.commit(message='asd', author='john', branch='foobranch')
+        # go back to the default branch
+        self.repo.workdir.checkout_branch()
+        self.assertNotEqual(self.repo.workdir.get_branch(), 'foobranch')
+        self.assertNotEqual(self.repo.workdir.get_changeset(), foobranch_head)
+        # checkout 'foobranch'
+        self.repo.workdir.checkout_branch('foobranch')
+        self.assertEqual(self.repo.workdir.get_branch(), 'foobranch')
+        self.assertEqual(self.repo.workdir.get_changeset(), foobranch_head)
+
 
 # For each backend create test case class
 for alias in SCM_TESTS:

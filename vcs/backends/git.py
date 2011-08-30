@@ -78,10 +78,13 @@ class GitRepository(BaseRepository):
         :param cmd: git command to be executed
         """
         #cmd = '(cd %s && git %s)' % (self.path, cmd)
-        cmd = 'git %s' % cmd
+        if isinstance(cmd, str):
+            cmd = 'git %s' % cmd
+        else:
+            cmd = ['git'] + cmd
         try:
             opts = dict(
-                shell=True,
+                shell=isinstance(cmd, str),
                 stdout=PIPE,
                 stderr=PIPE)
             if os.path.isdir(self.path):
@@ -1023,3 +1026,9 @@ class GitWorkdir(BaseWorkdir):
         return self.repository.get_changeset(
             self.repository._repo.refs.as_dict().get('HEAD'))
 
+    def checkout_branch(self, branch=None):
+        if branch is None:
+            branch = self.repository.DEFAULT_BRANCH_NAME
+        if branch not in self.repository.branches:
+            raise BranchDoesNotExistError
+        self.repository.run_git_command(['checkout', branch])
