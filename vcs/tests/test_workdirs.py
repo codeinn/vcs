@@ -72,8 +72,8 @@ class WorkdirTestCaseMixin(BackendTestMixin):
         foobranch_head = self.imc.commit(message='asd', author='john', branch='foobranch')
         # go back to the default branch
         self.repo.workdir.checkout_branch()
-        self.assertNotEqual(self.repo.workdir.get_branch(), 'foobranch')
-        self.assertNotEqual(self.repo.workdir.get_changeset(), foobranch_head)
+        self.assertEqual(self.repo.workdir.get_branch(), self.backend_class.DEFAULT_BRANCH_NAME)
+        self.assertEqual(self.repo.workdir.get_changeset(), self.tip)
         # checkout 'foobranch'
         self.repo.workdir.checkout_branch('foobranch')
         self.assertEqual(self.repo.workdir.get_branch(), 'foobranch')
