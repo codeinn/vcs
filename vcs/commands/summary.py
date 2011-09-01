@@ -7,7 +7,7 @@ class SummaryCommand(ChangesetCommand):
     show_progress_bar = True
 
     option_list = ChangesetCommand.option_list + (
-        make_option('--with-changesets-size', action='store_true',
+        make_option('-s', '--with-changesets-size', action='store_true',
             dest='changeset_size', default=False,
             help='Counts size of filenodes from each commit [may be *heavy*]'),
     )
