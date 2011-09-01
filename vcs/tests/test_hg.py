@@ -8,6 +8,13 @@ from conf import PACKAGE_DIR, TEST_HG_REPO, TEST_HG_REPO_CLONE, \
     TEST_HG_REPO_PULL
 from vcs.utils.compat import unittest
 
+
+# Use only clean mercurial's ui
+import mercurial.scmutil
+mercurial.scmutil.rcpath()
+if mercurial.scmutil._rcpath:
+    mercurial.scmutil._rcpath = mercurial.scmutil._rcpath[:1]
+
 class MercurialRepositoryTest(unittest.TestCase):
 
     def __check_for_existing_repo(self):

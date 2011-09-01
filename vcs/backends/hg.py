@@ -85,7 +85,6 @@ class MercurialRepository(BaseRepository):
         # We've set path and ui, now we can set _repo itself
         self._repo = self._get_repo(create, src_url, update_after_clone)
 
-
     @property
     def _empty(self):
         """
