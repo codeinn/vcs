@@ -78,10 +78,13 @@ class GitRepository(BaseRepository):
         :param cmd: git command to be executed
         """
         #cmd = '(cd %s && git %s)' % (self.path, cmd)
-        cmd = 'git %s' % cmd
+        if isinstance(cmd, str):
+            cmd = 'git %s' % cmd
+        else:
+            cmd = ['git'] + cmd
         try:
             opts = dict(
-                shell=True,
+                shell=isinstance(cmd, str),
                 stdout=PIPE,
                 stderr=PIPE)
             if os.path.isdir(self.path):
@@ -233,6 +236,9 @@ class GitRepository(BaseRepository):
 
     @LazyProperty
     def branches(self):
+        return self._get_branches()
+
+    def _get_branches(self):
         if not self.revisions:
             return {}
         refs = self._repo.refs.as_dict()
@@ -953,11 +959,12 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
 
         ref = 'refs/heads/%s' % branch
         repo.refs[ref] = commit.id
-        repo.refs['HEAD'] = commit.id
+        repo.refs.set_symbolic_ref('HEAD', ref)
 
         # Update vcs repository object & recreate dulwich repo
         self.repository.revisions.append(commit.id)
         self.repository._repo = Repo(self.repository.path)
+        self.repository.branches = self.repository._get_branches()
         tip = self.repository.get_changeset()
         self.reset()
         return tip
@@ -1019,3 +1026,9 @@ class GitWorkdir(BaseWorkdir):
         return self.repository.get_changeset(
             self.repository._repo.refs.as_dict().get('HEAD'))
 
+    def checkout_branch(self, branch=None):
+        if branch is None:
+            branch = self.repository.DEFAULT_BRANCH_NAME
+        if branch not in self.repository.branches:
+            raise BranchDoesNotExistError
+        self.repository.run_git_command(['checkout', branch])
