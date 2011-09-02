@@ -45,6 +45,9 @@ class BranchesTestCaseMixin(BackendTestMixin):
         self.assertEqual(tip.date, datetime.datetime(2010, 1, 1, 21))
 
     def test_new_branch(self):
+        # This check must not be removed to ensure the 'branches' LazyProperty
+        # gets hit *before* the new 'foobar' branch got created:
+        self.assertFalse('foobar' in self.repo.branches)
         self.imc.add(vcs.nodes.FileNode('docs/index.txt',
             content='Documentation\n'))
         foobar_tip = self.imc.commit(

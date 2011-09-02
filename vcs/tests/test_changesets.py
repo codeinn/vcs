@@ -37,6 +37,8 @@ class ChangesetsWithCommitsTestCaseixin(BackendTestMixin):
         )
         self.assertTrue('foobar' in self.repo.branches)
         self.assertEqual(foobar_tip.branch, 'foobar')
+        # 'foobar' should be the only branch that contains the new commit
+        self.assertNotEqual(*self.repo.branches.values())
 
     def test_new_head_in_default_branch(self):
         tip = self.repo.get_changeset()
