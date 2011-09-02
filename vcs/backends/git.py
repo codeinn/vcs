@@ -234,11 +234,8 @@ class GitRepository(BaseRepository):
         undefined_contact = 'Unknown'
         return undefined_contact
 
-    @LazyProperty
+    @property
     def branches(self):
-        return self._get_branches()
-
-    def _get_branches(self):
         if not self.revisions:
             return {}
         refs = self._repo.refs.as_dict()
@@ -964,7 +961,6 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         # Update vcs repository object & recreate dulwich repo
         self.repository.revisions.append(commit.id)
         self.repository._repo = Repo(self.repository.path)
-        self.repository.branches = self.repository._get_branches()
         tip = self.repository.get_changeset()
         self.reset()
         return tip
