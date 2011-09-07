@@ -585,8 +585,8 @@ class GitSpecificWithRepoTest(BackendTestMixin, unittest.TestCase):
                 'author': 'Joe Doe <joe.doe@example.com>',
                 'date': datetime.datetime(2010, 1, 1, 20),
                 'added': [
-                    FileNode('foobar/static/js/admin/base.js', content='foo'),
-                    FileNode('foobar/static/admin', content='foo',
+                    FileNode('foobar/static/js/admin/base.js', content='base'),
+                    FileNode('foobar/static/admin', content='admin',
                         mode=0120000), # this is a link
                     FileNode('foo', content='foo'),
                 ],
@@ -596,12 +596,12 @@ class GitSpecificWithRepoTest(BackendTestMixin, unittest.TestCase):
     def test_paths_slow_traversing(self):
         cs = self.repo.get_changeset()
         self.assertEqual(cs.get_node('foobar').get_node('static').get_node('js')
-            .get_node('admin').get_node('base.js').content, 'foo')
+            .get_node('admin').get_node('base.js').content, 'base')
 
     def test_paths_fast_traversing(self):
         cs = self.repo.get_changeset()
         self.assertEqual(cs.get_node('foobar/static/js/admin/base.js').content,
-            'foo')
+            'base')
 
 if __name__ == '__main__':
     unittest.main()

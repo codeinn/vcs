@@ -480,6 +480,7 @@ class GitChangeset(BaseChangeset):
         return path
 
     def _get_id_for_path(self, path):
+        # FIXME: Please, spare a couple of minutes and make those codes cleaner;
         if not path in self._paths:
             path = path.strip('/')
             # set root tree
@@ -495,11 +496,11 @@ class GitChangeset(BaseChangeset):
                     curdir = '/'.join((curdir, dir))
                 else:
                     curdir = dir
-                if curdir in self._paths:
-                    # This path have been already traversed
-                    # Update tree and continue
-                    tree = self.repository._repo[self._paths[curdir]]
-                    continue
+                #if curdir in self._paths:
+                    ## This path have been already traversed
+                    ## Update tree and continue
+                    #tree = self.repository._repo[self._paths[curdir]]
+                    #continue
                 dir_id = None
                 for item, stat, id in tree.iteritems():
                     if curdir:
