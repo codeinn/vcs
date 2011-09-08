@@ -15,10 +15,10 @@ Below is a table which shows requirements for each backend.
 +------------+---------------------+---------+---------------------+
 | SCM        | Backend             | Alias   | Requirements        |
 +============+=====================+=========+=====================+
-| Mercurial_ | ``vcs.backend.hg``  | ``hg``  | - mercurial_ >= 1.6 |
+| Mercurial_ | ``vcs.backend.hg``  | ``hg``  | - mercurial_ >= 1.9 |
 +------------+---------------------+---------+---------------------+
 | Git_       | ``vcs.backend.git`` | ``git`` | - git_ >= 1.7       |
-|            |                     |         | - Dulwich_ >= 0.6   |
+|            |                     |         | - Dulwich_ >= 0.8   |
 +------------+---------------------+---------+---------------------+
 
 Install from Cheese Shop
@@ -48,6 +48,8 @@ Here is a full list of packages needed to run test suite:
 +-----------+---------------------------------------+
 | Package   | Homepage                              |
 +===========+=======================================+
+| mock      | http://pypi.python.org/pypi/mock      |
++-----------+---------------------------------------+
 | unittest2 | http://pypi.python.org/pypi/unittest2 |
 +-----------+---------------------------------------+
 | mercurial | http://mercurial.selenic.com/         |
