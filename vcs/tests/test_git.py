@@ -603,6 +603,15 @@ class GitSpecificWithRepoTest(BackendTestMixin, unittest.TestCase):
         self.assertEqual(cs.get_node('foobar/static/js/admin/base.js').content,
             'base')
 
+    def test_workdir_get_branch(self):
+        self.repo.run_git_command('checkout -b production')
+        # Regression test: one of following would fail if we don't check
+        # .git/HEAD file
+        self.repo.run_git_command('checkout production')
+        self.assertEqual(self.repo.workdir.get_branch(), 'production')
+        self.repo.run_git_command('checkout master')
+        self.assertEqual(self.repo.workdir.get_branch(), 'master')
+
 if __name__ == '__main__':
     unittest.main()
 

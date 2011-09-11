@@ -1010,14 +1010,17 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
 class GitWorkdir(BaseWorkdir):
 
     def get_branch(self):
-        refs = self.repository._repo.refs.as_dict()
-        head = refs.get('HEAD')
-        for branch, ref in refs.iteritems():
-            if branch == 'HEAD':
-                continue
-            if ref == head:
-                return branch.split('/')[-1]
-        raise RepositoryError("Couldn't compute workdir's branch")
+        headpath = self.repository._repo.refs.refpath('HEAD')
+        try:
+            content = open(headpath).read()
+            match = re.match(r'^ref: refs/heads/(?P<branch>.+)\n$', content)
+            if match:
+                return match.groupdict()['branch']
+            else:
+                raise RepositoryError("Couldn't compute workdir's branch")
+        except IOError:
+            # Try naive way...
+            raise RepositoryError("Couldn't compute workdir's branch")
 
     def get_changeset(self):
         return self.repository.get_changeset(
@@ -1029,3 +1032,4 @@ class GitWorkdir(BaseWorkdir):
         if branch not in self.repository.branches:
             raise BranchDoesNotExistError
         self.repository.run_git_command(['checkout', branch])
+
