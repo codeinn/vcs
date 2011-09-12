@@ -14,6 +14,8 @@ Implemented Backends
    git
    hg
 
+.. _api-base-backend:
+
 Base Backend
 ------------
 

@@ -13,11 +13,13 @@ vcs uses `Semantic Versioning <http://semver.org/>`_
 - Common :ref:`API <API>` for SCM :ref:`backends <api-backends>`
 - Fetching repositories data lazily
 - Simple caching mechanism so we don't hit repo too often
+- In memory commits API
+- Command Line Interface
 
 **Incoming**
 
-- Simple commit api
-- Smart and powerfull in memory Workdirs
+- Full working directories support
+- Extra backends: Subversion, Bazaar
 
 Documentation
 =============
@@ -29,6 +31,8 @@ Documentation
 
    quickstart
    installation
+   contribute
+   alternatives
    api/index
 
 Other topics
