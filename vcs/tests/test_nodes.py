@@ -148,6 +148,28 @@ class NodeBasicTest(unittest.TestCase):
         node = FileNode('foobar', 'empty... almost', mode=0100644)
         self.assertFalse(node.is_executable())
 
+    def test_mimetype(self):
+        py_node = FileNode('test.py')
+        tar_node = FileNode('test.tar.gz')
+
+        ext = 'CustomExtension'
+                
+        my_node2 = FileNode('myfile2')
+        my_node2._mimetype = [ext]
+
+        my_node3 = FileNode('myfile3')
+        my_node3._mimetype = [ext,ext]
+        
+        self.assertEqual(py_node.mimetype,'text/x-python')
+        self.assertEqual(py_node.get_mimetype(),('text/x-python',None))
+        
+        self.assertEqual(tar_node.mimetype,'application/x-tar')
+        self.assertEqual(tar_node.get_mimetype(),('application/x-tar','gzip'))
+
+        self.assertRaises(NodeError,my_node2.get_mimetype)
+
+        self.assertEqual(my_node3.mimetype,ext)
+        self.assertEqual(my_node3.get_mimetype(),[ext,ext])
 
 class NodeContentTest(unittest.TestCase):
 

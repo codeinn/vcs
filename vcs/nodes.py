@@ -298,7 +298,6 @@ class FileNode(Node):
         raise NodeError("Cannot retrieve last changeset of the file without "
             "related changeset attribute")
 
-    @LazyProperty
     def get_mimetype(self):
         """
         Mimetype is calculated based on the file's content. If ``_mimetype``
@@ -307,10 +306,12 @@ class FileNode(Node):
         attribute to indicate that type should *NOT* be calculated).
         """
         if hasattr(self, '_mimetype'):
-            if isinstance(self._mimetype,[tuple,list]):
-                return self._mimetype[:2]
+            if (isinstance(self._mimetype,(tuple,list,)) and 
+                len(self._mimetype) == 2):
+                return self._mimetype
             else:
-                return self._mimetype,None
+                raise NodeError('given _mimetype attribute must be an 2 '
+                               'element list or tuple')
 
         mtype,encoding = mimetypes.guess_type(self.name)
 
