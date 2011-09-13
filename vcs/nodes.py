@@ -299,7 +299,7 @@ class FileNode(Node):
             "related changeset attribute")
 
     @LazyProperty
-    def mimetype(self):
+    def get_mimetype(self):
         """
         Mimetype is calculated based on the file's content. If ``_mimetype``
         attribute is available, it will be returned (backends which store
@@ -307,17 +307,31 @@ class FileNode(Node):
         attribute to indicate that type should *NOT* be calculated).
         """
         if hasattr(self, '_mimetype'):
-            return self._mimetype
+            if isinstance(self._mimetype,[tuple,list]):
+                return self._mimetype[:2]
+            else:
+                return self._mimetype,None
 
-        mtype = mimetypes.guess_type(self.name)[0]
+        mtype,encoding = mimetypes.guess_type(self.name)
 
         if mtype is None:
             if self.is_binary:
                 mtype = 'application/octet-stream'
+                encoding = None
             else:
                 mtype = 'text/plain'
-        return mtype
-
+                encoding = None
+        return mtype,encoding
+    
+    @LazyProperty
+    def mimetype(self):
+        """
+        Wrapper around full mimetype info. It returns only type of fetched
+        mimetype without the encoding part. use get_mimetype function to fetch
+        full set of (type,encoding)
+        """
+        return self.get_mimetype()[0]
+    
     @LazyProperty
     def mimetype_main(self):
         return self.mimetype.split('/')[0]
