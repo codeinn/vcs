@@ -25,6 +25,7 @@ from mercurial.context import memfilectx
 from mercurial.error import RepoError, RepoLookupError, Abort
 from mercurial.localrepo import localrepository
 from mercurial.node import hex
+from mercurial import hg
 from vcs.backends import ARCHIVE_SPECS
 from vcs.backends.base import BaseChangeset
 from vcs.backends.base import BaseInMemoryChangeset
@@ -887,7 +888,15 @@ class MercurialWorkdir(BaseWorkdir):
             if raw_id == branch_id:
                 return branch
         raise RepositoryError("Couldn't compute workdir's branch")
+        
 
     def get_changeset(self):
         return self.repository.get_changeset()
 
+    def checkout_branch(self, branch=None):
+        if branch is None:
+            branch = self.repository.DEFAULT_BRANCH_NAME
+        if branch not in self.repository.branches:
+            raise BranchDoesNotExistError
+        
+        hg.update(self.repository._repo,branch)
