@@ -30,6 +30,9 @@ class MercurialRepositoryTest(unittest.TestCase):
         wrong_repo_path = '/tmp/errorrepo'
         self.assertRaises(RepositoryError, MercurialRepository, wrong_repo_path)
 
+    def test_unicode_path_repo(self):
+        self.assertRaises(VCSError,lambda:MercurialRepository(u'iShouldFail'))
+
     def test_repo_clone(self):
         self.__check_for_existing_repo()
         repo = MercurialRepository(TEST_HG_REPO)
