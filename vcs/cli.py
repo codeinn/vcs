@@ -5,8 +5,10 @@ import copy
 import errno
 from optparse import OptionParser
 from optparse import make_option
+from vcs.conf import settings
 from vcs.exceptions import CommandError
 from vcs.exceptions import VCSError
+from vcs.utils.fakemod import create_module
 from vcs.utils.helpers import get_scm
 from vcs.utils.helpers import parse_changesets
 from vcs.utils.helpers import parse_datetime
@@ -33,6 +35,17 @@ class ExecutionManager(object):
             self.argv = sys.argv[1:]
         self.stdout = stdout or sys.stdout
         self.stderr = stderr or sys.stderr
+        self.vimrc = self.get_vcsrc()
+        self.registry = registry.copy()
+
+    def get_vcsrc(self):
+        try:
+            vimrc = create_module('vcsrc', settings.VCSRC_PATH)
+        except IOError:
+            self.stderr.write("No module or package at %s\n"
+                % settings.VCSRC_PATH)
+            vimrc = None
+        return vimrc
 
     def get_argv_for_command(self):
         argv = [a for a in self.argv]
@@ -48,18 +61,26 @@ class ExecutionManager(object):
             self.show_help()
 
     def get_command_class(self, cmd):
-        cmdpath = registry[cmd]
+        try:
+            cmdpath = self.registry[cmd]
+        except KeyError:
+            raise CommandError("No such command %r" % cmd)
         Command = import_class(cmdpath)
         return Command
 
     def get_commands(self):
         commands = OrderedDict()
-        for cmd in sorted(registry.keys()):
+        for cmd in sorted(self.registry.keys()):
             commands[cmd] = self.get_command_class(cmd)
         return commands
 
     def run_command(self, cmd, argv):
-        Command = self.get_command_class(cmd)
+        try:
+            Command = self.get_command_class(cmd)
+        except CommandError, e:
+            self.stderr.write(str(e) + '\n')
+            self.show_help()
+            sys.exit(-1)
         command = Command(stdout=self.stdout, stderr=self.stderr)
         command.run_from_argv(argv)
 
