@@ -883,12 +883,7 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
 class MercurialWorkdir(BaseWorkdir):
 
     def get_branch(self):
-        raw_id = self.get_changeset().raw_id
-        for branch, branch_id in self.repository.branches.iteritems():
-            if raw_id == branch_id:
-                return branch
-        raise RepositoryError("Couldn't compute workdir's branch")
-        
+        return self.repository._repo.dirstate.branch()
 
     def get_changeset(self):
         return self.repository.get_changeset()
@@ -900,3 +895,4 @@ class MercurialWorkdir(BaseWorkdir):
             raise BranchDoesNotExistError
         
         hg.update(self.repository._repo,branch)
+
