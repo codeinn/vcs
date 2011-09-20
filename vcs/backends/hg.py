@@ -25,7 +25,7 @@ from mercurial.context import memfilectx
 from mercurial.error import RepoError, RepoLookupError, Abort
 from mercurial.localrepo import localrepository
 from mercurial.node import hex
-from mercurial import hg
+from mercurial import merge as hg_merge
 from vcs.backends import ARCHIVE_SPECS
 from vcs.backends.base import BaseChangeset
 from vcs.backends.base import BaseInMemoryChangeset
@@ -894,5 +894,5 @@ class MercurialWorkdir(BaseWorkdir):
         if branch not in self.repository.branches:
             raise BranchDoesNotExistError
         
-        hg.update(self.repository._repo,branch)
+        hg_merge.update(self.repository._repo, branch, False, False, None)
 
