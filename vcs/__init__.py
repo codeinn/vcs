@@ -15,11 +15,11 @@ VERSION = (0, 2, 1, 'dev')
 __version__ = '.'.join((str(each) for each in VERSION[:4]))
 
 __all__ = [
-    'get_version', 'get_repo', 'get_backend', 'BACKENDS',
+    'get_version', 'get_repo', 'get_backend',
     'VCSError', 'RepositoryError', 'ChangesetError']
 
 import sys
-from vcs.backends import get_repo, get_backend, BACKENDS
+from vcs.backends import get_repo, get_backend
 from vcs.exceptions import VCSError, RepositoryError, ChangesetError
 
 

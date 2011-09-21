@@ -10,22 +10,11 @@
 """
 
 from pprint import pformat
+from vcs.conf import settings
 from vcs.exceptions import VCSError
 from vcs.utils.helpers import get_scm
 from vcs.utils.paths import abspath
 from vcs.utils.imports import import_class
-
-BACKENDS = {
-    'hg': 'vcs.backends.hg.MercurialRepository',
-    'git': 'vcs.backends.git.GitRepository',
-}
-
-ARCHIVE_SPECS = {
-    'tar': ('application/x-tar', '.tar'),
-    'tbz2': ('application/x-bzip2', '.tar.bz2'),
-    'tgz': ('application/x-gzip', '.tar.gz'),
-    'zip': ('application/zip', '.zip'),
-}
 
 
 def get_repo(path, alias=None, create=False):
@@ -48,10 +37,10 @@ def get_backend(alias):
     Returns ``Repository`` class identified by the given alias or raises
     VCSError if alias is not recognized or backend class cannot be imported.
     """
-    if alias not in BACKENDS:
+    if alias not in settings.BACKENDS:
         raise VCSError("Given alias '%s' is not recognized! Allowed aliases:\n"
-            "%s" % (alias, pformat(BACKENDS.keys())))
-    backend_path = BACKENDS[alias]
+            "%s" % (alias, pformat(settings.BACKENDS.keys())))
+    backend_path = settings.BACKENDS[alias]
     klass = import_class(backend_path)
     return klass
 
@@ -60,4 +49,4 @@ def get_supported_backends():
     """
     Returns list of aliases of supported backends.
     """
-    return BACKENDS.keys()
+    return settings.BACKENDS.keys()

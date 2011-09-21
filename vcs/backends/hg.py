@@ -26,11 +26,11 @@ from mercurial.error import RepoError, RepoLookupError, Abort
 from mercurial.localrepo import localrepository
 from mercurial.node import hex
 from mercurial import merge as hg_merge
-from vcs.backends import ARCHIVE_SPECS
 from vcs.backends.base import BaseChangeset
 from vcs.backends.base import BaseInMemoryChangeset
 from vcs.backends.base import BaseRepository
 from vcs.backends.base import BaseWorkdir
+from vcs.conf import settings
 from vcs.exceptions import BranchDoesNotExistError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import ChangesetError
@@ -676,7 +676,7 @@ class MercurialChangeset(BaseChangeset):
         :raise VcsError: If given stream is None
         """
 
-        allowed_kinds = ARCHIVE_SPECS.keys()
+        allowed_kinds = settings.ARCHIVE_SPECS.keys()
         if kind not in allowed_kinds:
             raise ImproperArchiveTypeError('Archive kind not supported use one'
                 'of %s', allowed_kinds)
