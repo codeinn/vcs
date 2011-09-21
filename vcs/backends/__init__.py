@@ -8,7 +8,7 @@
     :created_on: Apr 8, 2010
     :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
-
+import os
 from pprint import pformat
 from vcs.conf import settings
 from vcs.exceptions import VCSError
@@ -17,13 +17,20 @@ from vcs.utils.paths import abspath
 from vcs.utils.imports import import_class
 
 
-def get_repo(path, alias=None, create=False):
+def get_repo(path=None, alias=None, create=False):
     """
     Returns ``Repository`` object of type linked with given ``alias`` at
     the specified ``path``. If ``alias`` is not given it will try to guess it
     using get_scm method
     """
-    path = abspath(path)
+    if path is None:
+        path = abspath(os.path.curdir)
+    try:
+        scm, path = get_scm(path, search_recursively=True)
+        path = abspath(path)
+        alias = scm
+    except VCSError:
+        raise VCSError("No scm found at %s" % path)
     if alias is None:
         alias = get_scm(path)[0]
 
