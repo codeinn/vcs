@@ -65,7 +65,10 @@ class ExecutionManager(object):
             cmdpath = self.registry[cmd]
         except KeyError:
             raise CommandError("No such command %r" % cmd)
-        Command = import_class(cmdpath)
+        if isinstance(cmdpath, basestring):
+            Command = import_class(cmdpath)
+        else:
+            Command = cmdpath
         return Command
 
     def get_commands(self):
@@ -194,8 +197,16 @@ class RepositoryCommand(BaseCommand):
             self.repo = repo
         super(RepositoryCommand, self).__init__(stdout, stderr)
 
+    def pre_process(self, repo, **options):
+        pass
+
+    def post_process(self, repo, **options):
+        pass
+
     def handle(self, *args, **options):
-        return self.handle_repo(self.repo, *args, **options)
+        self.pre_process(self.repo)
+        self.handle_repo(self.repo, *args, **options)
+        self.post_process(self.repo, **options)
 
     def handle_repo(self, repo, *args, **options):
         raise NotImplementedError()

@@ -19,6 +19,8 @@ class LogCommand(ChangesetCommand):
     )
 
     def get_last_commit(self, repo, cid=None):
+        if cid is None:
+            cid = repo.branches[repo.workdir.get_branch()]
         return repo.get_changeset(cid)
 
     def get_template(self, **options):

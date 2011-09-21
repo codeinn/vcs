@@ -61,6 +61,7 @@ class TestExecutionManager(unittest.TestCase):
 
     def test_get_commands(self):
         with mock.patch.object(vcs.cli, 'registry', {
+            'mock': mock,
             'foo': 'vcs.cli.BaseCommand',
             'bar': 'vcs.tests.test_cli.DummyExecutionManager'}):
             manager = DummyExecutionManager()
@@ -68,6 +69,7 @@ class TestExecutionManager(unittest.TestCase):
             self.assertItemsEqual(manager.get_commands(), {
                 'foo': BaseCommand,
                 'bar': DummyExecutionManager,
+                'mock': mock,
             })
 
     def test_run_command(self):
