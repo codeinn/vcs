@@ -1,3 +1,4 @@
+import os
 from vcs.cli import make_option
 from vcs.cli import SingleChangesetCommand
 
@@ -70,8 +71,11 @@ class CatCommand(SingleChangesetCommand):
         self.stdout.write(text)
 
 
+    def get_relative_filename(self, filename):
+        return os.path.relpath(filename, self.repo.path)
+
     def handle_arg(self, changeset, arg, **options):
         filename = arg
-        node = changeset.get_node(filename)
+        node = changeset.get_node(self.get_relative_filename(filename))
         self.cat(node, **options)
 
