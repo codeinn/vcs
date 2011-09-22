@@ -753,3 +753,7 @@ line-height:normal;
 li p {
 margin-top:8px;
 }
+
+.docutils.literal pre {
+    background-color: #F1F5F9;
+}

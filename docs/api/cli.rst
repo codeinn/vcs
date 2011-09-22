@@ -6,6 +6,14 @@ vcs.cli
 .. automodule:: vcs.cli
 
 
+.. command:: ExecutionManager
+
+vcs.cli.ExecutionManager
+------------------------
+
+.. autoclass:: vcs.cli.ExecutionManager
+   :members:
+
 
 .. command:: BaseCommand
 

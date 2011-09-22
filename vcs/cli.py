@@ -1,3 +1,11 @@
+"""
+Command line interface for VCS
+------------------------------
+
+This module provides foundations for creating, executing and registering
+terminal commands for vcs. Moreover, :command:`ExecutionManager` makes it
+possible for user to create own code.
+"""
 import os
 import sys
 import vcs
@@ -45,8 +53,9 @@ class ExecutionManager(object):
     def get_vcsrc(self):
         """
         Returns in-memory created module pointing at user's configuration
-        and extra code/commands. By default tries to create module from %r.
-        """ % settings.VCSRC_PATH
+        and extra code/commands. By default tries to create module from
+        :setting:`VCSRC_PATH`.
+        """
         try:
             vimrc = create_module('vcsrc', settings.VCSRC_PATH)
         except IOError:
@@ -372,6 +381,8 @@ class ChangesetCommand(RepositoryCommand):
         * ``all``: return changesets from all branches
         * ``reversed``: by default changesets are returned in date order. If
           this flag is set to ``True``, reverse order would be applied.
+        * ``limit``: if specified, show no more changesets than this value.
+          Default is ``None``.
         """
         if options.get('start_date'):
             options['start_date'] = parse_datetime(options['start_date'])

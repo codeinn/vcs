@@ -31,6 +31,7 @@ Documentation
 
    quickstart
    installation
+   usage/index
    contribute
    alternatives
    api/index
