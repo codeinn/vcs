@@ -1,7 +1,7 @@
 .. _api-backends-git:
 
-Git Backend
-===========
+vcs.backends.git
+================
 
 .. automodule:: vcs.backends.git
 

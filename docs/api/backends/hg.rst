@@ -1,7 +1,7 @@
 .. _api-backends-hg:
 
-Mercurial Backend
-=================
+vcs.backends.hg
+===============
 
 .. automodule:: vcs.backends.hg
 

@@ -26,6 +26,9 @@ registry = {
 }
 
 class ExecutionManager(object):
+    """
+    Class for command execution management.
+    """
 
     def __init__(self, argv=None, stdout=None, stderr=None):
         if argv:
@@ -40,6 +43,10 @@ class ExecutionManager(object):
         self.registry = registry.copy()
 
     def get_vcsrc(self):
+        """
+        Returns in-memory created module pointing at user's configuration
+        and extra code/commands. By default tries to create module from %r.
+        """ % settings.VCSRC_PATH
         try:
             vimrc = create_module('vcsrc', settings.VCSRC_PATH)
         except IOError:
@@ -49,11 +56,17 @@ class ExecutionManager(object):
         return vimrc
 
     def get_argv_for_command(self):
+        """
+        Returns stripped arguments that would be passed into the command.
+        """
         argv = [a for a in self.argv]
         argv.insert(0, self.prog_name)
         return argv
 
     def execute(self):
+        """
+        Executes whole process of parsing and running command.
+        """
         if len(self.argv):
             cmd = self.argv[0]
             cmd_argv = self.get_argv_for_command()
@@ -62,6 +75,11 @@ class ExecutionManager(object):
             self.show_help()
 
     def get_command_class(self, cmd):
+        """
+        Returns command class from the registry for a given ``cmd``.
+
+        :param cmd: command to run (key at the registry)
+        """
         try:
             cmdpath = self.registry[cmd]
         except KeyError:
@@ -73,12 +91,21 @@ class ExecutionManager(object):
         return Command
 
     def get_commands(self):
+        """
+        Returns commands stored in the registry.
+        """
         commands = OrderedDict()
         for cmd in sorted(self.registry.keys()):
             commands[cmd] = self.get_command_class(cmd)
         return commands
 
     def run_command(self, cmd, argv):
+        """
+        Runs command.
+
+        :param cmd: command to run (key at the registry)
+        :param argv: arguments passed to the command
+        """
         try:
             Command = self.get_command_class(cmd)
         except CommandError, e:
@@ -89,6 +116,9 @@ class ExecutionManager(object):
         command.run_from_argv(argv)
 
     def show_help(self):
+        """
+        Prints help text about available commands.
+        """
         output = [
             'Usage: {prog} subcommand [options] [args]'.format(
                 prog=self.prog_name),
@@ -103,7 +133,9 @@ class ExecutionManager(object):
 
 
 class BaseCommand(object):
-
+    """
+    Base command class.
+    """
     help = ''
     args = ''
     option_list = (
@@ -118,18 +150,33 @@ class BaseCommand(object):
         self.stderr = stderr or sys.stderr
 
     def get_version(self):
+        """
+        Returns version of vcs.
+        """
         return vcs.get_version()
 
     def usage(self, subcommand):
+        """
+        Returns *how to use command* text.
+        """
         usage = '%prog {subcommand} [options]'.format(subcommand=subcommand)
         if self.args:
             usage = '{usage} {args}'.format(usage=usage, args=self.args)
         return usage
 
     def get_option_list(self):
+        """
+        Returns options specified at ``self.option_list``.
+        """
         return self.option_list
 
     def get_parser(self, prog_name, subcommand):
+        """
+        Returns parser for given ``prog_name`` and ``subcommand``.
+
+        :param prog_name: vcs main script name
+        :param subcommand: command name
+        """
         parser = OptionParser(
             prog=prog_name,
             usage=self.usage(subcommand),
@@ -138,15 +185,30 @@ class BaseCommand(object):
         return parser
 
     def print_help(self, prog_name, subcommand):
+        """
+        Prints parser's help.
+
+        :param prog_name: vcs main script name
+        :param subcommand: command name
+        """
         parser = self.get_parser(prog_name, subcommand)
         parser.print_help()
 
     def run_from_argv(self, argv):
+        """
+        Runs command for given arguments.
+
+        :param argv: arguments
+        """
         parser = self.get_parser(argv[0], argv[1])
         options, args = parser.parse_args(argv[2:])
         self.execute(*args, **options.__dict__)
 
     def execute(self, *args, **options):
+        """
+        Executes whole process of parsing arguments, running command and
+        trying to catch errors.
+        """
         try:
             self.handle(*args, **options)
         except CommandError, e:
@@ -183,12 +245,24 @@ class BaseCommand(object):
             sys.exit(1)
 
     def handle(self, *args, **options):
+        """
+        This method must be implemented at subclass.
+        """
         raise NotImplementedError()
 
 
 class RepositoryCommand(BaseCommand):
+    """
+    Base repository command.
+    """
 
     def __init__(self, stdout=None, stderr=None, repo=None):
+        """
+        Accepts extra argument:
+
+        :param repo: repository instance. If not given, repository would be
+          calculated based on current directory.
+        """
         if repo is None:
             curdir = abspath(os.curdir)
             try:
@@ -201,21 +275,42 @@ class RepositoryCommand(BaseCommand):
         super(RepositoryCommand, self).__init__(stdout, stderr)
 
     def pre_process(self, repo, **options):
-        pass
+        """
+        This method would be run at the beginning of ``handle`` method. Does
+        nothing by default.
+        """
 
     def post_process(self, repo, **options):
-        pass
+        """
+        This method would be run at the end of ``handle`` method. Does
+        nothing by default.
+        """
 
     def handle(self, *args, **options):
+        """
+        Runs ``pre_process``, ``handle_repo`` and ``post_process`` methods, in
+        that order.
+        """
         self.pre_process(self.repo)
         self.handle_repo(self.repo, *args, **options)
         self.post_process(self.repo, **options)
 
     def handle_repo(self, repo, *args, **options):
+        """
+        Handles given repository. This method must be implemented at subclass.
+        """
         raise NotImplementedError()
 
 
 class ChangesetCommand(RepositoryCommand):
+    """
+    Subclass of :command:`RepositoryCommand`.
+
+    **Extra options**
+
+    * ``show_progress_bar``: specifies if bar indicating progress of processed
+      changesets should be shown.
+    """
     show_progress_bar = False
 
     option_list = RepositoryCommand.option_list + (
@@ -257,6 +352,27 @@ class ChangesetCommand(RepositoryCommand):
         return True
 
     def get_changesets(self, repo, **options):
+        """
+        Returns generator of changesets from given ``repo`` for given
+        ``options``.
+
+        :param repo: repository instance. Same as ``self.repo``.
+
+        **Available options**
+
+        * ``start_date``: only changesets not older than this parameter would be
+          generated
+        * ``end_date``: only changesets not younger than this parameter would be
+          generated
+        * ``start``: changeset's ID from which changesets would be generated
+        * ``end``: changeset's ID to which changesets would be generated
+        * ``branch``: branch for which changesets would be generated. If ``all``
+          flag is specified, this option would be ignored. By default, branch
+          would by tried to retrieved from working directory.
+        * ``all``: return changesets from all branches
+        * ``reversed``: by default changesets are returned in date order. If
+          this flag is set to ``True``, reverse order would be applied.
+        """
         if options.get('start_date'):
             options['start_date'] = parse_datetime(options['start_date'])
         if options.get('end_date'):
@@ -293,7 +409,6 @@ class ChangesetCommand(RepositoryCommand):
             raise CommandError("Limit must be a number")
         changesets = self.get_changesets(repo, **opts)
         self.iter_changesets(repo, changesets, **options)
-        self.post_process(repo, **options)
 
     def iter_changesets(self, repo, changesets, **options):
         changesets = list(changesets)
@@ -310,19 +425,32 @@ class ChangesetCommand(RepositoryCommand):
                 progressbar.render(i)
 
     def get_progressbar(self, total, **options):
+        """
+        Returns progress bar instance for a given ``total`` number of clicks
+        it should do.
+        """
         progressbar = ColoredProgressBar(total)
         progressbar.steps_label = 'Commit'
         progressbar.elements += ['eta', 'time']
         return progressbar
 
     def handle_changeset(self, changeset, **options):
+        """
+        Handles single changeset. Must be implemented at subclass.
+        """
         raise NotImplementedError()
-
-    def post_process(self, repo, **options):
-        pass
 
 
 class SingleChangesetCommand(RepositoryCommand):
+    """
+    Single changeset command. Convenient if command has to operate on single
+    changeset rather than whole generator. For usage i.e. with command that
+    handles node(s) from single changeset.
+
+    **Extra options**
+
+    * ``min_args``: minimal number of arguements to parse. Default is ``1``.
+    """
 
     min_args = 1
 
@@ -332,6 +460,9 @@ class SingleChangesetCommand(RepositoryCommand):
     )
 
     def get_changeset(self, **options):
+        """
+        Returns changeset for given ``options``.
+        """
         cid = options.get('changeset_id', None)
         return self.repo.get_changeset(cid)
 
@@ -344,5 +475,12 @@ class SingleChangesetCommand(RepositoryCommand):
             self.handle_arg(changeset, arg, **options)
 
     def handle_arg(self, changeset, arg, **options):
+        """
+        Handles single argument for chosen ``changeset``. Must be implemented at
+        subclass.
+
+        :param changeset: chosen (by ``--commit`` option) changeset
+        :param arg: single argument from arguments list
+        """
         raise NotImplementedError()
 

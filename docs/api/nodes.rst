@@ -1,7 +1,7 @@
 .. _api-nodes:
 
-Nodes
-=====
+vcs.nodes
+=========
 
 .. module:: vcs.nodes
 

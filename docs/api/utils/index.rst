@@ -1,7 +1,7 @@
 .. _api-utils:
 
-Utils
-=====
+vcs.utils
+=========
 
 .. automodule:: vcs.utils
 

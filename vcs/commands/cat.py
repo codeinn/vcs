@@ -4,6 +4,9 @@ from vcs.cli import SingleChangesetCommand
 
 
 class CatCommand(SingleChangesetCommand):
+    """
+    Writes content of a target file to terminal.
+    """
 
     option_list = SingleChangesetCommand.option_list + (
         make_option('--blame', action='store_true', dest='blame',
@@ -12,7 +15,7 @@ class CatCommand(SingleChangesetCommand):
         make_option('--plain', action='store_true', dest='plain',
             default=False,
             help='Simply write output to terminal, don\'t use '
-                 'any extra formatting/colors.'),
+                 'any extra formatting/colors (pygments).'),
         make_option('-n', '--line-numbers', action='store_true', dest='linenos',
             default=False, help='Shows line numbers'),
     )

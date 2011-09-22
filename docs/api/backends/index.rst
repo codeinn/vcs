@@ -1,7 +1,7 @@
 .. _api-backends:
 
-Backends
-========
+vcs.backends
+============
 
 .. module:: vcs.backends
 
