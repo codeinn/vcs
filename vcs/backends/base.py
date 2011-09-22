@@ -13,6 +13,7 @@
 from itertools import chain
 from vcs.utils import author_name, author_email
 from vcs.utils.lazy import LazyProperty
+from vcs.conf import settings
 
 from vcs.exceptions import ChangesetError, EmptyRepositoryError, \
     NodeAlreadyAddedError, NodeAlreadyChangedError, NodeAlreadyExistsError, \
@@ -74,8 +75,7 @@ class BaseRepository(object):
 
     @LazyProperty
     def alias(self):
-        from vcs.backends import BACKENDS
-        for k, v in BACKENDS.items():
+        for k, v in settings.BACKENDS.items():
             if v.split('.')[-1] == str(self.__class__.__name__):
                 return k
 

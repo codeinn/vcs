@@ -17,6 +17,20 @@ class VCSTest(unittest.TestCase):
         hg = get_backend('hg')
         self.assertEqual(hg, MercurialRepository)
 
+    def test_alias_detect_hg(self):
+        alias = 'hg'
+        path = TEST_HG_REPO
+        backend = get_backend(alias)
+        repo = backend(path)        
+        self.assertEqual('hg',repo.alias)
+
+    def test_alias_detect_git(self):
+        alias = 'git'
+        path = TEST_GIT_REPO
+        backend = get_backend(alias)
+        repo = backend(path)        
+        self.assertEqual('git',repo.alias)
+
     def test_wrong_alias(self):
         alias = 'wrong_alias'
         self.assertRaises(VCSError, get_backend, alias)
