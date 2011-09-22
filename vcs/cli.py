@@ -16,6 +16,7 @@ from vcs.utils.imports import import_class
 from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils.paths import abspath
 from vcs.utils.progressbar import ColoredProgressBar
+from vcs.utils.termcolors import colorize
 
 
 registry = {
@@ -156,7 +157,8 @@ class BaseCommand(object):
                 except ImportError:
                     import pdb
                     pdb.set_trace()
-            self.stderr.write('ERROR: {error}\n'.format(error=e))
+            sys.stderr.write(colorize('ERROR: ', fg='red'))
+            self.stderr.write('{error}\n'.format(error=e))
             sys.exit(1)
         except Exception, e:
             if isinstance(e, IOError) and getattr(e, 'errno') == errno.EPIPE:
@@ -176,7 +178,8 @@ class BaseCommand(object):
                     '=========', '', '',
                 )))
                 traceback.print_exc(file=self.stderr)
-            self.stderr.write('ERROR: {error}\n'.format(error=e))
+            sys.stderr.write(colorize('ERROR: ', fg='red'))
+            self.stderr.write('{error}\n'.format(error=e))
             sys.exit(1)
 
     def handle(self, *args, **options):
