@@ -23,6 +23,10 @@ def get_repo(path=None, alias=None, create=False):
     the specified ``path``. If ``alias`` is not given it will try to guess it
     using get_scm method
     """
+    if create:
+        if not (path or alias):
+            raise TypeError("If create is specified, we need path and scm type")
+        return get_backend(alias)(path, create=True)
     if path is None:
         path = abspath(os.path.curdir)
     try:
