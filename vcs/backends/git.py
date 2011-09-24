@@ -928,7 +928,25 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
             for tree in new_trees:
                 object_store.add_object(tree)
         for node in self.removed:
-            del commit_tree[node.path]
+            paths = node.path.split('/')
+            tree = commit_tree
+            trees = [tree]
+            # Traverse deep into the forest...
+            for path in paths:
+                try:
+                    obj = self.repository._repo[tree[path][1]]
+                    if isinstance(obj, objects.Tree):
+                        trees.append(obj)
+                        tree = obj
+                except KeyError:
+                    break
+            # Cut down the blob and all rotten trees on the way back...
+            for path, tree in reversed(zip(paths, trees)):
+                del tree[path]
+                if tree:
+                    # This tree still has elements - don't remove it or any
+                    # of it's parents
+                    break
 
         object_store.add_object(commit_tree)
 

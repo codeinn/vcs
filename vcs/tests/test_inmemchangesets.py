@@ -192,6 +192,15 @@ class InMemoryChangesetTestMixin(object):
         self.assertNotEqual(tip.id, newtip.id)
         self.assertRaises(NodeDoesNotExistError, newtip.get_node, node.path)
 
+    def test_remove_last_file_from_directory(self):
+        node = FileNode('omg/qwe/foo/bar', content='foobar')
+        self.imc.add(node)
+        self.imc.commit('added', 'joe doe')
+
+        self.imc.remove(node)
+        tip = self.imc.commit('removed', 'joe doe')
+        self.assertRaises(NodeDoesNotExistError, tip.get_node, 'omg/qwe/foo/bar')
+
     def test_remove_raise_node_does_not_exist(self):
         self.imc.remove(self.nodes[0])
         self.assertRaises(NodeDoesNotExistError, self.imc.commit,
