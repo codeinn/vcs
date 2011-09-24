@@ -30,6 +30,9 @@ class BaseRepository(object):
         ``DEFAULT_BRANCH_NAME``
             name of default branch (i.e. "trunk" for svn, "master" for git etc.
 
+        ``scm``
+            alias of scm, i.e. *git* or *hg*
+
         ``repo``
             object from external api
 
@@ -48,6 +51,8 @@ class BaseRepository(object):
         ``tags``
             tags as list of changesets
     """
+    scm = None
+    DEFAULT_BRANCH_NAME = None
 
     def __init__(self, repo_path, create=False, **kwargs):
         """

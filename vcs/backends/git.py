@@ -46,6 +46,7 @@ class GitRepository(BaseRepository):
     Git repository backend.
     """
     DEFAULT_BRANCH_NAME = 'master'
+    scm = 'git'
 
     def __init__(self, repo_path, create=False, src_url=None,
                  update_after_clone=False):
@@ -78,13 +79,13 @@ class GitRepository(BaseRepository):
         :param cmd: git command to be executed
         """
         #cmd = '(cd %s && git %s)' % (self.path, cmd)
-        if isinstance(cmd, str):
+        if isinstance(cmd, basestring):
             cmd = 'git %s' % cmd
         else:
             cmd = ['git'] + cmd
         try:
             opts = dict(
-                shell=isinstance(cmd, str),
+                shell=isinstance(cmd, basestring),
                 stdout=PIPE,
                 stderr=PIPE)
             if os.path.isdir(self.path):

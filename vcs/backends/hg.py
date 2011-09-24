@@ -60,6 +60,7 @@ class MercurialRepository(BaseRepository):
     Mercurial repository backend
     """
     DEFAULT_BRANCH_NAME = 'default'
+    scm = 'hg'
 
     def __init__(self, repo_path, create=False, baseui=None, src_url=None,
                  update_after_clone=False):
