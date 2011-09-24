@@ -112,9 +112,12 @@ class MercurialRepository(BaseRepository):
     def branches(self):
         return self._get_branches()
 
-    def _get_branches(self):
+    def _get_branches(self, closed=False):
         """
         Get's branches for this repository
+        Returns only not closed branches by default
+        
+        :param closed: return also closed branches for mercurial
         """
 
         if self._empty:
@@ -129,10 +132,16 @@ class MercurialRepository(BaseRepository):
             """
 
             bt = {}
+            bt_closed = {}
             for bn, heads in localrepo.branchmap().iteritems():
                 tip = heads[-1]
-                if 'close' not in localrepo.changelog.read(tip)[5]:
+                if 'close' in localrepo.changelog.read(tip)[5]:
+                    bt_closed[bn] = tip
+                else:
                     bt[bn] = tip
+                    
+            if closed:
+                bt.update(bt_closed)
             return bt
 
         sortkey = lambda ctx: ctx[0]  # sort by name
@@ -894,6 +903,6 @@ class MercurialWorkdir(BaseWorkdir):
             branch = self.repository.DEFAULT_BRANCH_NAME
         if branch not in self.repository.branches:
             raise BranchDoesNotExistError
-        
+
         hg_merge.update(self.repository._repo, branch, False, False, None)
 

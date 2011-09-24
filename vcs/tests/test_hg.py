@@ -161,12 +161,14 @@ class MercurialRepositoryTest(unittest.TestCase):
 
         #active branches
         self.assertTrue('default' in self.repo.branches)
-        self.assertTrue('webvcs' in self.repo.branches)
-        self.assertTrue('workdir' in self.repo.branches)
 
         #closed branches
         self.assertFalse('web' in self.repo.branches)
         self.assertFalse('git' in self.repo.branches)
+
+        # closed
+        self.assertTrue('workdir' in self.repo._get_branches(closed=True))
+        self.assertTrue('webvcs' in self.repo._get_branches(closed=True))
 
         for name, id in self.repo.branches.items():
             self.assertTrue(isinstance(
@@ -534,7 +536,7 @@ class MercurialChangesetTest(unittest.TestCase):
         pass
 
     def test_archival_as_generator(self):
-        #TODO:        
+        #TODO:
         pass
 
     def test_archival_wrong_kind(self):
@@ -542,7 +544,7 @@ class MercurialChangesetTest(unittest.TestCase):
         self.assertRaises(VCSError, tip.fill_archive, kind='error')
 
     def test_archival_empty_prefix(self):
-        #TODO:        
+        #TODO:
         pass
 
 
