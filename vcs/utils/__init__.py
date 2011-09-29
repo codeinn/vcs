@@ -25,23 +25,33 @@ def date_fromtimestamp(unixts, tzoffset=0):
     return datetime.datetime(*time.gmtime(float(unixts) - tzoffset)[:6])
 
 
-def safe_unicode(s):
+def safe_unicode(str_, from_encoding='utf8'):
     """
-    safe unicode function. In case of UnicodeDecode error we try to return
-    unicode with errors replace, if this fails we return unicode with
-    string_escape decoding
+    safe unicode function. Does few trick to turn str_ into unicode
+     
+    In case of UnicodeDecode error we try to return it with encoding detected
+    by chardet library if it fails fallback to unicode with errors replaced
+
+    :param str_: string to decode
+    :rtype: unicode
+    :returns: unicode object
     """
+    if isinstance(str_, unicode):
+        return str_
 
     try:
-        u_str = unicode(s)
+        return unicode(str_, from_encoding)
     except UnicodeDecodeError:
-        try:
-            u_str = unicode(s, 'utf-8', 'replace')
-        except UnicodeDecodeError:
-            # In case we have a decode error just represent as byte string
-            u_str = unicode(str(s).encode('string_escape'))
-
-    return u_str
+        pass
+    
+    try:        
+        import chardet
+        encoding = chardet.detect(str_)['encoding']
+        if encoding is None:
+            raise Exception()
+        return str_.decode(encoding)
+    except (ImportError, UnicodeDecodeError,Exception):
+        return unicode(str_, from_encoding, 'replace')  
 
 
 def author_email(author):
