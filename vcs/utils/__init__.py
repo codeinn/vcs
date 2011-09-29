@@ -40,19 +40,23 @@ def safe_unicode(str_, from_encoding='utf8'):
         return str_
 
     try:
+        return unicode(str_)
+    except UnicodeDecodeError:
+        pass
+
+    try:
         return unicode(str_, from_encoding)
     except UnicodeDecodeError:
         pass
-    
-    try:        
+
+    try:
         import chardet
         encoding = chardet.detect(str_)['encoding']
         if encoding is None:
             raise Exception()
         return str_.decode(encoding)
-    except (ImportError, UnicodeDecodeError,Exception):
-        return unicode(str_, from_encoding, 'replace')  
-
+    except (ImportError, UnicodeDecodeError, Exception):
+        return unicode(str_, from_encoding, 'replace')
 
 def author_email(author):
     """
