@@ -58,6 +58,39 @@ def safe_unicode(str_, from_encoding='utf8'):
     except (ImportError, UnicodeDecodeError, Exception):
         return unicode(str_, from_encoding, 'replace')
 
+def safe_str(unicode_, to_encoding='utf8'):
+    """
+    safe str function. Does few trick to turn unicode_ into string
+     
+    In case of UnicodeEncodeError we try to return it with encoding detected
+    by chardet library if it fails fallback to string with errors replaced
+
+    :param unicode_: unicode to encode
+    :rtype: str
+    :returns: str object
+    """
+
+    if isinstance(unicode_, str):
+        return unicode_
+
+    try:
+        return unicode_.encode(to_encoding)
+    except UnicodeEncodeError:
+        pass
+    
+    try:
+        import chardet
+        encoding = chardet.detect(unicode_)['encoding']
+        print encoding
+        if encoding is None:
+            raise UnicodeEncodeError()
+        
+        return unicode_.encode(encoding)
+    except (ImportError, UnicodeEncodeError):
+        return unicode_.encode(to_encoding, 'replace')
+
+    return safe_str
+
 def author_email(author):
     """
     returns email address of given author.

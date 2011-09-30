@@ -50,6 +50,7 @@ from vcs.nodes import RootNode
 from vcs.utils import date_fromtimestamp
 from vcs.utils import makedate
 from vcs.utils import safe_unicode
+from vcs.utils import safe_str
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils.paths import abspath, get_dirs_for_path
@@ -590,10 +591,7 @@ class MercurialChangeset(BaseChangeset):
         if path.endswith('/'):
             path = path.rstrip('/')
 
-        if isinstance(path, unicode):
-            path = path.encode('utf-8')
-
-        return path
+        return safe_str(path)
 
     def _get_kind(self, path):
         path = self._fix_path(path)
@@ -745,6 +743,7 @@ class MercurialChangeset(BaseChangeset):
         """
 
         path = self._fix_path(path)
+        
         if not path in self.nodes:
             if path in self._file_paths:
                 node = FileNode(path, changeset=self)
