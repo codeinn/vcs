@@ -47,8 +47,6 @@ from vcs.nodes import FileNode
 from vcs.nodes import NodeKind
 from vcs.nodes import RemovedFileNodesGenerator
 from vcs.nodes import RootNode
-from vcs.utils import date_fromtimestamp
-from vcs.utils import makedate
 from vcs.utils import safe_unicode
 from vcs.utils import safe_str
 from vcs.utils.lazy import LazyProperty
@@ -340,19 +338,17 @@ class MercurialRepository(BaseRepository):
         """
         Returns last change made on this repository as datetime object
         """
-        return date_fromtimestamp(self._get_mtime(), makedate()[1])
-
-    def _get_mtime(self):
         try:
-            return time.mktime(self.get_changeset().date.timetuple())
+            return self.get_changeset().date
         except RepositoryError:
             #fallback to filesystem
             cl_path = os.path.join(self.path, '.hg', "00changelog.i")
             st_path = os.path.join(self.path, '.hg', "store")
             if os.path.exists(cl_path):
-                return os.stat(cl_path).st_mtime
+                unixts = os.stat(cl_path).st_mtime
             else:
-                return os.stat(st_path).st_mtime
+                unixts = os.stat(st_path).st_mtime
+            return datetime.datetime.fromtimestamp(unixts)
 
     def _get_hidden(self):
         return self._repo.ui.configbool("web", "hidden", untrusted=True)
@@ -496,7 +492,7 @@ class MercurialChangeset(BaseChangeset):
 
     @LazyProperty
     def date(self):
-        return date_fromtimestamp(*self._ctx.date())
+        return datetime.datetime.fromtimestamp(self._ctx.date()[0])
 
     @LazyProperty
     def status(self):
