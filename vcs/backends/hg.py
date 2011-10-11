@@ -433,10 +433,10 @@ class MercurialRepository(BaseRepository):
             raise BranchDoesNotExistError('Such branch %s does not exists for'
                                   ' this repository' % branch_name)
 
-        slice = reversed(self.revisions[start_pos:end_pos]) if reverse else \
+        slice_ = reversed(self.revisions[start_pos:end_pos]) if reverse else \
             self.revisions[start_pos:end_pos]
 
-        for id_ in slice:
+        for id_ in slice_:
             cs = self.get_changeset(id_)
             if branch_name and cs.branch != branch_name:
                 continue

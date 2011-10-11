@@ -18,11 +18,13 @@ def makedate():
 
 def date_fromtimestamp(unixts, tzoffset=0):
     """
-    Makes a datetime objec out of unix timestamp with given timezone offset
+    Makes a local datetime object out of unix timestamp
+    
     :param unixts:
     :param tzoffset:
     """
-    return datetime.datetime(*time.gmtime(float(unixts) - tzoffset)[:6])
+
+    return datetime.datetime.fromtimestamp(float(unixts))
 
 
 def safe_unicode(str_, from_encoding='utf8'):
