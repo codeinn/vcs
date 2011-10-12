@@ -22,5 +22,3 @@ ARCHIVE_SPECS = {
     'tgz': ('application/x-gzip', '.tar.gz'),
     'zip': ('application/zip', '.zip'),
 }
-
-print abspath(os.getenv('HOME'), '.vcsrc')
