@@ -467,7 +467,7 @@ class GitChangeset(BaseChangeset):
                 if not id:
                     break
                 if id == self.id:
-                    return name
+                    return safe_unicode(name)
         raise ChangesetError("This should not happen... Have you manually "
             "change id of the changeset?")
 

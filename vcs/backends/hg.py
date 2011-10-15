@@ -480,11 +480,11 @@ class MercurialChangeset(BaseChangeset):
 
     @LazyProperty
     def tags(self):
-        return self._ctx.tags()
+        return map(safe_unicode,self._ctx.tags())
 
     @LazyProperty
     def branch(self):
-        return  self._ctx.branch()
+        return  safe_unicode(self._ctx.branch())
 
     @LazyProperty
     def message(self):
