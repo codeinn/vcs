@@ -1,8 +1,15 @@
 import os
 
-abspath = lambda *p: os.path.abspath(os.path.join(*p))
+abspath = lambda * p: os.path.abspath(os.path.join(*p))
 
-VCSRC_PATH = os.environ.get('VCSRC_PATH', abspath(os.getenv('HOME'), '.vcsrc'))
+VCSRC_PATH = os.environ.get('VCSRC_PATH')
+
+if not VCSRC_PATH:
+    HOME_ = os.getenv('HOME',os.getenv('USERPROFILE'))
+    if not HOME_:
+        raise Exception("You need to set HOME or USERPROFILE env variable")
+
+VCSRC_PATH = VCSRC_PATH or abspath(HOME_, '.vcsrc')
 
 BACKENDS = {
     'hg': 'vcs.backends.hg.MercurialRepository',
@@ -15,4 +22,3 @@ ARCHIVE_SPECS = {
     'tgz': ('application/x-gzip', '.tar.gz'),
     'zip': ('application/zip', '.zip'),
 }
-

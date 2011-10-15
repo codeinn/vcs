@@ -18,31 +18,80 @@ def makedate():
 
 def date_fromtimestamp(unixts, tzoffset=0):
     """
-    Makes a datetime objec out of unix timestamp with given timezone offset
+    Makes a local datetime object out of unix timestamp
+    
     :param unixts:
     :param tzoffset:
     """
-    return datetime.datetime(*time.gmtime(float(unixts) - tzoffset)[:6])
+
+    return datetime.datetime.fromtimestamp(float(unixts))
 
 
-def safe_unicode(s):
+def safe_unicode(str_, from_encoding='utf8'):
     """
-    safe unicode function. In case of UnicodeDecode error we try to return
-    unicode with errors replace, if this fails we return unicode with
-    string_escape decoding
+    safe unicode function. Does few trick to turn str_ into unicode
+     
+    In case of UnicodeDecode error we try to return it with encoding detected
+    by chardet library if it fails fallback to unicode with errors replaced
+
+    :param str_: string to decode
+    :rtype: unicode
+    :returns: unicode object
     """
+    if isinstance(str_, unicode):
+        return str_
 
     try:
-        u_str = unicode(s)
+        return unicode(str_)
     except UnicodeDecodeError:
-        try:
-            u_str = unicode(s, 'utf-8', 'replace')
-        except UnicodeDecodeError:
-            # In case we have a decode error just represent as byte string
-            u_str = unicode(str(s).encode('string_escape'))
+        pass
 
-    return u_str
+    try:
+        return unicode(str_, from_encoding)
+    except UnicodeDecodeError:
+        pass
 
+    try:
+        import chardet
+        encoding = chardet.detect(str_)['encoding']
+        if encoding is None:
+            raise Exception()
+        return str_.decode(encoding)
+    except (ImportError, UnicodeDecodeError, Exception):
+        return unicode(str_, from_encoding, 'replace')
+
+def safe_str(unicode_, to_encoding='utf8'):
+    """
+    safe str function. Does few trick to turn unicode_ into string
+     
+    In case of UnicodeEncodeError we try to return it with encoding detected
+    by chardet library if it fails fallback to string with errors replaced
+
+    :param unicode_: unicode to encode
+    :rtype: str
+    :returns: str object
+    """
+
+    if isinstance(unicode_, str):
+        return unicode_
+
+    try:
+        return unicode_.encode(to_encoding)
+    except UnicodeEncodeError:
+        pass
+    
+    try:
+        import chardet
+        encoding = chardet.detect(unicode_)['encoding']
+        print encoding
+        if encoding is None:
+            raise UnicodeEncodeError()
+        
+        return unicode_.encode(encoding)
+    except (ImportError, UnicodeEncodeError):
+        return unicode_.encode(to_encoding, 'replace')
+
+    return safe_str
 
 def author_email(author):
     """
