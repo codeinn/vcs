@@ -2,8 +2,10 @@
 Module providing backend independent mixin class. It requires that
 InMemoryChangeset class is working properly at backend class.
 """
+import os
 import vcs
 import time
+import shutil
 import datetime
 from vcs.utils.compat import unittest
 
@@ -78,9 +80,21 @@ class BackendTestMixin(object):
                 author=commit['author'],
                 date=commit['date'])
 
+    @classmethod
+    def tearDownClass(cls):
+        if not getattr(cls, 'recreate_repo_per_test', False) and \
+            'VCS_REMOVE_TEST_DIRS' in os.environ:
+            shutil.rmtree(cls.repo_path)
+
     def setUp(self):
         if getattr(self, 'recreate_repo_per_test', False):
             self.__class__.setUpClass()
+
+    def tearDown(self):
+        if getattr(self, 'recreate_repo_per_test', False) and \
+            'VCS_REMOVE_TEST_DIRS' in os.environ:
+            shutil.rmtree(self.repo_path)
+
 
 
 # For each backend create test case class
