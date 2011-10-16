@@ -392,11 +392,11 @@ class MercurialRepository(BaseRepository):
         """
         Returns normalized url. If schema is not given, would fall
         to filesystem
-        (``file://``) schema.
+        (``file:///``) schema.
         """
         url = str(url)
         if url != 'default' and not '://' in url:
-            url = '://'.join(('file', url))
+            url = ':///'.join(('file', url))
         return url
 
     def get_changeset(self, revision=None):

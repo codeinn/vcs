@@ -191,11 +191,11 @@ class GitRepository(BaseRepository):
     def _get_url(self, url):
         """
         Returns normalized url. If schema is not given, would fall to
-        filesystem (``file://``) schema.
+        filesystem (``file:///``) schema.
         """
         url = str(url)
         if url != 'default' and not '://' in url:
-            url = '://'.join(('file', url))
+            url = ':///'.join(('file', url))
         return url
 
     @LazyProperty
