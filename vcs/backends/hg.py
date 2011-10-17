@@ -396,7 +396,7 @@ class MercurialRepository(BaseRepository):
         """
         url = str(url)
         if url != 'default' and not '://' in url:
-            url = ':///'.join(('file', url))
+            url = "file:" + urllib.pathname2url(url);
         return url
 
     def get_changeset(self, revision=None):
