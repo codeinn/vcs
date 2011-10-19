@@ -35,7 +35,7 @@ from vcs.exceptions import TagAlreadyExistError
 from vcs.exceptions import TagDoesNotExistError
 from vcs.exceptions import VCSError
 from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
-from vcs.utils import safe_unicode, makedate, date_fromtimestamp
+from vcs.utils import safe_unicode
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils.paths import abspath
@@ -207,19 +207,17 @@ class GitRepository(BaseRepository):
         """
         Returns last change made on this repository as datetime object
         """
-        return date_fromtimestamp(self._get_mtime(), makedate()[1])
-
-    def _get_mtime(self):
         try:
-            return time.mktime(self.get_changeset().date.timetuple())
+            return self.get_changeset().date
         except RepositoryError:
             #fallback to filesystem
             in_path = os.path.join(self.path, '.git', "index")
             he_path = os.path.join(self.path, '.git', "HEAD")
             if os.path.exists(in_path):
-                return os.stat(in_path).st_mtime
+                unixts = os.stat(in_path).st_mtime
             else:
-                return os.stat(he_path).st_mtime
+                unixts = os.stat(he_path).st_mtime
+            return datetime.datetime.fromtimestamp(unixts)
 
     @LazyProperty
     def description(self):
@@ -443,8 +441,7 @@ class GitChangeset(BaseChangeset):
 
     @LazyProperty
     def date(self):
-        return date_fromtimestamp(self._commit.commit_time,
-                                  self._commit.commit_timezone)
+        return datetime.datetime.fromtimestamp(self._commit.commit_time)
 
     @LazyProperty
     def status(self):
