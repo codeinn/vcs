@@ -120,6 +120,11 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
         changesets = list(self.repo.get_changesets(start=second_id))
         self.assertEqual(len(changesets), 4)
 
+    def test_get_changesets_numerical_id_respects_start(self):
+        second_id = 1
+        changesets = list(self.repo.get_changesets(start=second_id))
+        self.assertEqual(len(changesets), 4)
+
     def test_get_changesets_includes_start_changeset(self):
         second_id = self.repo.revisions[1]
         changesets = list(self.repo.get_changesets(start=second_id))
@@ -131,7 +136,20 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
         self.assertEqual(changesets[-1].raw_id, second_id)
         self.assertEqual(len(changesets), 2)
 
+    def test_get_changesets_numerical_id_respects_end(self):
+        second_id = 1
+        changesets = list(self.repo.get_changesets(end=second_id))
+        self.assertEqual(changesets.index(changesets[-1]), second_id)
+        self.assertEqual(len(changesets), 2)
+
     def test_get_changesets_respects_both_start_and_end(self):
+        second_id = self.repo.revisions[1]
+        third_id = self.repo.revisions[2]
+        changesets = list(self.repo.get_changesets(start=second_id,
+            end=third_id))
+        self.assertEqual(len(changesets), 2)
+
+    def test_get_changesets_numerical_id_respects_both_start_and_end(self):
         second_id = self.repo.revisions[1]
         third_id = self.repo.revisions[2]
         changesets = list(self.repo.get_changesets(start=second_id,

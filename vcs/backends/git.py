@@ -356,15 +356,15 @@ class GitRepository(BaseRepository):
         start_pos = 0
         end_pos = len(revs)
         if start:
-            self._get_revision(start)
+            _start = self._get_revision(start)
             try:
-                start_pos = revs.index(start)
+                start_pos = revs.index(_start)
             except ValueError:
                 pass
         if end:
-            self._get_revision(end)
+            _end = self._get_revision(end)
             try:
-                end_pos = revs.index(end) + 1
+                end_pos = revs.index(_end) + 1
             except ValueError:
                 pass
         if (start_pos and end_pos) and start_pos > end_pos:
