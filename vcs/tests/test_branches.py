@@ -87,13 +87,29 @@ class BranchesTestCaseMixin(BackendTestMixin):
         self.assertEqual(newest_tip.branch,
             self.backend_class.DEFAULT_BRANCH_NAME)
 
+    def test_branch_with_slash_in_name(self):
+        self.imc.add(vcs.nodes.FileNode('extrafile', content='Some data\n'))
+        self.imc.commit('Branch with a slash!', author='joe',
+            branch='issue/123')
+        self.assertTrue('issue/123' in self.repo.branches)
+
+    def test_branch_with_slash_in_name_and_similar_without(self):
+        self.imc.add(vcs.nodes.FileNode('extrafile', content='Some data\n'))
+        self.imc.commit('Branch with a slash!', author='joe',
+            branch='issue/123')
+        self.imc.add(vcs.nodes.FileNode('extrafile II', content='Some data\n'))
+        self.imc.commit('Branch without a slash...', author='joe',
+            branch='123')
+        self.assertIn('issue/123', self.repo.branches)
+        self.assertIn('123', self.repo.branches)
+
 
 # For each backend create test case class
 for alias in SCM_TESTS:
     attrs = {
         'backend_alias': alias,
     }
-    cls_name = ''.join(('%s branch test' % alias).title().split())
+    cls_name = ''.join(('%s branches test' % alias).title().split())
     bases = (BranchesTestCaseMixin, unittest.TestCase)
     globals()[cls_name] = type(cls_name, bases, attrs)
 

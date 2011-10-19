@@ -241,7 +241,7 @@ class GitRepository(BaseRepository):
             return {}
         refs = self._repo.refs.as_dict()
         sortkey = lambda ctx: ctx[0]
-        _branches = [(ref.split('/')[-1], head)
+        _branches = [('/'.join(ref.split('/')[2:]), head)
             for ref, head in refs.items()
             if ref.startswith('refs/heads/') or
             ref.startswith('refs/remotes/') and not ref.endswith('/HEAD')]
@@ -251,7 +251,7 @@ class GitRepository(BaseRepository):
         if not self.revisions:
             return {}
         sortkey = lambda ctx: ctx[0]
-        _tags = [(ref.split('/')[-1], head,) for ref, head in
+        _tags = [('/'.join(ref.split('/')[2:]), head) for ref, head in
             self._repo.get_refs().items() if ref.startswith('refs/tags/')]
         return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
 
