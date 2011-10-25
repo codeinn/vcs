@@ -1,13 +1,12 @@
 import os
+import tempfile
 
 abspath = lambda * p: os.path.abspath(os.path.join(*p))
 
 VCSRC_PATH = os.environ.get('VCSRC_PATH')
 
 if not VCSRC_PATH:
-    HOME_ = os.getenv('HOME',os.getenv('USERPROFILE'))
-    if not HOME_:
-        raise Exception("You need to set HOME or USERPROFILE env variable")
+    HOME_ = os.getenv('HOME',os.getenv('USERPROFILE',tempfile.gettempdir()))
 
 VCSRC_PATH = VCSRC_PATH or abspath(HOME_, '.vcsrc')
 
@@ -22,3 +21,5 @@ ARCHIVE_SPECS = {
     'tgz': ('application/x-gzip', '.tar.gz'),
     'zip': ('application/zip', '.zip'),
 }
+
+print VCSRC_PATH
