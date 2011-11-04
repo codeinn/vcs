@@ -421,17 +421,21 @@ class MercurialRepository(BaseRepository):
         :param branch_name:
         :param reversed: return changesets in reversed order
         """
+        
         start_raw_id = self._get_revision(start)
         start_pos = self.revisions.index(start_raw_id) if start else None
         end_raw_id = self._get_revision(end)
-        end_pos = self.revisions.index(end_raw_id) + 1  if end else None
+        end_pos = self.revisions.index(end_raw_id) if end else None
 
-        if (start_pos and end_pos) and start_pos > end_pos:
-            raise RepositoryError('start cannot be after end')
+        if None not in [start, end] and start_pos > end_pos:
+            raise RepositoryError("start revision '%s' cannot be "
+                                  "after end revision '%s'" % (start, end))
 
         if branch_name and branch_name not in self.branches.keys():
             raise BranchDoesNotExistError('Such branch %s does not exists for'
                                   ' this repository' % branch_name)
+        if end_pos is not None:
+            end_pos +=1
 
         slice_ = reversed(self.revisions[start_pos:end_pos]) if reverse else \
             self.revisions[start_pos:end_pos]

@@ -150,10 +150,7 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
         self.assertEqual(len(changesets), 2)
 
     def test_get_changesets_numerical_id_respects_both_start_and_end(self):
-        second_id = self.repo.revisions[1]
-        third_id = self.repo.revisions[2]
-        changesets = list(self.repo.get_changesets(start=second_id,
-            end=third_id))
+        changesets = list(self.repo.get_changesets(start=2, end=3))
         self.assertEqual(len(changesets), 2)
 
     def test_get_changesets_includes_end_changeset(self):
@@ -175,7 +172,6 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
         changesets_id_list = [cs.raw_id for cs in
             self.repo.get_changesets(reverse=True)]
         self.assertItemsEqual(changesets_id_list, reversed(self.repo.revisions))
-
 
     def test_get_filenodes_generator(self):
         tip = self.repo.get_changeset()
@@ -216,6 +212,20 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
         end = self.repo.revisions[0]
         with self.assertRaises(RepositoryError):
             list(self.repo.get_changesets(start=start, end=end))
+
+    def test_get_changesets_numerical_id_reversed(self):
+        with self.assertRaises(RepositoryError):
+            [x for x in self.repo.get_changesets(start=3, end=2)]
+
+    def test_get_changesets_numerical_id_respects_both_start_and_end_last(self):
+        with self.assertRaises(RepositoryError):
+            last = len(self.repo.revisions)
+            list(self.repo.get_changesets(start=last-1, end=last-2))            
+
+    def test_get_changesets_numerical_id_last_zero_error(self):
+        with self.assertRaises(RepositoryError):
+            last = len(self.repo.revisions)
+            list(self.repo.get_changesets(start=last-1, end=0))       
 
 
 class ChangesetsChangesTestCaseMixin(BackendTestMixin):
