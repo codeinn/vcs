@@ -361,14 +361,19 @@ class GitRepository(BaseRepository):
                 start_pos = revs.index(_start)
             except ValueError:
                 pass
-        if end:
+        
+        if end is not None:
             _end = self._get_revision(end)
             try:
-                end_pos = revs.index(_end) + 1
+                end_pos = revs.index(_end)
             except ValueError:
                 pass
-        if (start_pos and end_pos) and start_pos > end_pos:
+            
+        if None not in [start, end] and start_pos > end_pos:
             raise RepositoryError('start cannot be after end')
+
+        if end_pos is not None:
+            end_pos +=1
 
         revs = revs[start_pos:end_pos]
         if reverse:
