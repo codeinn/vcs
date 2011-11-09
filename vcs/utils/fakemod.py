@@ -1,5 +1,4 @@
 import imp
-import runpy
 
 
 def create_module(name, path):
@@ -9,6 +8,7 @@ def create_module(name, path):
     ``path`` (it may also be a zip or package containing *__main__* module).
     """
     module = imp.new_module(name)
-    module.__dict__.update(runpy.run_path(path))
+    module.__file__ = path
+    execfile(path, module.__dict__)
     return module
 
