@@ -137,17 +137,21 @@ class DiffProcessor(object):
         """
         Extract the filename and revision hint from a line.
         """
+
         try:
             if line1.startswith('--- ') and line2.startswith('+++ '):
                 l1 = line1[4:].split(None, 1)
-                old_filename = l1[0] if len(l1) >= 1 else None
+                old_filename = l1[0].lstrip('a/') if len(l1) >= 1 else None
                 old_rev = l1[1] if len(l1) == 2 else 'old'
 
-                l2 = line1[4:].split(None, 1)
-                #new_filename = l2[0] if len(l2) >= 1 else None
+                l2 = line2[4:].split(None, 1)
+                new_filename = l2[0].lstrip('b/') if len(l1) >= 1 else None
                 new_rev = l2[1] if len(l2) == 2 else 'new'
 
-                return old_filename, new_rev, old_rev
+                filename = old_filename if (old_filename !=
+                                            'dev/null') else new_filename
+
+                return filename, new_rev, old_rev
         except (ValueError, IndexError):
             pass
 
