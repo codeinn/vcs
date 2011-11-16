@@ -350,6 +350,8 @@ class GitRepository(BaseRepository):
         if branch_name:
             cmd_template += ' $branch_name'
             cmd_params['branch_name'] = branch_name
+        else:
+            cmd_template += ' --all'
 
         cmd = Template(cmd_template).safe_substitute(**cmd_params)
         revs = self.run_git_command(cmd)[0].splitlines()

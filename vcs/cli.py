@@ -332,7 +332,7 @@ class ChangesetCommand(RepositoryCommand):
                  'working directory branch is used. For bare repository '
                  'default would be SCM\'s default branch (i.e. master for git)'),
         make_option('--all', action='store_true', dest='all',
-            default='all', help='Show changesets across all branches.'),
+            default=False, help='Show changesets across all branches.'),
 
         make_option('--since', '--start-date', action='store', dest='start_date',
             help='Show only changesets not younger than specified '
@@ -384,6 +384,9 @@ class ChangesetCommand(RepositoryCommand):
         * ``limit``: if specified, show no more changesets than this value.
           Default is ``None``.
         """
+        branch_name = None
+        if not options['all']:
+            branch_name = options.get('branch') or repo.workdir.get_branch()
         if options.get('start_date'):
             options['start_date'] = parse_datetime(options['start_date'])
         if options.get('end_date'):
@@ -393,8 +396,7 @@ class ChangesetCommand(RepositoryCommand):
             end=options.get('end', options.get('main')),
             start_date=options.get('start_date'),
             end_date=options.get('end_date'),
-            branch_name=options.get('all') and None or
-                options.get('branch') or repo.workdir.get_branch(),
+            branch_name=branch_name,
             reverse=not options.get('reversed', False),
         )
         try:
