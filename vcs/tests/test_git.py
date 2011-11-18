@@ -8,7 +8,7 @@ from vcs.exceptions import RepositoryError, VCSError, NodeDoesNotExistError
 from vcs.nodes import NodeKind, FileNode, DirNode, NodeState
 from vcs.utils.compat import unittest
 from vcs.tests.base import BackendTestMixin
-from conf import TEST_GIT_REPO, TEST_GIT_REPO_CLONE
+from conf import TEST_GIT_REPO, TEST_GIT_REPO_CLONE, get_new_dir
 
 
 class GitRepositoryTest(unittest.TestCase):
@@ -62,9 +62,26 @@ class GitRepositoryTest(unittest.TestCase):
         self.assertEqual(len(repo.revisions), len(repo_clone.revisions))
         #check if current workdir was *NOT* updated
         fpath = os.path.join(clone_path, 'MANIFEST.in')
+        # Make sure it's not bare repo
+        self.assertFalse(repo_clone._repo.bare)
         self.assertEqual(False, os.path.isfile(fpath),
             'Repo was cloned and updated but file %s was found'
             % fpath)
+
+    def test_repo_clone_into_bare_repo(self):
+        repo = GitRepository(TEST_GIT_REPO)
+        clone_path = TEST_GIT_REPO_CLONE + '_bare.git'
+        repo_clone = GitRepository(clone_path, create=True,
+            src_url=repo.path, bare=True)
+        self.assertTrue(repo_clone._repo.bare)
+
+    def test_create_repo_is_not_bare_by_default(self):
+        repo = GitRepository(get_new_dir('not-bare-by-default'), create=True)
+        self.assertFalse(repo._repo.bare)
+
+    def test_create_bare_repo(self):
+        repo = GitRepository(get_new_dir('bare-repo'), create=True, bare=True)
+        self.assertTrue(repo._repo.bare)
 
     def test_revisions(self):
         # there are 112 revisions (by now)

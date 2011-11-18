@@ -49,10 +49,10 @@ class GitRepository(BaseRepository):
     scm = 'git'
 
     def __init__(self, repo_path, create=False, src_url=None,
-                 update_after_clone=False):
+                 update_after_clone=False, bare=False):
 
         self.path = abspath(repo_path)
-        self._repo = self._get_repo(create, src_url, update_after_clone)
+        self._repo = self._get_repo(create, src_url, update_after_clone, bare)
         try:
             self.head = self._repo.head()
         except KeyError:
@@ -121,7 +121,8 @@ class GitRepository(BaseRepository):
         pass
 
 
-    def _get_repo(self, create, src_url=None, update_after_clone=False):
+    def _get_repo(self, create, src_url=None, update_after_clone=False,
+            bare=False):
         if create and os.path.exists(self.path):
             raise RepositoryError("Location already exist")
         if src_url and not create:
@@ -130,11 +131,14 @@ class GitRepository(BaseRepository):
         try:
             if create and src_url:
                 self._check_url(src_url)
-                self.clone(src_url, update_after_clone)
+                self.clone(src_url, update_after_clone, bare)
                 return Repo(self.path)
             elif create:
                 os.mkdir(self.path)
-                return Repo.init(self.path)
+                if bare:
+                    return Repo.init_bare(self.path)
+                else:
+                    return Repo.init(self.path)
             else:
                 return Repo(self.path)
         except (NotGitRepository, OSError), err:
@@ -390,17 +394,23 @@ class GitRepository(BaseRepository):
         """
         return GitInMemoryChangeset(self)
 
-    def clone(self, url, update_after_clone):
+    def clone(self, url, update_after_clone=True, bare=False):
         """
         Tries to clone changes from external location.
-        if update_after_clone is set To false it'll prevent the runing update
-        on workdir
+
+        :param update_after_clone: If set to ``False``, git won't checkout
+          working directory
+        :param bare: If set to ``True``, repository would be cloned into
+          *bare* git repository (no working directory at all).
         """
         url = self._get_url(url)
-        cmd = 'clone '
-        if not update_after_clone:
-            cmd += '--no-checkout '
-        cmd += '-- "%s" "%s"' % (url, self.path)
+        cmd = ['clone']
+        if bare:
+            cmd.append('--bare')
+        elif not update_after_clone:
+            cmd.append('--no-checkout')
+        cmd += ['--', '"%s"' % url, '"%s"' % self.path]
+        cmd = ' '.join(cmd)
         # If error occurs run_git_command raises RepositoryError already
         self.run_git_command(cmd)
 
