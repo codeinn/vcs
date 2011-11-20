@@ -1,14 +1,17 @@
 from __future__ import with_statement
 
 import os
-import shutil
+import mock
 import time
+import shutil
 import tempfile
 import datetime
 from vcs.utils.compat import unittest
 from vcs.utils.paths import get_dirs_for_path
+from vcs.utils.helpers import get_dict_for_attrs
 from vcs.utils.helpers import get_scm
 from vcs.utils.helpers import get_scms_for_path
+from vcs.utils.helpers import get_total_seconds
 from vcs.utils.helpers import parse_changesets
 from vcs.utils.helpers import parse_datetime
 from vcs.utils import author_email, author_name
@@ -212,6 +215,42 @@ class TestAuthorExtractors(unittest.TestCase):
 
         for test_str, result in self.TEST_AUTHORS:
             self.assertEqual(result[0], author_name(test_str))
+
+
+class TestGetDictForAttrs(unittest.TestCase):
+
+    def test_returned_dict_has_expected_attrs(self):
+        obj = mock.Mock()
+        obj.NOT_INCLUDED = 'this key/value should not be included'
+        obj.CONST = True
+        obj.foo = 'aaa'
+        obj.attrs = {'foo': 'bar'}
+        obj.date = datetime.datetime(2010, 12, 31)
+        obj.count = 1001
+
+        self.assertEqual(get_dict_for_attrs(obj, ['CONST', 'foo', 'attrs',
+            'date', 'count']), {
+            'CONST': True,
+            'foo': 'aaa',
+            'attrs': {'foo': 'bar'},
+            'date': datetime.datetime(2010, 12, 31),
+            'count': 1001,
+        })
+
+
+class TestGetTotalSeconds(unittest.TestCase):
+
+    def assertTotalSecondsEqual(self, timedelta, expected_seconds):
+        result = get_total_seconds(timedelta)
+        self.assertEqual(result, expected_seconds,
+            "We computed %s seconds for %s but expected %s"
+            % (result, timedelta, expected_seconds))
+
+    def test_get_total_seconds_returns_proper_value(self):
+        self.assertTotalSecondsEqual(datetime.timedelta(seconds=1001), 1001)
+
+    def test_get_total_seconds_returns_proper_value_for_partial_seconds(self):
+        self.assertTotalSecondsEqual(datetime.timedelta(seconds=50.65), 50.65)
 
 
 if __name__ == '__main__':

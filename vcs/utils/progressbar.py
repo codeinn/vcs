@@ -1,6 +1,9 @@
 # encoding: UTF-8
 import sys
 import datetime
+from string import Template
+from vcs.utils.filesize import filesizeformat
+from vcs.utils.helpers import get_total_seconds
 
 
 class ProgressBarError(Exception):
@@ -60,7 +63,7 @@ class ProgressBar(object):
     def get_template(self):
         separator = self.get_separator()
         elements = self.get_elements()
-        return separator.join((('{%s}' % e) for e in elements))
+        return Template(separator.join((('$%s' % e) for e in elements)))
 
     def get_total_time(self, current_time=None):
         if current_time is None:
@@ -75,14 +78,14 @@ class ProgressBar(object):
             ttime = '-'
         else:
             ttime = str(delta)
-        return '{}: {}'.format(self.time_label, ttime)
+        return '%s %s' % (self.time_label, ttime)
 
     def get_eta(self, current_time=None):
         if current_time is None:
             current_time = datetime.datetime.now()
         if self.step == 0:
             return datetime.timedelta()
-        total_seconds = self.get_total_time().total_seconds()
+        total_seconds = get_total_seconds(self.get_total_time())
         eta_seconds = total_seconds * self.steps / self.step - total_seconds
         return datetime.timedelta(seconds=int(eta_seconds))
 
@@ -92,28 +95,28 @@ class ProgressBar(object):
             eta = '--:--:--'
         else:
             eta = str(eta).rjust(8)
-        return '{}: {}'.format(self.eta_label, eta)
+        return '%s: %s' % (self.eta_label, eta)
 
     def get_percentage(self):
         return float(self.step) / self.steps * 100
 
     def get_rendered_percentage(self):
         perc = self.get_percentage()
-        return '{val}%'.format(val=int(perc)).rjust(5)
+        return ('%s%%' % (int(perc))).rjust(5)
 
     def get_rendered_steps(self):
-        return '{}: {}/{}'.format(self.steps_label, self.step, self.steps)
+        return '%s: %s/%s' % (self.steps_label, self.step, self.steps)
 
     def get_rendered_speed(self, step=None, total_seconds=None):
         if step is None:
             step = self.step
         if total_seconds is None:
-            total_seconds = self.get_total_time().total_seconds()
+            total_seconds = get_total_seconds(self.get_total_time())
         if step <= 0 or total_seconds <= 0:
             speed = '-'
         else:
             speed = filesizeformat(float(step) / total_seconds)
-        return '{}: {}/s'.format(self.speed_label, speed)
+        return '%s: %s/s' % (self.speed_label, speed)
 
     def get_rendered_transfer(self, step=None, steps=None):
         if step is None:
@@ -122,13 +125,13 @@ class ProgressBar(object):
             steps = self.steps
 
         if steps <= 0:
-            return '{}: -'.format(self.transfer_label)
+            return '%s: -' % self.transfer_label
         total = filesizeformat(float(steps))
         if step <= 0:
             transferred = '-'
         else:
             transferred = filesizeformat(float(step))
-        return '{}: {} / {}'.format(self.transfer_label, transferred, total)
+        return '%s: %s / %s' % (self.transfer_label, transferred, total)
 
     def get_context(self):
         return {
@@ -144,7 +147,7 @@ class ProgressBar(object):
     def get_line(self):
         template = self.get_template()
         context = self.get_context()
-        return template.format(**context)
+        return template.safe_substitute(**context)
 
     def write(self, data):
         self.stream.write(data)
@@ -161,26 +164,6 @@ class ProgressBar(object):
         if step == self.steps:
             self.write('\n')
 
-
-def filesizeformat(bytes):
-    """
-    Formats the value like a 'human-readable' file size (i.e. 13 KB, 4.1 MB,
-    102 bytes, etc).
-
-    Grabbed from Django (http://www.djangoproject.com)    
-    """
-    try:
-        bytes = float(bytes)
-    except (TypeError,ValueError,UnicodeDecodeError):
-        return u"0 bytes"
-
-    if bytes < 1024:
-        return '{:.0f} B'.format(bytes)
-    if bytes < 1024 * 1024:
-        return '{:.0f} KB'.format(bytes / 1024)
-    if bytes < 1024 * 1024 * 1024:
-        return '{:.1f} MB'.format(bytes / 1024 / 1024)
-    return '{:.1f} GB'.format(bytes / 1024 / 1024 / 1024)
 
 """
 termcolors.py
@@ -425,8 +408,8 @@ class BarOnlyProgressBar(ProgressBar):
     def get_bar(self):
         bar = super(BarOnlyProgressBar, self).get_bar()
         perc = self.get_percentage()
-        perc_text = '{}%'.format(int(perc))
-        text = ' {}% '.format(perc_text).center(self.width, '=')
+        perc_text = '%s%%' % int(perc)
+        text = (' %s%% ' % (perc_text)).center(self.width, '=')
         L = text.find(' ')
         R = text.rfind(' ')
         bar = ' '.join((bar[:L], perc_text, bar[R:]))

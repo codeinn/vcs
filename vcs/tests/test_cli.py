@@ -1,12 +1,12 @@
-# encoding: UTF-8
 from __future__ import with_statement
 
 import inspect
-import io
 import mock
 import sys
 import vcs
 import vcs.cli
+from contextlib import nested
+from StringIO import StringIO
 from vcs.utils.compat import unittest
 from vcs.cli import make_option
 from vcs.cli import BaseCommand
@@ -32,23 +32,25 @@ class TestExecutionManager(unittest.TestCase):
             self.assertEqual(manager.prog_name, 'vcs')
 
     def test_default_stdout(self):
-        stream = io.StringIO()
+        stream = StringIO()
         with mock.patch.object(sys, 'stdout', stream):
             manager = DummyExecutionManager()
             self.assertEqual(manager.stdout, stream)
 
     def test_default_stderr(self):
-        stream = io.StringIO()
+        stream = StringIO()
         with mock.patch.object(sys, 'stderr', stream):
             manager = DummyExecutionManager()
             self.assertEqual(manager.stderr, stream)
 
     def test_get_vcsrc(self):
-        with mock.patch('vcs.conf.settings.VCSRC_PATH', __file__):
+        with nested(mock.patch('vcs.conf.settings.VCSRC_PATH', 'foobar'),
+            mock.patch('vcs.cli.create_module')) as (VP, m):
             # Use not-dummy manager here as we need to test get_vcsrc behavior
+            m.return_value = mock.Mock()
             manager = ExecutionManager()
-            self.assertEqual(manager.vimrc.__file__, __file__)
-            self.assertTrue(inspect.ismodule(manager.vimrc))
+            self.assertEqual(manager.vimrc, m.return_value)
+            m.assert_called_once_with('vcsrc', 'foobar')
 
     def test_get_command_class(self):
         with mock.patch.object(vcs.cli, 'registry', {
@@ -74,8 +76,8 @@ class TestExecutionManager(unittest.TestCase):
             })
 
     def test_run_command(self):
-        manager = DummyExecutionManager(stdout=io.StringIO(),
-            stderr=io.StringIO())
+        manager = DummyExecutionManager(stdout=StringIO(),
+            stderr=StringIO())
 
         class Command(BaseCommand):
 
@@ -104,7 +106,7 @@ class TestExecutionManager(unittest.TestCase):
         manager.show_help.assert_called_once_with()
 
     def test_show_help_writes_to_stdout(self):
-        manager = DummyExecutionManager(stdout=io.StringIO(), stderr=io.StringIO())
+        manager = DummyExecutionManager(stdout=StringIO(), stderr=StringIO())
         manager.show_help()
         self.assertGreater(len(manager.stdout.getvalue()), 0)
 
@@ -112,14 +114,14 @@ class TestExecutionManager(unittest.TestCase):
 class TestBaseCommand(unittest.TestCase):
 
     def test_default_stdout(self):
-        stream = io.StringIO()
+        stream = StringIO()
         with mock.patch.object(sys, 'stdout', stream):
             command = BaseCommand()
             command.stdout.write(u'foobar')
             self.assertEqual(sys.stdout.getvalue(), u'foobar')
 
     def test_default_stderr(self):
-        stream = io.StringIO()
+        stream = StringIO()
         with mock.patch.object(sys, 'stderr', stream):
             command = BaseCommand()
             command.stderr.write(u'foobar')

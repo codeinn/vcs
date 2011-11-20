@@ -11,16 +11,19 @@ def filesizeformat(bytes, sep=' '):
     try:
         bytes = float(bytes)
     except (TypeError, ValueError, UnicodeDecodeError):
-        bytes = 0
-        template = u'{size}{sep}B'
-        formats = {'size': 0, 'sep': sep}
-        return template.format(**formats)
+        return '0%sB' % sep
 
     if bytes < 1024:
-        return '{size:.0f}{sep}B'.format(size=bytes, sep=sep)
-    if bytes < 1024 * 1024:
-        return '{size:.0f}{sep}KB'.format(size=bytes / 1024, sep=sep)
-    if bytes < 1024 * 1024 * 1024:
-        return '{size:.1f}{sep}MB'.format(size=bytes / 1024 / 1024, sep=sep)
-    return '{size:.2f}{sep}GB'.format(size=bytes / 1024 / 1024 / 1024, sep=sep)
+        size = bytes
+        template = '%.0f%sB'
+    elif bytes < 1024 * 1024:
+        size = bytes / 1024
+        template = '%.0f%sKB'
+    elif bytes < 1024 * 1024 * 1024:
+        size = bytes / 1024 / 1024
+        template = '%.1f%sMB'
+    else:
+        size = bytes / 1024 / 1024 / 1024
+        template = '%.2f%sGB'
+    return template % (size, sep)
 

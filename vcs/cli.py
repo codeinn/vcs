@@ -4,7 +4,7 @@ Command line interface for VCS
 
 This module provides foundations for creating, executing and registering
 terminal commands for vcs. Moreover, :command:`ExecutionManager` makes it
-possible for user to create own code.
+possible for user to create own code (at *.vcsrc* file).
 """
 import os
 import sys
@@ -129,14 +129,13 @@ class ExecutionManager(object):
         Prints help text about available commands.
         """
         output = [
-            'Usage: {prog} subcommand [options] [args]'.format(
-                prog=self.prog_name),
+            'Usage %s subcommand [options] [args]' % self.prog_name,
             '',
             'Available commands:',
             '',
         ]
         for cmd in self.get_commands():
-            output.append('  {cmd}'.format(cmd=cmd))
+            output.append('  %s' % cmd)
         output += ['', '']
         self.stdout.write(u'\n'.join(output))
 
@@ -168,9 +167,9 @@ class BaseCommand(object):
         """
         Returns *how to use command* text.
         """
-        usage = '%prog {subcommand} [options]'.format(subcommand=subcommand)
+        usage = ' '.join(['%prog', subcommand, '[options]'])
         if self.args:
-            usage = '{usage} {args}'.format(usage=usage, args=self.args)
+            usage = '%s %s' % (usage, str(self.args))
         return usage
 
     def get_option_list(self):
@@ -229,7 +228,7 @@ class BaseCommand(object):
                     import pdb
                     pdb.set_trace()
             sys.stderr.write(colorize('ERROR: ', fg='red'))
-            self.stderr.write('{error}\n'.format(error=e))
+            self.stderr.write('%s\n' % e)
             sys.exit(1)
         except Exception, e:
             if isinstance(e, IOError) and getattr(e, 'errno') == errno.EPIPE:
@@ -250,7 +249,7 @@ class BaseCommand(object):
                 )))
                 traceback.print_exc(file=self.stderr)
             sys.stderr.write(colorize('ERROR: ', fg='red'))
-            self.stderr.write('{error}\n'.format(error=e))
+            self.stderr.write('%s\n' % e)
             sys.exit(1)
 
     def handle(self, *args, **options):
@@ -481,8 +480,7 @@ class SingleChangesetCommand(RepositoryCommand):
 
     def handle_repo(self, repo, *args, **options):
         if len(args) < self.min_args:
-            raise CommandError("At least {min_args} arguments required".format(
-                min_args=self.min_args))
+            raise CommandError("At least %s arguments required" % self.min_args)
         changeset = self.get_changeset(**options)
         for arg in args:
             self.handle_arg(changeset, arg, **options)

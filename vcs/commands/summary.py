@@ -57,8 +57,7 @@ class SummaryCommand(ChangesetCommand):
         max_label_size = max(len(label) for label, value in stats)
         output = ['']
         output.extend([
-            '{label:>{max_label_size}}: {value}'.format(label=label,
-                max_label_size=max_label_size + 3, value=value)
+            '%s: %s' % (label.rjust(max_label_size+3), value)
             for label, value in stats
         ])
         output.append('')

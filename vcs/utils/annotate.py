@@ -14,8 +14,7 @@ def annotate_highlight(filenode, annotate_from_changeset_func=None,
 
     :param filenode: FileNode object
     :param annotate_from_changeset_func: function taking changeset and
-    returning
-      single annotate cell; needs break line at the end
+      returning single annotate cell; needs break line at the end
     :param order: ordered sequence of ``ls`` (line numbers column),
       ``annotate`` (annotate column), ``code`` (code column); Default is
       ``['ls', 'annotate', 'code']``

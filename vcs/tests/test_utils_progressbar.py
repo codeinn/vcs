@@ -2,6 +2,8 @@ from __future__ import with_statement
 
 import sys
 import datetime
+from StringIO import StringIO
+from vcs.utils.helpers import get_total_seconds
 from vcs.utils.progressbar import AlreadyFinishedError
 from vcs.utils.progressbar import ProgressBar
 from vcs.utils.compat import unittest
@@ -31,7 +33,7 @@ class TestProgressBar(unittest.TestCase):
         bar = ProgressBar()
         bar.elements = ['foo', 'bar']
         bar.separator = ' '
-        self.assertEquals(bar.get_template(), '{foo} {bar}')
+        self.assertEquals(bar.get_template().template, '$foo $bar')
 
     def test_default_stream_is_sys_stderr(self):
         bar = ProgressBar()
@@ -58,7 +60,6 @@ class TestProgressBar(unittest.TestCase):
         self.assertEquals(len(bar.get_bar()), 30)
 
     def test_write(self):
-        from StringIO import StringIO
         stream = StringIO()
         bar = ProgressBar()
         bar.stream = stream
@@ -66,7 +67,6 @@ class TestProgressBar(unittest.TestCase):
         self.assertEquals(stream.getvalue(), 'foobar')
 
     def test_change_stream(self):
-        from StringIO import StringIO
         stream1 = StringIO()
         stream2 = StringIO()
         bar = ProgressBar()
@@ -77,7 +77,6 @@ class TestProgressBar(unittest.TestCase):
         self.assertEquals(stream2.getvalue(), 'bar')
 
     def test_render_writes_new_line_at_last_step(self):
-        from StringIO import StringIO
         bar = ProgressBar()
         bar.stream = StringIO()
         bar.steps = 5
@@ -89,7 +88,6 @@ class TestProgressBar(unittest.TestCase):
         self.assertEquals(bar.step, 0)
 
     def test_iter_starts_from_current_step(self):
-        from StringIO import StringIO
         bar = ProgressBar()
         bar.stream = StringIO()
         bar.steps = 20
@@ -98,7 +96,6 @@ class TestProgressBar(unittest.TestCase):
         self.assertEquals(stepped[0], 5)
 
     def test_iter_ends_at_last_step(self):
-        from StringIO import StringIO
         bar = ProgressBar()
         bar.stream = StringIO()
         bar.steps = 20
@@ -122,21 +119,20 @@ class TestProgressBar(unittest.TestCase):
         self.assertTrue(p.get_rendered_total_time().startswith('FOOBAR'))
 
     def test_get_eta(self):
-        from StringIO import StringIO
         bar = ProgressBar(100)
         bar.stream = StringIO()
 
         bar.render(50)
         now = datetime.datetime.now()
         delta = now - bar.started
-        self.assertEquals(bar.get_eta(now).total_seconds(),
-            int(delta.total_seconds() * 0.5))
+        self.assertEquals(get_total_seconds(bar.get_eta(now)),
+            int(get_total_seconds(delta) * 0.5))
 
         bar.render(75)
         now = datetime.datetime.now()
         delta = now - bar.started
-        self.assertEquals(bar.get_eta(now).total_seconds(),
-            int(delta.total_seconds() * 0.25))
+        self.assertEquals(get_total_seconds(bar.get_eta(now)),
+            int(get_total_seconds(delta) * 0.25))
 
     def test_get_rendered_eta(self):
         bar = ProgressBar(100)
@@ -167,8 +163,8 @@ class TestProgressBar(unittest.TestCase):
         bar = ProgressBar(GB * 10)
         self.assertEqual(bar.get_rendered_speed(KB, 1), 'Speed: 1 KB/s')
         self.assertEqual(bar.get_rendered_speed(MB, 1), 'Speed: 1.0 MB/s')
-        self.assertEqual(bar.get_rendered_speed(GB * 4, 2), 'Speed: 2.0 GB/s')
-        self.assertEqual(bar.get_rendered_speed(GB * 5, 2), 'Speed: 2.5 GB/s')
+        self.assertEqual(bar.get_rendered_speed(GB * 4, 2), 'Speed: 2.00 GB/s')
+        self.assertEqual(bar.get_rendered_speed(GB * 5, 2), 'Speed: 2.50 GB/s')
 
     def test_get_rendered_transfer_respects_transfer_label(self):
         bar = ProgressBar(100)
@@ -188,7 +184,7 @@ class TestProgressBar(unittest.TestCase):
         self.assertEqual(bar.get_rendered_transfer(KB * 5, MB),
             'Transfer: 5 KB / 1.0 MB')
         self.assertEqual(bar.get_rendered_transfer(GB * 2.3, GB * 10),
-            'Transfer: 2.3 GB / 10.0 GB')
+            'Transfer: 2.30 GB / 10.00 GB')
 
 
     def test_context(self):
@@ -236,7 +232,6 @@ class TestProgressBar(unittest.TestCase):
         self.assertEquals(speed, bar.get_rendered_speed())
 
     def test_render_raises_error_if_bar_already_finished(self):
-        from StringIO import StringIO
         bar = ProgressBar(10)
         bar.stream = StringIO()
         bar.render(10)

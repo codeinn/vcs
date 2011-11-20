@@ -1,6 +1,8 @@
 """
 Utitlites aimed to help achieve mostly basic tasks.
 """
+from __future__ import division
+
 import re
 import time
 import datetime
@@ -225,5 +227,27 @@ def parse_datetime(text):
             past = datetime.datetime.now() - datetime.timedelta(days=days)
             return datetime.datetime(*past.timetuple()[:3])
 
-    raise ValueError('Wrong date: "{text}"'.format(text=text))
+    raise ValueError('Wrong date: "%s"' % text)
+
+
+def get_dict_for_attrs(obj, attrs):
+    """
+    Returns dictionary for each attribute from given ``obj``.
+    """
+    data = {}
+    for attr in attrs:
+        data[attr] = getattr(obj, attr)
+    return data
+
+
+def get_total_seconds(timedelta):
+    """
+    Backported for Python 2.5.
+
+    See http://docs.python.org/library/datetime.html.
+    """
+    return ((timedelta.microseconds + (
+            timedelta.seconds + 
+            timedelta.days * 24 * 60 * 60
+        ) * 10**6) / 10**6)
 

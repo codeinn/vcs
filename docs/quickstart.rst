@@ -95,6 +95,7 @@ Now let's ask for nodes at revision faebbb751cc36c137127c50f57bcdb5f1c540013
    [<DirNode 'docs'>, <DirNode 'tests'>, <DirNode 'vcs'>]
 
 .. note::
+
    :ref:`api-nodes` are objects representing files and directories within the
    repository revision.
 

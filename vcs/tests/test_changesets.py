@@ -4,12 +4,43 @@ import vcs
 import datetime
 from base import BackendTestMixin
 from conf import SCM_TESTS
+from vcs.backends.base import BaseChangeset
 from vcs.nodes import FileNode
 from vcs.exceptions import BranchDoesNotExistError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import RepositoryError
 from vcs.utils.compat import unittest
 
+
+class TestBaseChangeset(unittest.TestCase):
+
+    def test_as_dict(self):
+        changeset = BaseChangeset()
+        changeset.id = 'ID'
+        changeset.raw_id = 'RAW_ID'
+        changeset.short_id = 'SHORT_ID'
+        changeset.revision = 1009
+        changeset.date = datetime.datetime(2011, 1, 30, 1, 45)
+        changeset.message = 'Message of a commit'
+        changeset.author = 'Joe Doe <joe.doe@example.com>'
+        changeset.added = [FileNode('foo/bar/baz'), FileNode('foobar')]
+        changeset.changed = []
+        changeset.removed = []
+        self.assertEqual(changeset.as_dict(), {
+            'id': 'ID',
+            'raw_id': 'RAW_ID',
+            'short_id': 'SHORT_ID',
+            'revision': 1009,
+            'date': datetime.datetime(2011, 1, 30, 1, 45),
+            'message': 'Message of a commit',
+            'author': {
+                'name': 'Joe Doe',
+                'email': 'joe.doe@example.com',
+            },
+            'added': ['foo/bar/baz', 'foobar'],
+            'changed': [],
+            'removed': [],
+        })
 
 class ChangesetsWithCommitsTestCaseixin(BackendTestMixin):
     recreate_repo_per_test = True

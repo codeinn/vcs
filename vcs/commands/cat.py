@@ -50,9 +50,8 @@ class CatCommand(SingleChangesetCommand):
         if options.get('linenos'):
             lines = text.splitlines()
             linenos_width = len(str(len(lines)))
-            text = '\n'.join(('{lineno:>{linenos_width}} {line}'.format(
-                lineno=lineno + 1, linenos_width=linenos_width,
-                line=lines[lineno])
+            text = '\n'.join((
+                '%s %s' % (str(lineno + 1).rjust(linenos_width), lines[lineno])
                 for lineno in xrange(len(lines))))
             text += '\n'
 
@@ -62,11 +61,10 @@ class CatCommand(SingleChangesetCommand):
             author_width = 15
             for line in xrange(len(lines)):
                 cs = node.annotate[line][1]
-                output.append('{cid} | {author:<{author_width}} | {line}'.format(
-                    cid=cs.raw_id[:6],
-                    author=cs.author[:14],
-                    author_width=author_width,
-                    line=lines[line])
+                output.append('%s |%s | %s' % (
+                    cs.raw_id[:6],
+                    cs.author[:14].rjust(author_width),
+                    lines[line])
                 )
             text = '\n'.join(output)
             text += '\n'

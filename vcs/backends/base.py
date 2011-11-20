@@ -13,6 +13,7 @@
 from itertools import chain
 from vcs.utils import author_name, author_email
 from vcs.utils.lazy import LazyProperty
+from vcs.utils.helpers import get_dict_for_attrs
 from vcs.conf import settings
 
 from vcs.exceptions import ChangesetError, EmptyRepositoryError, \
@@ -547,6 +548,19 @@ class BaseChangeset(object):
         for topnode, dirs, files in self.walk():
             for node in files:
                 yield node
+
+    def as_dict(self):
+        """
+        Returns dictionary with changeset's attributes and their values.
+        """
+        data = get_dict_for_attrs(self, ['id', 'raw_id', 'short_id',
+            'revision', 'date', 'message'])
+        data['author'] = {'name': self.author_name, 'email': self.author_email}
+        data['added'] = [node.path for node in self.added]
+        data['changed'] = [node.path for node in self.changed]
+        data['removed'] = [node.path for node in self.removed]
+        return data
+
 
 
 class BaseWorkdir(object):
