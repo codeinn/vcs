@@ -608,6 +608,14 @@ class GitSpecificWithRepoTest(BackendTestMixin, unittest.TestCase):
                     FileNode('foo', content='foo'),
                 ],
             },
+            {
+                'message': 'Second',
+                'author': 'Joe Doe <joe.doe@example.com>',
+                'date': datetime.datetime(2010, 1, 1, 22),
+                'added': [
+                    FileNode('foo2', content='foo2'),
+                ],
+            },
         ]
 
     def test_paths_slow_traversing(self):
@@ -628,6 +636,18 @@ class GitSpecificWithRepoTest(BackendTestMixin, unittest.TestCase):
         self.assertEqual(self.repo.workdir.get_branch(), 'production')
         self.repo.run_git_command('checkout master')
         self.assertEqual(self.repo.workdir.get_branch(), 'master')
+
+    def test_get_diff_runs_git_command_with_hashes(self):
+        self.repo.run_git_command = mock.Mock(return_value=['', ''])
+        self.repo._get_diff(0, 1)
+        self.repo.run_git_command.assert_called_once_with('diff %s %s' %
+            (self.repo._get_revision(0), self.repo._get_revision(1)))
+
+    def test_get_diff_runs_git_command_with_path_if_its_given(self):
+        self.repo.run_git_command = mock.Mock(return_value=['', ''])
+        self.repo._get_diff(0, 1, 'foo')
+        self.repo.run_git_command.assert_called_once_with('diff %s %s -- "foo"'
+            % (self.repo._get_revision(0), self.repo._get_revision(1)))
 
 if __name__ == '__main__':
     unittest.main()
