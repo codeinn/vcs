@@ -5,3 +5,4 @@
 
 build
 vcs.egg-info
+.tox
