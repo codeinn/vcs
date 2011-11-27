@@ -6,7 +6,6 @@ from vcs.utils.diffs import get_udiff
 
 
 class LogCommand(ChangesetCommand):
-    TEMPLATE = u'{cs.raw_id} | {cs.date} | {cs.author} | {cs.message}'
     TEMPLATE = Template(u'$raw_id | $date | $message')
 
     option_list = ChangesetCommand.option_list + (
@@ -30,6 +29,7 @@ class LogCommand(ChangesetCommand):
         template = self.get_template(**options)
         output = template.safe_substitute(**changeset.as_dict())
         self.stdout.write(output)
+        self.stdout.write('\n')
 
         if options.get('show_patches'):
 
