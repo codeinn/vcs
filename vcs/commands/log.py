@@ -6,7 +6,7 @@ from vcs.utils.diffs import get_udiff
 
 
 class LogCommand(ChangesetCommand):
-    TEMPLATE = Template(u'$raw_id | $date | $author | $message')
+    TEMPLATE = Template(u'$raw_id | $date | $message')
 
     option_list = ChangesetCommand.option_list + (
         make_option('-t', '--template', action='store', dest='template',
