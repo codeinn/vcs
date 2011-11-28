@@ -593,7 +593,7 @@ class GitSpecificTest(unittest.TestCase):
 
 class GitSpecificWithRepoTest(BackendTestMixin, unittest.TestCase):
     backend_alias = 'git'
-    
+
     @classmethod
     def _get_commits(cls):
         return [
@@ -640,6 +640,12 @@ class GitSpecificWithRepoTest(BackendTestMixin, unittest.TestCase):
     def test_get_diff_runs_git_command_with_hashes(self):
         self.repo.run_git_command = mock.Mock(return_value=['', ''])
         self.repo._get_diff(0, 1)
+        self.repo.run_git_command.assert_called_once_with('diff %s %s' %
+            (self.repo._get_revision(0), self.repo._get_revision(1)))
+
+    def test_get_diff_runs_git_command_with_str_hashes(self):
+        self.repo.run_git_command = mock.Mock(return_value=['', ''])
+        self.repo._get_diff('0' * 40, 1)
         self.repo.run_git_command.assert_called_once_with('diff %s %s' %
             (self.repo._get_revision(0), self.repo._get_revision(1)))
 

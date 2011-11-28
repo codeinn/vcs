@@ -165,22 +165,24 @@ class GitRepository(BaseRepository):
         that changset's revision attribute would become integer.
         """
         pattern = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
+        is_bstr = lambda o:isinstance(o, (str, unicode))
+        is_null = lambda o:len(o) == revision.count('0')
 
         if len(self.revisions) == 0:
             raise EmptyRepositoryError("There are no changesets yet")
 
-        if revision in (None, 'tip', 'HEAD', 'head', -1):
+        if revision in (None, '', 'tip', 'HEAD', 'head', -1):
             revision = self.revisions[-1]
 
-        if (isinstance(revision, (str, unicode)) and revision.isdigit() \
-            and len(revision) < 12) or isinstance(revision, int):
+        if ((is_bstr(revision) and revision.isdigit() and len(revision) < 12)
+            or isinstance(revision, int) or is_null(revision)):
             try:
                 revision = self.revisions[int(revision)]
             except:
                 raise ChangesetDoesNotExistError("Revision %r does not exist "
                     "for this repository %s" % (revision, self))
 
-        elif isinstance(revision, (str, unicode)):
+        elif is_bstr(revision):
             if not pattern.match(revision) or revision not in self.revisions:
                 raise ChangesetDoesNotExistError("Revision %r does not exist "
                     "for this repository %s" % (revision, self))
@@ -371,19 +373,19 @@ class GitRepository(BaseRepository):
                 start_pos = revs.index(_start)
             except ValueError:
                 pass
-        
+
         if end is not None:
             _end = self._get_revision(end)
             try:
                 end_pos = revs.index(_end)
             except ValueError:
                 pass
-            
+
         if None not in [start, end] and start_pos > end_pos:
             raise RepositoryError('start cannot be after end')
 
         if end_pos is not None:
-            end_pos +=1
+            end_pos += 1
 
         revs = revs[start_pos:end_pos]
         if reverse:
