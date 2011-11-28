@@ -9,13 +9,10 @@ import logging
 from difflib import unified_diff
 from itertools import tee, imap
 
-from mercurial import patch
-from mercurial.mdiff import diffopts
 from mercurial.match import match
 
 from vcs.exceptions import VCSError
 from vcs.nodes import FileNode, NodeError
-from vcs.backends.hg import MercurialRepository
 
 
 def get_udiff(filenode_old, filenode_new):
@@ -52,8 +49,8 @@ def get_udiff(filenode_old, filenode_new):
 
 
 def get_gitdiff(filenode_old, filenode_new):
-    """Returns mercurial style git diff between given
-    ``filenode_old`` and ``filenode_new``.
+    """
+    Returns git style diff between given ``filenode_old`` and ``filenode_new``.
     """
 
     for filenode in (filenode_old, filenode_new):
@@ -61,25 +58,11 @@ def get_gitdiff(filenode_old, filenode_new):
             raise VCSError("Given object should be FileNode object, not %s"
                 % filenode.__class__)
 
-    repo = filenode_new.changeset.repository
-
     old_raw_id = getattr(filenode_old.changeset, 'raw_id', '0' * 40)
     new_raw_id = getattr(filenode_new.changeset, 'raw_id', '0' * 40)
 
-    root = filenode_new.changeset.repository.path
-
-    file_filter = match(root, '', [filenode_new.path])
-
-    if isinstance(repo, MercurialRepository):
-
-        vcs_gitdiff = patch.diff(repo._repo,
-                          old_raw_id,
-                          new_raw_id,
-                          match=file_filter,
-                          opts=diffopts(git=True))
-
-    else:
-        vcs_gitdiff = repo._get_diff(old_raw_id, new_raw_id, filenode_new.path)
+    repo = filenode_new.changeset.repository
+    vcs_gitdiff = repo._get_diff(old_raw_id, new_raw_id, filenode_new.path)
 
     return vcs_gitdiff
 
@@ -248,7 +231,7 @@ class DiffProcessor(object):
         files = []
         try:
             line = lineiter.next()
-            #skip first context
+            # skip first context
             skipfirst = True
             while 1:
                 # continue until we found the old file

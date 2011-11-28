@@ -26,6 +26,9 @@ from mercurial.error import RepoError, RepoLookupError, Abort
 from mercurial.localrepo import localrepository
 from mercurial.node import hex
 from mercurial import merge as hg_merge
+from mercurial import patch
+from mercurial.match import match
+from mercurial.mdiff import diffopts
 from vcs.backends.base import BaseChangeset
 from vcs.backends.base import BaseInMemoryChangeset
 from vcs.backends.base import BaseRepository
@@ -140,7 +143,7 @@ class MercurialRepository(BaseRepository):
                     bt_closed[bn] = tip
                 else:
                     bt[bn] = tip
-                    
+
             if closed:
                 bt.update(bt_closed)
             return bt
@@ -234,6 +237,10 @@ class MercurialRepository(BaseRepository):
 
         return map(lambda x: hex(x[7]), self._repo.changelog.index)[:-1]
 
+    def _get_diff(self, rev1, rev2, path=None):
+        file_filter = match(self.path, '', [path])
+        return patch.diff(self._repo, rev1, rev2, match=file_filter,
+                          opts=diffopts(git=True))
 
     def _check_url(self, url):
         """
@@ -421,7 +428,7 @@ class MercurialRepository(BaseRepository):
         :param branch_name:
         :param reversed: return changesets in reversed order
         """
-        
+
         start_raw_id = self._get_revision(start)
         start_pos = self.revisions.index(start_raw_id) if start else None
         end_raw_id = self._get_revision(end)
@@ -435,7 +442,7 @@ class MercurialRepository(BaseRepository):
             raise BranchDoesNotExistError('Such branch %s does not exists for'
                                   ' this repository' % branch_name)
         if end_pos is not None:
-            end_pos +=1
+            end_pos += 1
 
         slice_ = reversed(self.revisions[start_pos:end_pos]) if reverse else \
             self.revisions[start_pos:end_pos]
@@ -484,7 +491,7 @@ class MercurialChangeset(BaseChangeset):
 
     @LazyProperty
     def tags(self):
-        return map(safe_unicode,self._ctx.tags())
+        return map(safe_unicode, self._ctx.tags())
 
     @LazyProperty
     def branch(self):
@@ -747,7 +754,7 @@ class MercurialChangeset(BaseChangeset):
         """
 
         path = self._fix_path(path)
-        
+
         if not path in self.nodes:
             if path in self._file_paths:
                 node = FileNode(path, changeset=self)
