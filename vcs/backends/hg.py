@@ -233,6 +233,22 @@ class MercurialRepository(BaseRepository):
         except Abort, e:
             raise RepositoryError(e.message)
 
+    @LazyProperty
+    def bookmarks(self):
+        """
+        Get's bookmarks for this repository
+        """
+        return self._get_bookmarks()
+
+    def _get_bookmarks(self):
+        if self._empty:
+            return {}
+
+        sortkey = lambda ctx: ctx[0]  # sort by name
+        _bookmarks = [(safe_unicode(n), hex(h),) for n, h in
+                 self._repo._bookmarks.items()]        
+        return OrderedDict(sorted(_bookmarks, key=sortkey, reverse=True))
+    
     def _get_all_revisions(self):
 
         return map(lambda x: hex(x[7]), self._repo.changelog.index)[:-1]
