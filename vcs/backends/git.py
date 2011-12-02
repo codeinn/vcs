@@ -223,7 +223,7 @@ class GitRepository(BaseRepository):
         try:
             return time.mktime(self.get_changeset().date.timetuple())
         except RepositoryError:
-            #fallback to filesystem
+            # fallback to filesystem
             in_path = os.path.join(self.path, '.git', "index")
             he_path = os.path.join(self.path, '.git', "HEAD")
             if os.path.exists(in_path):
@@ -233,16 +233,16 @@ class GitRepository(BaseRepository):
 
     @LazyProperty
     def description(self):
-        undefined_description = 'unknown'
+        undefined_description = u'unknown'
         description_path = os.path.join(self.path, '.git', 'description')
         if os.path.isfile(description_path):
-            return open(description_path).read()
+            return safe_unicode(open(description_path).read())
         else:
             return undefined_description
 
     @LazyProperty
     def contact(self):
-        undefined_contact = 'Unknown'
+        undefined_contact = u'Unknown'
         return undefined_contact
 
     @property

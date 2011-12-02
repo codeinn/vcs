@@ -29,6 +29,7 @@ from mercurial import merge as hg_merge
 from mercurial import patch
 from mercurial.match import match
 from mercurial.mdiff import diffopts
+from mercurial.hgweb.common import get_contact
 from vcs.backends.base import BaseChangeset
 from vcs.backends.base import BaseInMemoryChangeset
 from vcs.backends.base import BaseRepository
@@ -260,7 +261,7 @@ class MercurialRepository(BaseRepository):
 
     def _check_url(self, url):
         """
-        Functon will check given url and try to verify if it's a valid
+        Function will check given url and try to verify if it's a valid
         link. Sometimes it may happened that mercurial will issue basic
         auth request that can cause whole API to hang when used from python
         or other external calls.
@@ -348,15 +349,15 @@ class MercurialRepository(BaseRepository):
 
     @LazyProperty
     def description(self):
-        undefined_description = 'unknown'
-        return self._repo.ui.config('web', 'description',
-                                   undefined_description, untrusted=True)
+        undefined_description = u'unknown'
+        return safe_unicode(self._repo.ui.config('web', 'description',
+                                   undefined_description, untrusted=True))
 
     @LazyProperty
     def contact(self):
-        from mercurial.hgweb.common import get_contact
-        undefined_contact = 'Unknown'
-        return get_contact(self._repo.ui.config) or undefined_contact
+        undefined_contact = u'Unknown'
+        return safe_unicode(get_contact(self._repo.ui.config) 
+                            or undefined_contact)
 
     @LazyProperty
     def last_change(self):
