@@ -101,10 +101,14 @@ class GitRepository(BaseRepository):
                 "stderr:\n%s" % (cmd, se))
         return so, se
 
-    def _get_diff(self, rev1, rev2, path=None):
+    def _get_diff(self, rev1, rev2, path=None, ignore_whitespace=False):
         rev1 = self._get_revision(rev1)
         rev2 = self._get_revision(rev2)
-        cmd = 'diff %s %s' % (rev1, rev2)
+        
+        if ignore_whitespace:
+            cmd = 'diff -w %s %s' % (rev1, rev2)
+        else:
+            cmd = 'diff %s %s' % (rev1, rev2)
         if path:
             cmd += ' -- "%s"' % path
         so, se = self.run_git_command(cmd)
