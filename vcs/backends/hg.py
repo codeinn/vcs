@@ -260,7 +260,7 @@ class MercurialRepository(BaseRepository):
         return patch.diff(self._repo, rev1, rev2, match=file_filter,
                           opts=diffopts(git=True,
                                         ignorews=ignore_whitespace,
-                                        context=3))
+                                        context=context))
 
     def _check_url(self, url):
         """
