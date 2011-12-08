@@ -107,9 +107,9 @@ class GitRepository(BaseRepository):
         rev2 = self._get_revision(rev2)
 
         if ignore_whitespace:
-            cmd = 'diff -U %s -w %s %s' % (context, rev1, rev2)
+            cmd = 'diff -U%s -w %s %s' % (context, rev1, rev2)
         else:
-            cmd = 'diff -U %s %s %s' % (context, rev1, rev2)
+            cmd = 'diff -U%s %s %s' % (context, rev1, rev2)
         if path:
             cmd += ' -- "%s"' % path
         so, se = self.run_git_command(cmd)
