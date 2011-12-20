@@ -105,6 +105,7 @@ class GitRepository(BaseRepository):
                   context=3):
         rev1 = self._get_revision(rev1)
         rev2 = self._get_revision(rev2)
+        context = context or 3
 
         if ignore_whitespace:
             cmd = 'diff -U%s -w %s %s' % (context, rev1, rev2)
