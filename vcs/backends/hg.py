@@ -51,6 +51,8 @@ from vcs.nodes import FileNode
 from vcs.nodes import NodeKind
 from vcs.nodes import RemovedFileNodesGenerator
 from vcs.nodes import RootNode
+from vcs.utils import author_email
+from vcs.utils import author_name
 from vcs.utils import date_fromtimestamp
 from vcs.utils import makedate
 from vcs.utils import safe_unicode
@@ -495,6 +497,49 @@ class MercurialRepository(BaseRepository):
         Returns ``Workdir`` instance for this repository.
         """
         return MercurialWorkdir(self)
+
+    def get_config_value(self, section, name, config_file=None):
+        """
+        Returns configuration value for a given [``section``] and ``name``.
+
+        :param section: Section we want to retrieve value from
+        :param name: Name of configuration we want to retrieve
+        :param config_file: A path to file which should be used to retrieve
+          configuration from (might also be a list of file paths)
+        """
+        if config_file is None:
+            config_file = []
+        elif isinstance(config_file, basestring):
+            config_file = [config_file]
+
+        config = self._repo.ui
+        for path in config_file:
+            config.readconfig(path)
+        return config.config(section, name)
+
+    def get_user_name(self, config_file=None):
+        """
+        Returns user's name from global configuration file.
+
+        :param config_file: A path to file which should be used to retrieve
+          configuration from (might also be a list of file paths)
+        """
+        username = self.get_config_value('ui', 'username')
+        if username:
+            return author_name(username)
+        return None
+
+    def get_user_email(self, config_file=None):
+        """
+        Returns user's email from global configuration file.
+
+        :param config_file: A path to file which should be used to retrieve
+          configuration from (might also be a list of file paths)
+        """
+        username = self.get_config_value('ui', 'username')
+        if username:
+            return author_email(username)
+        return None
 
 
 class MercurialChangeset(BaseChangeset):

@@ -1,12 +1,15 @@
 import os
 import tempfile
+from vcs.utils.paths import get_user_home
 
 abspath = lambda * p: os.path.abspath(os.path.join(*p))
 
 VCSRC_PATH = os.environ.get('VCSRC_PATH')
 
 if not VCSRC_PATH:
-    HOME_ = os.getenv('HOME',os.getenv('USERPROFILE',tempfile.gettempdir()))
+    HOME_ = get_user_home()
+    if not HOME_:
+        HOME_ = tempfile.gettempdir()
 
 VCSRC_PATH = VCSRC_PATH or abspath(HOME_, '.vcsrc')
 if os.path.isdir(VCSRC_PATH):

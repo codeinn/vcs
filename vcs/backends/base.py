@@ -253,6 +253,35 @@ class BaseRepository(object):
         """
         raise NotImplementedError
 
+    def get_config_value(self, section, name, config_file=None):
+        """
+        Returns configuration value for a given [``section``] and ``name``.
+
+        :param section: Section we want to retrieve value from
+        :param name: Name of configuration we want to retrieve
+        :param config_file: A path to file which should be used to retrieve
+          configuration from (might also be a list of file paths)
+        """
+        raise NotImplementedError
+
+    def get_user_name(self, config_file=None):
+        """
+        Returns user's name from global configuration file.
+
+        :param config_file: A path to file which should be used to retrieve
+          configuration from (might also be a list of file paths)
+        """
+        raise NotImplementedError
+
+    def get_user_email(self, config_file=None):
+        """
+        Returns user's email from global configuration file.
+
+        :param config_file: A path to file which should be used to retrieve
+          configuration from (might also be a list of file paths)
+        """
+        raise NotImplementedError
+
     # =========== #
     # WORKDIR API #
     # =========== #

@@ -28,3 +28,10 @@ def get_dir_size(path):
             except OSError:
                 pass
     return size
+
+def get_user_home():
+    """
+    Returns home path of the user.
+    """
+    return os.getenv('HOME', os.getenv('USERPROFILE'))
+

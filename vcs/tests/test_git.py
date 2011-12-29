@@ -385,7 +385,7 @@ class GitChangesetTest(unittest.TestCase):
             ],
         }
         for path, revs in files.items():
-            node = self.repo.get_changeset().get_node(path)
+            node = self.repo.get_changeset(revs[0]).get_node(path)
             node_revs = [chset.raw_id for chset in node.history]
             self.assertTrue(set(revs).issubset(set(node_revs)),
                 "We assumed that %s is subset of revisions for which file %s "

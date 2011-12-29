@@ -27,10 +27,14 @@ from vcs.utils.progressbar import ColoredProgressBar
 from vcs.utils.termcolors import colorize
 
 
+COMPLETION_ENV_NAME = 'VCS_AUTO_COMPLETE'
+
 registry = {
-    'cat':      'vcs.commands.cat.CatCommand',
-    'log':      'vcs.commands.log.LogCommand',
-    'summary':  'vcs.commands.summary.SummaryCommand',
+    'cat':         'vcs.commands.cat.CatCommand',
+    'completion':  'vcs.commands.completion.CompletionCommand',
+    'log':         'vcs.commands.log.LogCommand',
+    'standup':     'vcs.commands.standup.StandupCommand',
+    'summary':     'vcs.commands.summary.SummaryCommand',
 }
 
 class ExecutionManager(object):
@@ -76,12 +80,30 @@ class ExecutionManager(object):
         """
         Executes whole process of parsing and running command.
         """
+        self.autocomplete()
         if len(self.argv):
             cmd = self.argv[0]
             cmd_argv = self.get_argv_for_command()
             self.run_command(cmd, cmd_argv)
         else:
             self.show_help()
+
+    def autocomplete(self):
+        if COMPLETION_ENV_NAME not in os.environ:
+            return
+        cwords = os.environ['COMP_WORDS'].split()[1:]
+        cword = int(os.environ['COMP_CWORD'])
+        try:
+            current = cwords[cword-1]
+        except IndexError:
+            current = ''
+        cmd_names = self.get_commands().keys()
+
+        if current:
+            self.stdout.write(unicode(' '.join(
+                [name for name in cmd_names if name.startswith(current)])))
+
+        sys.exit(1)
 
     def get_command_class(self, cmd):
         """

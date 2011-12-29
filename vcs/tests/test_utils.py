@@ -15,6 +15,7 @@ from vcs.utils.helpers import get_total_seconds
 from vcs.utils.helpers import parse_changesets
 from vcs.utils.helpers import parse_datetime
 from vcs.utils import author_email, author_name
+from vcs.utils.paths import get_user_home
 from conf import TEST_HG_REPO, TEST_GIT_REPO, TEST_TMP_PATH
 from vcs.exceptions import VCSError
 
@@ -251,6 +252,26 @@ class TestGetTotalSeconds(unittest.TestCase):
 
     def test_get_total_seconds_returns_proper_value_for_partial_seconds(self):
         self.assertTotalSecondsEqual(datetime.timedelta(seconds=50.65), 50.65)
+
+
+class TestGetUserHome(unittest.TestCase):
+    
+    @mock.patch.object(os, 'environ', {})
+    def test_defaults_to_none(self):
+        self.assertEqual(get_user_home(), None)
+
+    @mock.patch.object(os, 'environ', {'HOME': '/home/foobar'})
+    def test_unix_like(self):
+        self.assertEqual(get_user_home(), '/home/foobar')
+
+    @mock.patch.object(os, 'environ', {'USERPROFILE': '/Users/foobar'})
+    def test_windows_like(self):
+        self.assertEqual(get_user_home(), '/Users/foobar')
+
+    @mock.patch.object(os, 'environ', {'HOME': '/home/foobar',
+        'USERPROFILE': '/Users/foobar'})
+    def test_prefers_home_over_userprofile(self):
+        self.assertEqual(get_user_home(), '/home/foobar')
 
 
 if __name__ == '__main__':

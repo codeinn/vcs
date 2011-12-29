@@ -18,6 +18,8 @@ __all__ = (
 SCM_TESTS = ['hg', 'git']
 uniq_suffix = str(int(time.mktime(datetime.datetime.now().timetuple())))
 
+THIS = os.path.abspath(os.path.dirname(__file__))
+
 GIT_REMOTE_REPO = 'git://github.com/codeinn/vcs.git'
 
 TEST_TMP_PATH = os.environ.get('VCS_TEST_ROOT', '/tmp')
@@ -54,4 +56,6 @@ def get_new_dir(title):
 
 PACKAGE_DIR = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..'))
+
+TEST_USER_CONFIG_FILE = jn(THIS, 'aconfig')
 
