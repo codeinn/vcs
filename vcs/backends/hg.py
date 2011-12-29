@@ -254,11 +254,13 @@ class MercurialRepository(BaseRepository):
 
         return map(lambda x: hex(x[7]), self._repo.changelog.index)[:-1]
 
-    def _get_diff(self, rev1, rev2, path=None, ignore_whitespace=False):
+    def _get_diff(self, rev1, rev2, path=None, ignore_whitespace=False,
+                  context=3):
         file_filter = match(self.path, '', [path])
         return patch.diff(self._repo, rev1, rev2, match=file_filter,
                           opts=diffopts(git=True,
-                                        ignorews=ignore_whitespace))
+                                        ignorews=ignore_whitespace,
+                                        context=context))
 
     def _check_url(self, url):
         """
