@@ -9,6 +9,8 @@ if not VCSRC_PATH:
     HOME_ = os.getenv('HOME',os.getenv('USERPROFILE',tempfile.gettempdir()))
 
 VCSRC_PATH = VCSRC_PATH or abspath(HOME_, '.vcsrc')
+if os.path.isdir(VCSRC_PATH):
+    VCSRC_PATH = os.path.join(VCSRC_PATH, '__init__.py')
 
 BACKENDS = {
     'hg': 'vcs.backends.hg.MercurialRepository',
