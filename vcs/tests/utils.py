@@ -11,21 +11,6 @@ from subprocess import Popen
 class VCSTestError(Exception):
     pass
 
-ALIASES = ['hg', 'git', 'svn', 'bzr']
-
-def noob_guess_repo(path):
-    """
-    Returns one of: ``hg``, ``git``, ``svn``, ``bzr`` (in that order of
-    precedence) for a given path.
-    """
-    if not os.path.isdir(path):
-        raise VCSTestError("Given path %s is not a directory" % path)
-    for key in ALIASES:
-        dir = os.path.join(path, '.' + key)
-        if os.path.isdir(dir):
-            return key
-    return None
-
 def run_command(cmd, args):
     """
     Runs command on the system with given ``args``.
@@ -61,9 +46,6 @@ class SCMFetcher(object):
     def setup(self):
         if not os.path.isdir(self.test_repo_path):
             self.fetch_repo()
-        elif not noob_guess_repo(self.test_repo_path) == self.alias:
-            raise RuntimeError("Repository at %s seems not to be %s powered"
-                % (self.test_repo_path, self.alias))
 
     def fetch_repo(self):
         """

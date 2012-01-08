@@ -59,7 +59,7 @@ def setup_package():
             'alias': 'git',
             'test_repo_path': TEST_GIT_REPO,
             'remote_repo': GIT_REMOTE_REPO,
-            'clone_cmd': 'git clone',
+            'clone_cmd': 'git clone --bare',
         },
     }
     try:
