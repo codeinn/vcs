@@ -12,12 +12,14 @@
 import os
 import re
 import time
+import inspect
 import posixpath
 from dulwich.repo import Repo, NotGitRepository
 #from dulwich.config import ConfigFile
 from string import Template
 from subprocess import Popen, PIPE
 from vcs.backends.base import BaseRepository
+from vcs.backends.base import EmptyChangeset
 from vcs.exceptions import BranchDoesNotExistError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import EmptyRepositoryError
@@ -100,21 +102,6 @@ class GitRepository(BaseRepository):
             raise RepositoryError("Couldn't run git command (%s).\n"
                 "stderr:\n%s" % (cmd, se))
         return so, se
-
-    def _get_diff(self, rev1, rev2, path=None, ignore_whitespace=False,
-            context=3):
-        rev1 = self._get_revision(rev1)
-        rev2 = self._get_revision(rev2)
-        
-        if ignore_whitespace:
-            cmd = 'diff -U%s -w %s %s' % (context, rev1, rev2)
-        else:
-            cmd = 'diff -U%s %s %s' % (context, rev1, rev2)
-        if path:
-            cmd += ' -- "%s"' % path
-        so, se = self.run_git_command(cmd)
-
-        return so
 
     def _check_url(self, url):
         """
@@ -322,6 +309,11 @@ class GitRepository(BaseRepository):
         Returns ``GitChangeset`` object representing commit from git repository
         at the given revision or head (most recent commit) if None given.
         """
+        if (revision is EmptyChangeset or inspect.isclass(revision)
+            and issubclass(revision, EmptyChangeset)):
+            return EmptyChangeset()
+        if isinstance(revision, GitChangeset):
+            return revision
         revision = self._get_revision(revision)
         changeset = GitChangeset(repository=self, revision=revision)
         return changeset
@@ -397,6 +389,36 @@ class GitRepository(BaseRepository):
             revs = reversed(revs)
         for rev in revs:
             yield self.get_changeset(rev)
+
+    def get_diff(self, rev1, rev2, path=None, ignore_whitespace=False,
+            context=3):
+        cs1 = self.get_changeset(rev1)
+        cs2 = self.get_changeset(rev2)
+
+        flags = ['-U%s' % context]
+        if ignore_whitespace:
+            flags.append('-w')
+
+        if cs1.is_empty_changeset:
+            cmd = ' '.join(['show'] + flags + [cs2.raw_id])
+        else:
+            cmd = ' '.join(['diff'] + flags + [cs1.raw_id, cs2.raw_id])
+
+        if path:
+            cmd += ' -- "%s"' % path
+        stdout, stderr = self.run_git_command(cmd)
+        # If we used 'show' command, strip first few lines (until actual diff
+        # starts)
+        if cs1.is_empty_changeset:
+            lines = stdout.splitlines()
+            x = 0
+            for line in lines:
+                if line.startswith('diff'):
+                    break
+                x += 1
+            # Append new line just like 'diff' command do
+            stdout = '\n'.join(lines[x:]) + '\n'
+        return stdout
 
     @LazyProperty
     def in_memory_changeset(self):

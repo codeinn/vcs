@@ -300,6 +300,11 @@ class BaseChangeset(object):
 
     **Attributes**
 
+        ``is_empty_changeset``
+            indicates that this is **NOT** an empty changeset. It should be
+            ``False`` for instance of BaseChangeset subclasses. Also see
+            :class:`vcs.backends.base.EmptyRepositoryError`.
+
         ``repository``
             repository object within which changeset exists
 
@@ -341,6 +346,8 @@ class BaseChangeset(object):
             otherwise; trying to access this attribute while there is no
             changesets would raise ``EmptyRepositoryError``
     """
+
+    is_empty_changeset = property(lambda self: False)
 
     def __str__(self):
         return '<%s at %s:%s>' % (self.__class__.__name__, self.revision,
@@ -590,6 +597,14 @@ class BaseChangeset(object):
         data['removed'] = [node.path for node in self.removed]
         return data
 
+
+class EmptyChangeset(object):
+    """
+    Simple class that could be used as *placeholder* for empty changeset. It
+    does **NOT** implement :class:`BaseChangeset` *API*. ``is_empty_changeset``
+    is the only attribute that is set on this class, and is ``True``.
+    """
+    is_empty_changeset = True
 
 
 class BaseWorkdir(object):
