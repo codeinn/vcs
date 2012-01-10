@@ -14,7 +14,7 @@ import re
 import time
 import posixpath
 from dulwich.repo import Repo, NotGitRepository
-from dulwich.config import ConfigFile
+#from dulwich.config import ConfigFile
 from string import Template
 from subprocess import Popen, PIPE
 from vcs.backends.base import BaseRepository
@@ -32,6 +32,7 @@ from vcs.utils.paths import get_user_home
 from .workdir import GitWorkdir
 from .changeset import GitChangeset
 from .inmemory import GitInMemoryChangeset
+from .config import ConfigFile
 
 
 class GitRepository(BaseRepository):
