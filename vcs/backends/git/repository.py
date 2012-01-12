@@ -12,6 +12,7 @@
 import os
 import re
 import time
+import inspect
 import posixpath
 from dulwich.repo import Repo, NotGitRepository
 #from dulwich.config import ConfigFile
@@ -100,21 +101,6 @@ class GitRepository(BaseRepository):
             raise RepositoryError("Couldn't run git command (%s).\n"
                 "stderr:\n%s" % (cmd, se))
         return so, se
-
-    def _get_diff(self, rev1, rev2, path=None, ignore_whitespace=False,
-            context=3):
-        rev1 = self._get_revision(rev1)
-        rev2 = self._get_revision(rev2)
-        
-        if ignore_whitespace:
-            cmd = 'diff -U%s -w %s %s' % (context, rev1, rev2)
-        else:
-            cmd = 'diff -U%s %s %s' % (context, rev1, rev2)
-        if path:
-            cmd += ' -- "%s"' % path
-        so, se = self.run_git_command(cmd)
-
-        return so
 
     def _check_url(self, url):
         """
@@ -322,6 +308,8 @@ class GitRepository(BaseRepository):
         Returns ``GitChangeset`` object representing commit from git repository
         at the given revision or head (most recent commit) if None given.
         """
+        if isinstance(revision, GitChangeset):
+            return revision
         revision = self._get_revision(revision)
         changeset = GitChangeset(repository=self, revision=revision)
         return changeset
@@ -397,6 +385,49 @@ class GitRepository(BaseRepository):
             revs = reversed(revs)
         for rev in revs:
             yield self.get_changeset(rev)
+
+    def get_diff(self, rev1, rev2, path=None, ignore_whitespace=False,
+            context=3):
+        """
+        Returns (git like) *diff*, as plain text. Shows changes introduced by
+        ``rev2`` since ``rev1``.
+
+        :param rev1: Entry point from which diff is shown. Can be
+          ``self.EMPTY_CHANGESET`` - in this case, patch showing all
+          the changes since empty state of the repository until ``rev2``
+        :param rev2: Until which revision changes should be shown.
+        :param ignore_whitespace: If set to ``True``, would not show whitespace
+          changes. Defaults to ``False``.
+        :param context: How many lines before/after changed lines should be
+          shown. Defaults to ``3``.
+        """
+        flags = ['-U%s' % context]
+        if ignore_whitespace:
+            flags.append('-w')
+
+        if rev1 == self.EMPTY_CHANGESET:
+            rev2 = self.get_changeset(rev2).raw_id
+            cmd = ' '.join(['show'] + flags + [rev2])
+        else:
+            rev1 = self.get_changeset(rev1).raw_id
+            rev2 = self.get_changeset(rev2).raw_id
+            cmd = ' '.join(['diff'] + flags + [rev1, rev2])
+
+        if path:
+            cmd += ' -- "%s"' % path
+        stdout, stderr = self.run_git_command(cmd)
+        # If we used 'show' command, strip first few lines (until actual diff
+        # starts)
+        if rev1 == self.EMPTY_CHANGESET:
+            lines = stdout.splitlines()
+            x = 0
+            for line in lines:
+                if line.startswith('diff'):
+                    break
+                x += 1
+            # Append new line just like 'diff' command do
+            stdout = '\n'.join(lines[x:]) + '\n'
+        return stdout
 
     @LazyProperty
     def in_memory_changeset(self):
