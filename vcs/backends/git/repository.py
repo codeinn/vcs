@@ -19,7 +19,6 @@ from dulwich.repo import Repo, NotGitRepository
 from string import Template
 from subprocess import Popen, PIPE
 from vcs.backends.base import BaseRepository
-from vcs.backends.base import EmptyChangeset
 from vcs.exceptions import BranchDoesNotExistError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import EmptyRepositoryError
@@ -309,9 +308,6 @@ class GitRepository(BaseRepository):
         Returns ``GitChangeset`` object representing commit from git repository
         at the given revision or head (most recent commit) if None given.
         """
-        if (revision is EmptyChangeset or inspect.isclass(revision)
-            and issubclass(revision, EmptyChangeset)):
-            return EmptyChangeset()
         if isinstance(revision, GitChangeset):
             return revision
         revision = self._get_revision(revision)
@@ -392,24 +388,37 @@ class GitRepository(BaseRepository):
 
     def get_diff(self, rev1, rev2, path=None, ignore_whitespace=False,
             context=3):
-        cs1 = self.get_changeset(rev1)
-        cs2 = self.get_changeset(rev2)
+        """
+        Returns (git like) *diff*, as plain text. Shows changes introduced by
+        ``rev2`` since ``rev1``.
 
+        :param rev1: Entry point from which diff is shown. Can be
+          ``self.EMPTY_CHANGESET`` - in this case, patch showing all
+          the changes since empty state of the repository until ``rev2``
+        :param rev2: Until which revision changes should be shown.
+        :param ignore_whitespace: If set to ``True``, would not show whitespace
+          changes. Defaults to ``False``.
+        :param context: How many lines before/after changed lines should be
+          shown. Defaults to ``3``.
+        """
         flags = ['-U%s' % context]
         if ignore_whitespace:
             flags.append('-w')
 
-        if cs1.is_empty_changeset:
-            cmd = ' '.join(['show'] + flags + [cs2.raw_id])
+        if rev1 == self.EMPTY_CHANGESET:
+            rev2 = self.get_changeset(rev2).raw_id
+            cmd = ' '.join(['show'] + flags + [rev2])
         else:
-            cmd = ' '.join(['diff'] + flags + [cs1.raw_id, cs2.raw_id])
+            rev1 = self.get_changeset(rev1).raw_id
+            rev2 = self.get_changeset(rev2).raw_id
+            cmd = ' '.join(['diff'] + flags + [rev1, rev2])
 
         if path:
             cmd += ' -- "%s"' % path
         stdout, stderr = self.run_git_command(cmd)
         # If we used 'show' command, strip first few lines (until actual diff
         # starts)
-        if cs1.is_empty_changeset:
+        if rev1 == self.EMPTY_CHANGESET:
             lines = stdout.splitlines()
             x = 0
             for line in lines:

@@ -3,9 +3,9 @@ import datetime
 from base import BackendTestMixin
 from conf import SCM_TESTS
 from conf import TEST_USER_CONFIG_FILE
-from vcs.backends.base import EmptyChangeset
 from vcs.nodes import FileNode
 from vcs.utils.compat import unittest
+from vcs.exceptions import ChangesetDoesNotExistError
 
 
 class RepositoryBaseTest(BackendTestMixin):
@@ -70,9 +70,16 @@ class RepositoryGetDiffTest(BackendTestMixin):
         ]
         return commits
 
+    def test_raise_for_wrong(self):
+        with self.assertRaises(ChangesetDoesNotExistError):
+            self.repo.get_diff('a' * 40, 'b' * 40)
+
+class GitRepositoryGetDiffTest(RepositoryGetDiffTest, unittest.TestCase):
+    backend_alias = 'git'
+
     def test_initial_commit_diff(self):
         initial_rev = self.repo.revisions[0]
-        self.assertEqual(self.repo.get_diff(EmptyChangeset, initial_rev), '''diff --git a/foobar b/foobar
+        self.assertEqual(self.repo.get_diff(self.repo.EMPTY_CHANGESET, initial_rev), '''diff --git a/foobar b/foobar
 new file mode 100644
 index 0000000..f6ea049
 --- /dev/null
@@ -134,6 +141,67 @@ index c11c37d..f932447 100644
 ''')
 
 
+class HgRepositoryGetDiffTest(RepositoryGetDiffTest, unittest.TestCase):
+    backend_alias = 'hg'
+
+    def test_initial_commit_diff(self):
+        initial_rev = self.repo.revisions[0]
+        self.assertEqual(self.repo.get_diff(self.repo.EMPTY_CHANGESET, initial_rev), '''diff --git a/foobar b/foobar
+new file mode 100755
+--- /dev/null
++++ b/foobar
+@@ -0,0 +1,1 @@
++foobar
+\ No newline at end of file
+diff --git a/foobar2 b/foobar2
+new file mode 100755
+--- /dev/null
++++ b/foobar2
+@@ -0,0 +1,1 @@
++foobar2
+\ No newline at end of file
+''')
+
+    def test_second_changeset_diff(self):
+        revs = self.repo.revisions
+        self.assertEqual(self.repo.get_diff(revs[0], revs[1]), '''diff --git a/foobar b/foobar
+--- a/foobar
++++ b/foobar
+@@ -1,1 +1,1 @@
+-foobar
+\ No newline at end of file
++FOOBAR
+\ No newline at end of file
+diff --git a/foobar3 b/foobar3
+new file mode 100755
+--- /dev/null
++++ b/foobar3
+@@ -0,0 +1,1 @@
++foobar3
+\ No newline at end of file
+''')
+
+    def test_third_changeset_diff(self):
+        revs = self.repo.revisions
+        self.assertEqual(self.repo.get_diff(revs[1], revs[2]), '''diff --git a/foobar b/foobar
+deleted file mode 100755
+--- a/foobar
++++ /dev/null
+@@ -1,1 +0,0 @@
+-FOOBAR
+\ No newline at end of file
+diff --git a/foobar3 b/foobar3
+--- a/foobar3
++++ b/foobar3
+@@ -1,1 +1,3 @@
+-foobar3
+\ No newline at end of file
++FOOBAR
++FOOBAR
++FOOBAR
+''')
+
+
 # For each backend create test case class
 for alias in SCM_TESTS:
     attrs = {
@@ -142,15 +210,6 @@ for alias in SCM_TESTS:
     cls_name = alias.capitalize() + RepositoryBaseTest.__name__
     bases = (RepositoryBaseTest, unittest.TestCase)
     globals()[cls_name] = type(cls_name, bases, attrs)
-
-for alias in SCM_TESTS:
-    attrs = {
-        'backend_alias': alias,
-    }
-    cls_name = alias.capitalize() + RepositoryGetDiffTest.__name__
-    bases = (RepositoryGetDiffTest, unittest.TestCase)
-    globals()[cls_name] = type(cls_name, bases, attrs)
-
 
 if __name__ == '__main__':
     unittest.main()
