@@ -1,4 +1,4 @@
-0# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
     vcs.backends.git
     ~~~~~~~~~~~~~~~~
@@ -12,7 +12,6 @@
 import os
 import re
 import time
-import inspect
 import posixpath
 from dulwich.repo import Repo, NotGitRepository
 #from dulwich.config import ConfigFile

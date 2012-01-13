@@ -130,7 +130,7 @@ def _parse_string(value):
     value = value.strip()
     ret = []
     block = []
-    in_quotes  = False
+    in_quotes = False
     for c in value:
         if c == "\"":
             in_quotes = (not in_quotes)
@@ -165,7 +165,8 @@ def _unescape_value(value):
 
 def _escape_value(value):
     """Escape a value."""
-    return value.replace("\\", "\\\\").replace("\n", "\\n").replace("\t", "\\t").replace("\"", "\\\"")
+    return value.replace("\\", "\\\\").replace("\n", "\\n")\
+            .replace("\t", "\\t").replace("\"", "\\\"")
 
 
 def _check_variable_name(name):
@@ -250,7 +251,7 @@ class ConfigFile(ConfigDict):
                     ret._values[section][setting] = value
                     if not continuation:
                         setting = None
-            else: # continuation line
+            else:  # continuation line
                 if line.endswith("\\\n"):
                     line = line[:-2]
                     continuation = True
