@@ -54,6 +54,7 @@ class BaseRepository(object):
     """
     scm = None
     DEFAULT_BRANCH_NAME = None
+    EMPTY_CHANGESET = '0' * 40
 
     def __init__(self, repo_path, create=False, **kwargs):
         """
@@ -204,6 +205,23 @@ class BaseRepository(object):
         """
         raise NotImplementedError
 
+    def get_diff(self, rev1, rev2, path=None, ignore_whitespace=False,
+            context=3):
+        """
+        Returns (git like) *diff*, as plain text. Shows changes introduced by
+        ``rev2`` since ``rev1``.
+
+        :param rev1: Entry point from which diff is shown. Can be
+          ``self.EMPTY_CHANGESET`` - in this case, patch showing all
+          the changes since empty state of the repository until ``rev2``
+        :param rev2: Until which revision changes should be shown.
+        :param ignore_whitespace: If set to ``True``, would not show whitespace
+          changes. Defaults to ``False``.
+        :param context: How many lines before/after changed lines should be
+          shown. Defaults to ``3``.
+        """
+        raise NotImplementedError
+
     # ========== #
     # COMMIT API #
     # ========== #
@@ -341,7 +359,6 @@ class BaseChangeset(object):
             otherwise; trying to access this attribute while there is no
             changesets would raise ``EmptyRepositoryError``
     """
-
     def __str__(self):
         return '<%s at %s:%s>' % (self.__class__.__name__, self.revision,
             self.short_id)
@@ -589,7 +606,6 @@ class BaseChangeset(object):
         data['changed'] = [node.path for node in self.changed]
         data['removed'] = [node.path for node in self.removed]
         return data
-
 
 
 class BaseWorkdir(object):

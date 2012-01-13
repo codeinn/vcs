@@ -256,13 +256,32 @@ class MercurialRepository(BaseRepository):
 
         return map(lambda x: hex(x[7]), self._repo.changelog.index)[:-1]
 
-    def _get_diff(self, rev1, rev2, path=None, ignore_whitespace=False,
+    def get_diff(self, rev1, rev2, path='', ignore_whitespace=False,
                   context=3):
+        """
+        Returns (git like) *diff*, as plain text. Shows changes introduced by
+        ``rev2`` since ``rev1``.
+
+        :param rev1: Entry point from which diff is shown. Can be
+          ``self.EMPTY_CHANGESET`` - in this case, patch showing all
+          the changes since empty state of the repository until ``rev2``
+        :param rev2: Until which revision changes should be shown.
+        :param ignore_whitespace: If set to ``True``, would not show whitespace
+          changes. Defaults to ``False``.
+        :param context: How many lines before/after changed lines should be
+          shown. Defaults to ``3``.
+        """
+        # Check if given revisions are present at repository (may raise
+        # ChangesetDoesNotExistError)
+        if rev1 != self.EMPTY_CHANGESET:
+            self.get_changeset(rev1)
+        self.get_changeset(rev2)
+
         file_filter = match(self.path, '', [path])
-        return patch.diff(self._repo, rev1, rev2, match=file_filter,
+        return ''.join(patch.diff(self._repo, rev1, rev2, match=file_filter,
                           opts=diffopts(git=True,
                                         ignorews=ignore_whitespace,
-                                        context=context))
+                                        context=context)))
 
     def _check_url(self, url):
         """
