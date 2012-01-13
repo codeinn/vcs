@@ -439,7 +439,6 @@ class BaseChangeset(object):
 
         return author_email(self.author)
 
-
     def get_file_mode(self, path):
         """
         Returns stat mode of the file at the given ``path``.

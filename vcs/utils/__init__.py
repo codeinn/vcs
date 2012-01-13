@@ -60,6 +60,7 @@ def safe_unicode(str_, from_encoding='utf8'):
     except (ImportError, UnicodeDecodeError, Exception):
         return unicode(str_, from_encoding, 'replace')
 
+
 def safe_str(unicode_, to_encoding='utf8'):
     """
     safe str function. Does few trick to turn unicode_ into string
@@ -93,6 +94,7 @@ def safe_str(unicode_, to_encoding='utf8'):
 
     return safe_str
 
+
 def author_email(author):
     """
     returns email address of given author.
@@ -104,7 +106,6 @@ def author_email(author):
     import re
     r = author.find('>')
     l = author.find('<')
-
 
     if l == -1 or r == -1:
         # fallback to regex match of email out of a string
