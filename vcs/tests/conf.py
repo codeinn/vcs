@@ -58,4 +58,3 @@ PACKAGE_DIR = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..'))
 
 TEST_USER_CONFIG_FILE = jn(THIS, 'aconfig')
-

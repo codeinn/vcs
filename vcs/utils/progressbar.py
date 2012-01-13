@@ -21,7 +21,7 @@ class ProgressBar(object):
         self.step = 0
         self.steps = steps
         self.stream = stream or sys.stderr
-        self.bar_char = '=' 
+        self.bar_char = '='
         self.width = 50
         self.separator = ' | '
         self.elements = elements or self.default_elements
@@ -347,7 +347,7 @@ class BarOnlyColoredProgressBar(ColoredProgressBar,
     pass
 
 
-        
+
 def main():
     import time
 
@@ -417,4 +417,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

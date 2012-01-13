@@ -79,4 +79,3 @@ class CatCommand(SingleChangesetCommand):
         filename = arg
         node = changeset.get_node(self.get_relative_filename(filename))
         self.cat(node, **options)
-

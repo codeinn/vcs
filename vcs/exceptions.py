@@ -91,4 +91,3 @@ class ImproperArchiveTypeError(VCSError):
 
 class CommandError(VCSError):
     pass
-

@@ -10,4 +10,3 @@ def setup(app):
         rolename      = "setting",
         indextemplate = "pair: %s; setting",
     )
-

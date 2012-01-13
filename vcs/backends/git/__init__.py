@@ -7,4 +7,3 @@ from .workdir import GitWorkdir
 __all__ = [
     'GitRepository', 'GitChangeset', 'GitInMemoryChangeset', 'GitWorkdir',
 ]
-

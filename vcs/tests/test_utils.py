@@ -255,7 +255,7 @@ class TestGetTotalSeconds(unittest.TestCase):
 
 
 class TestGetUserHome(unittest.TestCase):
-    
+
     @mock.patch.object(os, 'environ', {})
     def test_defaults_to_none(self):
         self.assertEqual(get_user_home(), None)
@@ -276,4 +276,3 @@ class TestGetUserHome(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

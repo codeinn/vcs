@@ -3,7 +3,7 @@
 # django-projector documentation build configuration file, created by
 # sphinx-quickstart on Thu Feb 18 23:18:28 2010.
 #
-# This file is execfile()d with the current directory set to its containing 
+# This file is execfile()d with the current directory set to its containing
 # dir.
 #
 # Note that not all possible configuration values are present in this

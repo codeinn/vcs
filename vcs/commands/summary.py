@@ -22,7 +22,7 @@ class SummaryCommand(ChangesetCommand):
     def handle_changeset(self, changeset, **options):
         if options['changeset_size']:
             self.total_size += changeset.size
-        
+
         if changeset.author not in self.authors:
             self.authors[changeset.author] = {
                 'changeset_id_list': [changeset.raw_id],
@@ -63,4 +63,3 @@ class SummaryCommand(ChangesetCommand):
         output.append('')
         output.append('')
         self.stdout.write(u'\n'.join(output))
-

@@ -508,4 +508,3 @@ class GitRepository(BaseRepository):
           configuration from (might also be a list of file paths)
         """
         return self.get_config_value('user', 'email', config_file)
-

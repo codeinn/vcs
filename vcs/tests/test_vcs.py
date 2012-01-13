@@ -21,14 +21,14 @@ class VCSTest(unittest.TestCase):
         alias = 'hg'
         path = TEST_HG_REPO
         backend = get_backend(alias)
-        repo = backend(path)        
+        repo = backend(path)
         self.assertEqual('hg',repo.alias)
 
     def test_alias_detect_git(self):
         alias = 'git'
         path = TEST_GIT_REPO
         backend = get_backend(alias)
-        repo = backend(path)        
+        repo = backend(path)
         self.assertEqual('git',repo.alias)
 
     def test_wrong_alias(self):

@@ -11,4 +11,3 @@ def create_module(name, path):
     module.__file__ = path
     execfile(path, module.__dict__)
     return module
-

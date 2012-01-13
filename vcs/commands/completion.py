@@ -29,4 +29,3 @@ class CompletionCommand(BaseCommand):
 
     def handle(self, **options):
         self.stdout.write(self.get_completion_snippet())
-

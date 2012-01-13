@@ -123,7 +123,7 @@ class MercurialRepository(BaseRepository):
         """
         Get's branches for this repository
         Returns only not closed branches by default
-        
+
         :param closed: return also closed branches for mercurial
         """
 
@@ -249,9 +249,9 @@ class MercurialRepository(BaseRepository):
 
         sortkey = lambda ctx: ctx[0]  # sort by name
         _bookmarks = [(safe_unicode(n), hex(h),) for n, h in
-                 self._repo._bookmarks.items()]        
+                 self._repo._bookmarks.items()]
         return OrderedDict(sorted(_bookmarks, key=sortkey, reverse=True))
-    
+
     def _get_all_revisions(self):
 
         return map(lambda x: hex(x[7]), self._repo.changelog.index)[:-1]
@@ -289,14 +289,14 @@ class MercurialRepository(BaseRepository):
         link. Sometimes it may happened that mercurial will issue basic
         auth request that can cause whole API to hang when used from python
         or other external calls.
-        
+
         On failures it'll raise urllib2.HTTPError, return code 200 if url
         is valid or True if it's a local path
         """
 
         from mercurial.util import url as Url
 
-        # those authnadlers are patched for python 2.6.5 bug an 
+        # those authnadlers are patched for python 2.6.5 bug an
         # infinit looping when given invalid resources
         from mercurial.url import httpbasicauthhandler, httpdigestauthhandler
 
@@ -380,7 +380,7 @@ class MercurialRepository(BaseRepository):
     @LazyProperty
     def contact(self):
         undefined_contact = u'Unknown'
-        return safe_unicode(get_contact(self._repo.ui.config) 
+        return safe_unicode(get_contact(self._repo.ui.config)
                             or undefined_contact)
 
     @LazyProperty
@@ -774,7 +774,7 @@ class MercurialChangeset(BaseChangeset):
             Default is repository name and changeset's raw_id joined with dash
             (``repo-tip.<KIND>``).
         :param subrepos: include subrepos in this archive.
-    
+
         :raise ImproperArchiveTypeError: If given kind is wrong.
         :raise VcsError: If given stream is None
         """
@@ -999,4 +999,3 @@ class MercurialWorkdir(BaseWorkdir):
             raise BranchDoesNotExistError
 
         hg_merge.update(self.repository._repo, branch, False, False, None)
-

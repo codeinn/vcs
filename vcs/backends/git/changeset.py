@@ -284,7 +284,7 @@ class GitChangeset(BaseChangeset):
             Default is repository name and changeset's raw_id joined with dash
             (``repo-tip.<KIND>``).
         :param subrepos: include subrepos in this archive.
-        
+
         :raise ImproperArchiveTypeError: If given kind is wrong.
         :raise VcsError: If given stream is None
 
@@ -448,4 +448,3 @@ class GitChangeset(BaseChangeset):
         if not self.parents:
             return []
         return [RemovedFileNode(path) for path in self._get_paths_for_status('deleted')]
-

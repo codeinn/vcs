@@ -153,16 +153,16 @@ class NodeBasicTest(unittest.TestCase):
         tar_node = FileNode('test.tar.gz')
 
         ext = 'CustomExtension'
-                
+
         my_node2 = FileNode('myfile2')
         my_node2._mimetype = [ext]
 
         my_node3 = FileNode('myfile3')
         my_node3._mimetype = [ext,ext]
-        
+
         self.assertEqual(py_node.mimetype,'text/x-python')
         self.assertEqual(py_node.get_mimetype(),('text/x-python',None))
-        
+
         self.assertEqual(tar_node.mimetype,'application/x-tar')
         self.assertEqual(tar_node.get_mimetype(),('application/x-tar','gzip'))
 
@@ -181,4 +181,3 @@ class NodeContentTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

@@ -46,4 +46,3 @@ class LogCommand(ChangesetCommand):
                 old_node = changeset.parents[0].get_node(node.path)
                 new_node = FileNode(node.path, content='')
                 show_diff(old_node, new_node)
-

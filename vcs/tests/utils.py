@@ -90,4 +90,3 @@ def get_normalized_path(path):
                     return newpath
         raise VCSTestError("Couldn't compute new path for %s" % path)
     return path
-

@@ -89,4 +89,3 @@ for alias in SCM_TESTS:
 
 if __name__ == '__main__':
     unittest.main()
-

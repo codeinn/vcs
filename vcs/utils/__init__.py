@@ -19,7 +19,7 @@ def makedate():
 def date_fromtimestamp(unixts, tzoffset=0):
     """
     Makes a local datetime object out of unix timestamp
-    
+
     :param unixts:
     :param tzoffset:
     """
@@ -30,7 +30,7 @@ def date_fromtimestamp(unixts, tzoffset=0):
 def safe_unicode(str_, from_encoding='utf8'):
     """
     safe unicode function. Does few trick to turn str_ into unicode
-     
+
     In case of UnicodeDecode error we try to return it with encoding detected
     by chardet library if it fails fallback to unicode with errors replaced
 
@@ -63,7 +63,7 @@ def safe_unicode(str_, from_encoding='utf8'):
 def safe_str(unicode_, to_encoding='utf8'):
     """
     safe str function. Does few trick to turn unicode_ into string
-     
+
     In case of UnicodeEncodeError we try to return it with encoding detected
     by chardet library if it fails fallback to string with errors replaced
 
@@ -79,14 +79,14 @@ def safe_str(unicode_, to_encoding='utf8'):
         return unicode_.encode(to_encoding)
     except UnicodeEncodeError:
         pass
-    
+
     try:
         import chardet
         encoding = chardet.detect(unicode_)['encoding']
         print encoding
         if encoding is None:
             raise UnicodeEncodeError()
-        
+
         return unicode_.encode(encoding)
     except (ImportError, UnicodeEncodeError):
         return unicode_.encode(to_encoding, 'replace')
@@ -98,7 +98,7 @@ def author_email(author):
     returns email address of given author.
     If any of <,> sign are found, it fallbacks to regex findall()
     and returns first found result or empty string
-    
+
     Regex taken from http://www.regular-expressions.info/email.html
     """
     import re
@@ -130,4 +130,3 @@ def author_name(author):
     else:
         return author.replace(author_email(author), '').replace('<', '')\
             .replace('>', '').strip()
-

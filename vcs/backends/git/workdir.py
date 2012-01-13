@@ -29,4 +29,3 @@ class GitWorkdir(BaseWorkdir):
         if branch not in self.repository.branches:
             raise BranchDoesNotExistError
         self.repository.run_git_command(['checkout', branch])
-

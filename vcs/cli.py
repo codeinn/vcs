@@ -516,4 +516,3 @@ class SingleChangesetCommand(RepositoryCommand):
         :param arg: single argument from arguments list
         """
         raise NotImplementedError()
-

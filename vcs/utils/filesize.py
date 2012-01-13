@@ -26,4 +26,3 @@ def filesizeformat(bytes, sep=' '):
         size = bytes / 1024 / 1024 / 1024
         template = '%.2f%sGB'
     return template % (size, sep)
-

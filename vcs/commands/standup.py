@@ -9,4 +9,3 @@ class StandupCommand(LogCommand):
         username = repo.get_user_name()
         options['author'] = username + '*'
         return super(StandupCommand, self).handle_repo(repo, **options)
-

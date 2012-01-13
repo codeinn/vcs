@@ -29,7 +29,7 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         """
         self.check_integrity(parents)
 
-        from .repository import GitRepository 
+        from .repository import GitRepository
         if branch is None:
             branch = GitRepository.DEFAULT_BRANCH_NAME
 
@@ -190,4 +190,3 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
             # Always append tree
             trees.append(tree)
         return trees
-

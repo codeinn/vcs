@@ -306,7 +306,7 @@ class FileNode(Node):
         attribute to indicate that type should *NOT* be calculated).
         """
         if hasattr(self, '_mimetype'):
-            if (isinstance(self._mimetype,(tuple,list,)) and 
+            if (isinstance(self._mimetype,(tuple,list,)) and
                 len(self._mimetype) == 2):
                 return self._mimetype
             else:
@@ -323,7 +323,7 @@ class FileNode(Node):
                 mtype = 'text/plain'
                 encoding = None
         return mtype,encoding
-    
+
     @LazyProperty
     def mimetype(self):
         """
@@ -332,7 +332,7 @@ class FileNode(Node):
         full set of (type,encoding)
         """
         return self.get_mimetype()[0]
-    
+
     @LazyProperty
     def mimetype_main(self):
         return self.mimetype.split('/')[0]
@@ -549,4 +549,3 @@ class RootNode(DirNode):
 
     def __repr__(self):
         return '<%s>' % self.__class__.__name__
-

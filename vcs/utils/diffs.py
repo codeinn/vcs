@@ -51,7 +51,7 @@ def get_udiff(filenode_old, filenode_new,show_whitespace=True):
 def get_gitdiff(filenode_old, filenode_new, ignore_whitespace=True):
     """
     Returns git style diff between given ``filenode_old`` and ``filenode_new``.
-    
+
     :param ignore_whitespace: ignore whitespaces in diff
     """
 

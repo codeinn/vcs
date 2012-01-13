@@ -563,7 +563,3 @@ class MercurialChangesetTest(unittest.TestCase):
                          self.repo.get_changeset('3803844fdbd3').author_name)
         self.assertEqual('marcink',
                          self.repo.get_changeset('84478366594b').author_name)
-
-
-
-

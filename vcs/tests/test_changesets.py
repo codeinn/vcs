@@ -251,12 +251,12 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
     def test_get_changesets_numerical_id_respects_both_start_and_end_last(self):
         with self.assertRaises(RepositoryError):
             last = len(self.repo.revisions)
-            list(self.repo.get_changesets(start=last-1, end=last-2))            
+            list(self.repo.get_changesets(start=last-1, end=last-2))
 
     def test_get_changesets_numerical_id_last_zero_error(self):
         with self.assertRaises(RepositoryError):
             last = len(self.repo.revisions)
-            list(self.repo.get_changesets(start=last-1, end=0))       
+            list(self.repo.get_changesets(start=last-1, end=0))
 
 
 class ChangesetsChangesTestCaseMixin(BackendTestMixin):
@@ -334,4 +334,3 @@ for alias in SCM_TESTS:
 
 if __name__ == '__main__':
     unittest.main()
-
