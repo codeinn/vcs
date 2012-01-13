@@ -114,7 +114,6 @@ class GitRepository(BaseRepository):
         #TODO: implement this
         pass
 
-
     def _get_repo(self, create, src_url=None, update_after_clone=False,
             bare=False):
         if create and os.path.exists(self.path):
@@ -155,8 +154,8 @@ class GitRepository(BaseRepository):
         that changset's revision attribute would become integer.
         """
         pattern = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
-        is_bstr = lambda o:isinstance(o, (str, unicode))
-        is_null = lambda o:len(o) == revision.count('0')
+        is_bstr = lambda o: isinstance(o, (str, unicode))
+        is_null = lambda o: len(o) == revision.count('0')
 
         if len(self.revisions) == 0:
             raise EmptyRepositoryError("There are no changesets yet")
