@@ -15,6 +15,7 @@ mercurial.scmutil.rcpath()
 if mercurial.scmutil._rcpath:
     mercurial.scmutil._rcpath = mercurial.scmutil._rcpath[:1]
 
+
 class MercurialRepositoryTest(unittest.TestCase):
 
     def __check_for_existing_repo(self):
@@ -55,7 +56,6 @@ class MercurialRepositoryTest(unittest.TestCase):
                                                     + '_w_update',
                                                     'MANIFEST.in')), True,)
 
-
     def test_repo_clone_without_update(self):
         repo = MercurialRepository(TEST_HG_REPO)
         repo_clone = MercurialRepository(TEST_HG_REPO_CLONE + '_wo_update',
@@ -76,7 +76,6 @@ class MercurialRepositoryTest(unittest.TestCase):
         repo_new.pull(self.repo.path)
         repo_new = MercurialRepository(TEST_HG_REPO_PULL)
         self.assertTrue(len(self.repo.revisions) == len(repo_new.revisions))
-
 
     def test_revisions(self):
         # there are 21 revisions at bitbucket now
@@ -104,8 +103,6 @@ class MercurialRepositoryTest(unittest.TestCase):
         self.assertTrue(subset.issubset(set(self.repo.revisions)))
 
 
-
-    def test_revisions_order(self):
         # check if we have the proper order of revisions
         org = ['b986218ba1c9b0d6a259fac9b050b1724ed8e545',
                 '3d8f361e72ab303da48d799ff1ac40d5ac37c67e',
@@ -140,12 +137,10 @@ class MercurialRepositoryTest(unittest.TestCase):
                 'ee87846a61c12153b51543bf860e1026c6d3dcba', ]
         self.assertEqual(org, self.repo.revisions[:31])
 
-
     def test_iter_slice(self):
         sliced = list(self.repo[:10])
         itered = list(self.repo)[:10]
         self.assertEqual(sliced, itered)
-
 
     def test_slicing(self):
         #4 1 5 10 95
@@ -246,6 +241,7 @@ TODO: To be written...
         node = chset10.get_node('README.rst')
         self.assertEqual(node.kind, NodeKind.FILE)
         self.assertEqual(node.content, README)
+
 
 class MercurialChangesetTest(unittest.TestCase):
 
@@ -360,7 +356,7 @@ class MercurialChangesetTest(unittest.TestCase):
                 82],
         }
         for path, revs in files.items():
-            tip = self.repo.get_changeset()
+            tip = self.repo.get_changeset(revs[-1])
             node = tip.get_node(path)
             node_revs = [chset.revision for chset in node.history]
             self.assertTrue(set(revs).issubset(set(node_revs)),
