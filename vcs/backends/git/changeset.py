@@ -414,12 +414,12 @@ class GitChangeset(BaseChangeset):
             if not line:
                 continue
             if line.startswith(char):
-                splitted = line.split()
+                splitted = line.split(char,1)
                 if not len(splitted) == 2:
                     raise VCSError("Couldn't parse diff result:\n%s\n\n and "
                         "particularly that line: %s" % (self._diff_name_status,
                         line))
-                paths.add(splitted[1])
+                paths.add(splitted[1].strip())
         return sorted(paths)
 
     @LazyProperty
