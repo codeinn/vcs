@@ -655,5 +655,49 @@ class GitSpecificWithRepoTest(BackendTestMixin, unittest.TestCase):
         self.repo.run_git_command.assert_called_once_with('diff -U%s %s %s -- "foo"'
             % (3, self.repo._get_revision(0), self.repo._get_revision(1)))
 
+
+class GitRegressionTest(BackendTestMixin, unittest.TestCase):
+    backend_alias = 'git'
+
+    @classmethod
+    def _get_commits(cls):
+        return [
+            {
+                'message': 'Initial',
+                'author': 'Joe Doe <joe.doe@example.com>',
+                'date': datetime.datetime(2010, 1, 1, 20),
+                'added': [
+                    FileNode('bot/__init__.py', content='base'),
+                    FileNode('bot/templates/404.html', content='base'),
+                    FileNode('bot/templates/500.html', content='base'),
+                ],
+            },
+            {
+                'message': 'Second',
+                'author': 'Joe Doe <joe.doe@example.com>',
+                'date': datetime.datetime(2010, 1, 1, 22),
+                'added': [
+                    FileNode('bot/build/migrations/1.py', content='foo2'),
+                    FileNode('bot/build/migrations/2.py', content='foo2'),
+                    FileNode('bot/build/static/templates/f.html', content='foo2'),
+                    FileNode('bot/build/static/templates/f1.html', content='foo2'),
+                    FileNode('bot/build/templates/err.html', content='foo2'),
+                    FileNode('bot/build/templates/err2.html', content='foo2'),
+                ],
+            },
+        ]
+
+    def test_similar_paths(self):
+        cs = self.repo.get_changeset()
+        paths = lambda *n:[x.path for x in n]
+        self.assertEqual(paths(*cs.get_nodes('bot')), ['bot/build', 'bot/templates', 'bot/__init__.py'])
+        self.assertEqual(paths(*cs.get_nodes('bot/build')), ['bot/build/migrations', 'bot/build/static', 'bot/build/templates'])
+        self.assertEqual(paths(*cs.get_nodes('bot/build/static')), ['bot/build/static/templates'])
+        # this get_nodes below causes troubles !
+        self.assertEqual(paths(*cs.get_nodes('bot/build/static/templates')), ['bot/build/static/templates/f.html', 'bot/build/static/templates/f1.html'])
+        self.assertEqual(paths(*cs.get_nodes('bot/build/templates')), ['bot/build/templates/err.html', 'bot/build/templates/err2.html'])
+        self.assertEqual(paths(*cs.get_nodes('bot/templates/')), ['bot/templates/404.html', 'bot/templates/500.html'])
+
 if __name__ == '__main__':
     unittest.main()
+
