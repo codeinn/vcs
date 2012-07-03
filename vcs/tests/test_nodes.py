@@ -127,7 +127,7 @@ class NodeBasicTest(unittest.TestCase):
 
     def test_file_node_stat(self):
         node = FileNode('foobar', 'empty... almost')
-        mode = node.mode # default should be 0100644
+        mode = node.mode  # default should be 0100644
         self.assertTrue(mode & stat.S_IRUSR)
         self.assertTrue(mode & stat.S_IWUSR)
         self.assertTrue(mode & stat.S_IRGRP)

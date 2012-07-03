@@ -8,19 +8,22 @@
     :created_on: Apr 8, 2010
     :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
+import os
 import stat
 import posixpath
 import mimetypes
+
+from pygments import lexers
 
 from vcs.utils.lazy import LazyProperty
 from vcs.utils import safe_unicode
 from vcs.exceptions import NodeError
 from vcs.exceptions import RemovedFileNodeError
-
-from pygments import lexers
+from vcs.backends.base import EmptyChangeset
 
 
 class NodeKind:
+    SUBMODULE = -1
     DIR = 1
     FILE = 2
 
@@ -120,6 +123,10 @@ class Node(object):
         return None
 
     @LazyProperty
+    def unicode_path(self):
+        return safe_unicode(self.path)
+
+    @LazyProperty
     def name(self):
         """
         Returns name of the node so if its path
@@ -204,6 +211,13 @@ class Node(object):
         Returns ``True`` if node is a root node and ``False`` otherwise.
         """
         return self.kind == NodeKind.DIR and self.path == ''
+
+    def is_submodule(self):
+        """
+        Returns ``True`` if node's kind is ``NodeKind.SUBMODULE``, ``False``
+        otherwise.
+        """
+        return self.kind == NodeKind.SUBMODULE
 
     @LazyProperty
     def added(self):
@@ -306,14 +320,14 @@ class FileNode(Node):
         attribute to indicate that type should *NOT* be calculated).
         """
         if hasattr(self, '_mimetype'):
-            if (isinstance(self._mimetype,(tuple,list,)) and
+            if (isinstance(self._mimetype, (tuple, list,)) and
                 len(self._mimetype) == 2):
                 return self._mimetype
             else:
                 raise NodeError('given _mimetype attribute must be an 2 '
                                'element list or tuple')
 
-        mtype,encoding = mimetypes.guess_type(self.name)
+        mtype, encoding = mimetypes.guess_type(self.name)
 
         if mtype is None:
             if self.is_binary:
@@ -322,7 +336,7 @@ class FileNode(Node):
             else:
                 mtype = 'text/plain'
                 encoding = None
-        return mtype,encoding
+        return mtype, encoding
 
     @LazyProperty
     def mimetype(self):
@@ -392,8 +406,8 @@ class FileNode(Node):
         """
         Returns True if file has binary content.
         """
-        bin = '\0' in self.content
-        return bin
+        _bin = '\0' in self.content
+        return _bin
 
     @LazyProperty
     def extension(self):
@@ -406,6 +420,10 @@ class FileNode(Node):
         """
         return bool(self.mode & stat.S_IXUSR)
 
+    def __repr__(self):
+        return '<%s %r @ %s>' % (self.__class__.__name__, self.path,
+                                 getattr(self.changeset, 'short_id', ''))
+
 
 class RemovedFileNode(FileNode):
     """
@@ -413,8 +431,10 @@ class RemovedFileNode(FileNode):
     name, kind or state (or methods/attributes checking those two) would raise
     RemovedFileNodeError.
     """
-    ALLOWED_ATTRIBUTES = ['name', 'path', 'state', 'is_root', 'is_file',
-        'is_dir', 'kind', 'added', 'changed', 'not_changed', 'removed']
+    ALLOWED_ATTRIBUTES = [
+        'name', 'path', 'state', 'is_root', 'is_file', 'is_dir', 'kind',
+        'added', 'changed', 'not_changed', 'removed'
+    ]
 
     def __init__(self, path):
         """
@@ -537,6 +557,10 @@ class DirNode(Node):
 
         return size
 
+    def __repr__(self):
+        return '<%s %r @ %s>' % (self.__class__.__name__, self.path,
+                                 getattr(self.changeset, 'short_id', ''))
+
 
 class RootNode(DirNode):
     """
@@ -549,3 +573,41 @@ class RootNode(DirNode):
 
     def __repr__(self):
         return '<%s>' % self.__class__.__name__
+
+
+class SubModuleNode(Node):
+    """
+    represents a SubModule of Git or SubRepo of Mercurial
+    """
+    is_binary = False
+    size = 0
+
+    def __init__(self, name, url=None, changeset=None, alias=None):
+        self.path = name
+        self.kind = NodeKind.SUBMODULE
+        self.alias = alias
+        # we have to use emptyChangeset here since this can point to svn/git/hg
+        # submodules we cannot get from repository
+        self.changeset = EmptyChangeset(str(changeset), alias=alias)
+        self.url = url or self._extract_submodule_url()
+
+    def __repr__(self):
+        return '<%s %r @ %s>' % (self.__class__.__name__, self.path,
+                                 getattr(self.changeset, 'short_id', ''))
+
+    def _extract_submodule_url(self):
+        if self.alias == 'git':
+            #TODO: find a way to parse gits submodule file and extract the
+            # linking URL
+            return self.path
+        if self.alias == 'hg':
+            return self.path
+
+    @LazyProperty
+    def name(self):
+        """
+        Returns name of the node so if its path
+        then only last part is returned.
+        """
+        org = safe_unicode(self.path.rstrip('/').split('/')[-1])
+        return u'%s @ %s' % (org, self.changeset.short_id)
