@@ -8,8 +8,10 @@ import sys
 
 from subprocess import Popen
 
+
 class VCSTestError(Exception):
     pass
+
 
 def run_command(cmd, args):
     """
@@ -20,6 +22,7 @@ def run_command(cmd, args):
     status = os.waitpid(p.pid, 0)[1]
     return status
 
+
 def eprint(msg):
     """
     Prints given ``msg`` into sys.stderr as nose test runner hides all output
@@ -29,6 +32,7 @@ def eprint(msg):
     """
     sys.stderr.write(msg)
     sys.stderr.write('\n')
+
 
 class SCMFetcher(object):
 
@@ -54,6 +58,7 @@ class SCMFetcher(object):
         remote = self.remote_repo
         eprint("Fetching repository %s into %s" % (remote, self.test_repo_path))
         run_command(self.clone_cmd,  '%s %s' % (remote, self.test_repo_path))
+
 
 def get_normalized_path(path):
     """
