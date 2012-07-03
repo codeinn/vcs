@@ -152,7 +152,7 @@ class GitRepositoryTest(unittest.TestCase):
     def test_initial_changeset(self):
         id = self.repo.revisions[0]
         init_chset = self.repo.get_changeset(id)
-        self.assertEqual(init_chset.message, 'initial import')
+        self.assertEqual(init_chset.message, 'initial import\n')
         self.assertEqual(init_chset.author,
             'Marcin Kuzminski <marcin@python-blog.com>')
         for path in ('vcs/__init__.py',
@@ -700,4 +700,3 @@ class GitRegressionTest(BackendTestMixin, unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

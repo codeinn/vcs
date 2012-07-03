@@ -62,8 +62,8 @@ class ChangesetsWithCommitsTestCaseixin(BackendTestMixin):
         self.imc.add(vcs.nodes.FileNode('docs/index.txt',
             content='Documentation\n'))
         foobar_tip = self.imc.commit(
-            message='New branch: foobar',
-            author='joe',
+            message=u'New branch: foobar',
+            author=u'joe',
             branch='foobar',
         )
         self.assertTrue('foobar' in self.repo.branches)
@@ -76,23 +76,23 @@ class ChangesetsWithCommitsTestCaseixin(BackendTestMixin):
         self.imc.add(vcs.nodes.FileNode('docs/index.txt',
             content='Documentation\n'))
         foobar_tip = self.imc.commit(
-            message='New branch: foobar',
-            author='joe',
+            message=u'New branch: foobar',
+            author=u'joe',
             branch='foobar',
             parents=[tip],
         )
         self.imc.change(vcs.nodes.FileNode('docs/index.txt',
             content='Documentation\nand more...\n'))
         newtip = self.imc.commit(
-            message='At default branch',
-            author='joe',
+            message=u'At default branch',
+            author=u'joe',
             branch=foobar_tip.branch,
             parents=[foobar_tip],
         )
 
         newest_tip = self.imc.commit(
-            message='Merged with %s' % foobar_tip.raw_id,
-            author='joe',
+            message=u'Merged with %s' % foobar_tip.raw_id,
+            author=u'joe',
             branch=self.backend_class.DEFAULT_BRANCH_NAME,
             parents=[newtip, foobar_tip],
         )
@@ -105,19 +105,27 @@ class ChangesetsWithCommitsTestCaseixin(BackendTestMixin):
         self.imc.add(vcs.nodes.FileNode('docs/index.txt',
             content='Documentation\n'))
         doc_changeset = self.imc.commit(
-            message='New branch: docs',
-            author='joe',
+            message=u'New branch: docs',
+            author=u'joe',
             branch='docs',
         )
         self.imc.add(vcs.nodes.FileNode('newfile', content=''))
         self.imc.commit(
-            message='Back in default branch',
-            author='joe',
+            message=u'Back in default branch',
+            author=u'joe',
             parents=[tip],
         )
         default_branch_changesets = self.repo.get_changesets(
             branch_name=self.repo.DEFAULT_BRANCH_NAME)
         self.assertNotIn(doc_changeset, default_branch_changesets)
+
+    def test_get_changeset_by_branch(self):
+        for branch, sha in self.repo.branches.iteritems():
+            self.assertEqual(sha, self.repo.get_changeset(branch).raw_id)
+
+    def test_get_changeset_by_tag(self):
+        for tag, sha in self.repo.tags.iteritems():
+            self.assertEqual(sha, self.repo.get_changeset(tag).raw_id)
 
 
 class ChangesetsTestCaseMixin(BackendTestMixin):
@@ -128,8 +136,8 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
         start_date = datetime.datetime(2010, 1, 1, 20)
         for x in xrange(5):
             yield {
-                'message': 'Commit %d' % x,
-                'author': 'Joe Doe <joe.doe@example.com>',
+                'message': u'Commit %d' % x,
+                'author': u'Joe Doe <joe.doe@example.com>',
                 'date': start_date + datetime.timedelta(hours=12 * x),
                 'added': [
                     FileNode('file_%d.txt' % x, content='Foobar %d' % x),
@@ -266,8 +274,8 @@ class ChangesetsChangesTestCaseMixin(BackendTestMixin):
     def _get_commits(cls):
         return [
             {
-                'message': 'Initial',
-                'author': 'Joe Doe <joe.doe@example.com>',
+                'message': u'Initial',
+                'author': u'Joe Doe <joe.doe@example.com>',
                 'date': datetime.datetime(2010, 1, 1, 20),
                 'added': [
                     FileNode('foo/bar', content='foo'),
@@ -276,8 +284,8 @@ class ChangesetsChangesTestCaseMixin(BackendTestMixin):
                 ],
             },
             {
-                'message': 'Massive changes',
-                'author': 'Joe Doe <joe.doe@example.com>',
+                'message': u'Massive changes',
+                'author': u'Joe Doe <joe.doe@example.com>',
                 'date': datetime.datetime(2010, 1, 1, 22),
                 'added': [FileNode('fallout', content='War never changes')],
                 'changed': [

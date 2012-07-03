@@ -37,8 +37,8 @@ class BackendTestMixin(object):
     def _get_commits(cls):
         commits = [
             {
-                'message': 'Initial commit',
-                'author': 'Joe Doe <joe.doe@example.com>',
+                'message': u'Initial commit',
+                'author': u'Joe Doe <joe.doe@example.com>',
                 'date': datetime.datetime(2010, 1, 1, 20),
                 'added': [
                     FileNode('foobar', content='Foobar'),
@@ -47,8 +47,8 @@ class BackendTestMixin(object):
                 ],
             },
             {
-                'message': 'Changes...',
-                'author': 'Jane Doe <jane.doe@example.com>',
+                'message': u'Changes...',
+                'author': u'Jane Doe <jane.doe@example.com>',
                 'date': datetime.datetime(2010, 1, 1, 21),
                 'added': [
                     FileNode('some/new.txt', content='news...'),
@@ -76,9 +76,10 @@ class BackendTestMixin(object):
                 cls.imc.change(FileNode(node.path, content=node.content))
             for node in commit.get('removed', []):
                 cls.imc.remove(FileNode(node.path))
-            cls.tip = cls.imc.commit(message=commit['message'],
-                author=commit['author'],
-                date=commit['date'])
+
+            cls.tip = cls.imc.commit(message=unicode(commit['message']),
+                                     author=unicode(commit['author']),
+                                     date=commit['date'])
 
     @classmethod
     def tearDownClass(cls):
@@ -94,7 +95,6 @@ class BackendTestMixin(object):
         if getattr(self, 'recreate_repo_per_test', False) and \
             'VCS_REMOVE_TEST_DIRS' in os.environ:
             shutil.rmtree(self.repo_path)
-
 
 
 # For each backend create test case class

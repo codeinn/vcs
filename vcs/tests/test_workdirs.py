@@ -13,8 +13,8 @@ class WorkdirTestCaseMixin(BackendTestMixin):
     def _get_commits(cls):
         commits = [
             {
-                'message': 'Initial commit',
-                'author': 'Joe Doe <joe.doe@example.com>',
+                'message': u'Initial commit',
+                'author': u'Joe Doe <joe.doe@example.com>',
                 'date': datetime.datetime(2010, 1, 1, 20),
                 'added': [
                     FileNode('foobar', content='Foobar'),
@@ -23,8 +23,8 @@ class WorkdirTestCaseMixin(BackendTestMixin):
                 ],
             },
             {
-                'message': 'Changes...',
-                'author': 'Jane Doe <jane.doe@example.com>',
+                'message': u'Changes...',
+                'author': u'Jane Doe <jane.doe@example.com>',
                 'date': datetime.datetime(2010, 1, 1, 21),
                 'added': [
                     FileNode('some/new.txt', content='news...'),
@@ -37,7 +37,6 @@ class WorkdirTestCaseMixin(BackendTestMixin):
         ]
         return commits
 
-
     def test_get_branch_for_default_branch(self):
         self.assertEqual(self.repo.workdir.get_branch(),
             self.repo.DEFAULT_BRANCH_NAME)
@@ -46,8 +45,8 @@ class WorkdirTestCaseMixin(BackendTestMixin):
         self.imc.add(FileNode('docs/index.txt',
             content='Documentation\n'))
         self.imc.commit(
-            message='New branch: foobar',
-            author='joe',
+            message=u'New branch: foobar',
+            author=u'joe',
             branch='foobar',
         )
 
@@ -55,8 +54,8 @@ class WorkdirTestCaseMixin(BackendTestMixin):
         self.imc.add(FileNode('docs/index.txt',
             content='Documentation\n'))
         head = self.imc.commit(
-            message='New branch: foobar',
-            author='joe',
+            message=u'New branch: foobar',
+            author=u'joe',
             branch='foobar',
         )
         self.assertEqual(self.repo.workdir.get_changeset(), head)
@@ -68,7 +67,7 @@ class WorkdirTestCaseMixin(BackendTestMixin):
                           branch='foobranch')
         # create new branch 'foobranch'.
         self.imc.add(FileNode('file1', content='blah'))
-        self.imc.commit(message='asd', author='john', branch='foobranch')
+        self.imc.commit(message=u'asd', author=u'john', branch='foobranch')
         # go back to the default branch
         self.repo.workdir.checkout_branch()
         self.assertEqual(self.repo.workdir.get_branch(), self.backend_class.DEFAULT_BRANCH_NAME)

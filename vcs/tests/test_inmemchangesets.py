@@ -52,8 +52,8 @@ class InMemoryChangesetTestMixin(object):
             for node in self.nodes]
         for node in to_add:
             self.imc.add(node)
-        message = 'Added: %s' % ', '.join((node.path for node in self.nodes))
-        author = str(self.__class__)
+        message = u'Added: %s' % ', '.join((node.path for node in self.nodes))
+        author = unicode(self.__class__)
         changeset = self.imc.commit(message=message, author=author)
 
         newtip = self.repo.get_changeset()
@@ -71,8 +71,8 @@ class InMemoryChangesetTestMixin(object):
         to_add = [FileNode(node.path, content=node.content)
             for node in self.nodes]
         self.imc.add(*to_add)
-        message = 'Added: %s' % ', '.join((node.path for node in self.nodes))
-        author = str(self.__class__)
+        message = u'Added: %s' % ', '.join((node.path for node in self.nodes))
+        author = unicode(self.__class__)
         changeset = self.imc.commit(message=message, author=author)
 
         newtip = self.repo.get_changeset()
@@ -88,7 +88,7 @@ class InMemoryChangesetTestMixin(object):
     def test_add_actually_adds_all_nodes_at_second_commit_too(self):
         self.imc.add(FileNode('foo/bar/image.png', content='\0'))
         self.imc.add(FileNode('foo/README.txt', content='readme!'))
-        changeset = self.imc.commit('Initial', 'joe.doe@example.com')
+        changeset = self.imc.commit(u'Initial', u'joe.doe@example.com')
         self.assertTrue(isinstance(changeset.get_node('foo'), DirNode))
         self.assertTrue(isinstance(changeset.get_node('foo/bar'), DirNode))
         self.assertEqual(changeset.get_node('foo/bar/image.png').content, '\0')
@@ -103,7 +103,7 @@ class InMemoryChangesetTestMixin(object):
             FileNode('foobar/barbaz', content='foo'),
         ]
         self.imc.add(*to_add)
-        changeset = self.imc.commit('Another', 'joe.doe@example.com')
+        changeset = self.imc.commit(u'Another', u'joe.doe@example.com')
         self.assertEqual(changeset.get_node('foo/bar/foobaz/bar').content, 'foo')
         self.assertEqual(changeset.get_node('foo/bar/another/bar').content, 'foo')
         self.assertEqual(changeset.get_node('foo/baz.txt').content, 'foo')
@@ -118,7 +118,7 @@ class InMemoryChangesetTestMixin(object):
     def test_check_integrity_raise_already_exist(self):
         node = FileNode('foobar', content='baz')
         self.imc.add(node)
-        self.imc.commit(message='Added foobar', author=str(self))
+        self.imc.commit(message=u'Added foobar', author=unicode(self))
         self.imc.add(node)
         self.assertRaises(NodeAlreadyExistsError, self.imc.commit,
             message='new message',
@@ -127,12 +127,12 @@ class InMemoryChangesetTestMixin(object):
     def test_change(self):
         self.imc.add(FileNode('foo/bar/baz', content='foo'))
         self.imc.add(FileNode('foo/fbar', content='foobar'))
-        tip = self.imc.commit('Initial', 'joe.doe@example.com')
+        tip = self.imc.commit(u'Initial', u'joe.doe@example.com')
 
         # Change node's content
         node = FileNode('foo/bar/baz', content='My **changed** content')
         self.imc.change(node)
-        self.imc.commit('Changed %s' % node.path, 'joe.doe@example.com')
+        self.imc.commit(u'Changed %s' % node.path, u'joe.doe@example.com')
 
         newtip = self.repo.get_changeset()
         self.assertNotEqual(tip, newtip)
@@ -147,7 +147,7 @@ class InMemoryChangesetTestMixin(object):
     def test_check_integrity_change_raise_node_does_not_exist(self):
         node = FileNode('foobar', content='baz')
         self.imc.add(node)
-        self.imc.commit(message='Added foobar', author=str(self))
+        self.imc.commit(message=u'Added foobar', author=unicode(self))
         node = FileNode('not-foobar', content='')
         self.imc.change(node)
         self.assertRaises(NodeDoesNotExistError, self.imc.commit,
@@ -157,35 +157,35 @@ class InMemoryChangesetTestMixin(object):
     def test_change_raise_node_already_changed(self):
         node = FileNode('foobar', content='baz')
         self.imc.add(node)
-        self.imc.commit(message='Added foobar', author=str(self))
+        self.imc.commit(message=u'Added foobar', author=unicode(self))
         node = FileNode('foobar', content='more baz')
         self.imc.change(node)
         self.assertRaises(NodeAlreadyChangedError, self.imc.change, node)
 
     def test_check_integrity_change_raise_node_not_changed(self):
-        self.test_add() # Performs first commit
+        self.test_add()  # Performs first commit
 
         node = FileNode(self.nodes[0].path, content=self.nodes[0].content)
         self.imc.change(node)
         self.assertRaises(NodeNotChangedError, self.imc.commit,
-            message='Trying to mark node as changed without touching it',
-            author=str(self))
+            message=u'Trying to mark node as changed without touching it',
+            author=unicode(self))
 
     def test_change_raise_node_already_removed(self):
         node = FileNode('foobar', content='baz')
         self.imc.add(node)
-        self.imc.commit(message='Added foobar', author=str(self))
+        self.imc.commit(message=u'Added foobar', author=unicode(self))
         self.imc.remove(FileNode('foobar'))
         self.assertRaises(NodeAlreadyRemovedError, self.imc.change, node)
 
     def test_remove(self):
-        self.test_add() # Performs first commit
+        self.test_add()  # Performs first commit
 
         tip = self.repo.get_changeset()
         node = self.nodes[0]
         self.assertEqual(node.content, tip.get_node(node.path).content)
         self.imc.remove(node)
-        self.imc.commit(message='Removed %s' % node.path, author=str(self))
+        self.imc.commit(message=u'Removed %s' % node.path, author=unicode(self))
 
         newtip = self.repo.get_changeset()
         self.assertNotEqual(tip, newtip)
@@ -195,10 +195,10 @@ class InMemoryChangesetTestMixin(object):
     def test_remove_last_file_from_directory(self):
         node = FileNode('omg/qwe/foo/bar', content='foobar')
         self.imc.add(node)
-        self.imc.commit('added', 'joe doe')
+        self.imc.commit(u'added', u'joe doe')
 
         self.imc.remove(node)
-        tip = self.imc.commit('removed', 'joe doe')
+        tip = self.imc.commit(u'removed', u'joe doe')
         self.assertRaises(NodeDoesNotExistError, tip.get_node, 'omg/qwe/foo/bar')
 
     def test_remove_raise_node_does_not_exist(self):
@@ -208,13 +208,13 @@ class InMemoryChangesetTestMixin(object):
             author=str(self))
 
     def test_check_integrity_remove_raise_node_does_not_exist(self):
-        self.test_add() # Performs first commit
+        self.test_add()  # Performs first commit
 
         node = FileNode('no-such-file')
         self.imc.remove(node)
         self.assertRaises(NodeDoesNotExistError, self.imc.commit,
-            message='Trying to remove not existing node',
-            author=str(self))
+            message=u'Trying to remove not existing node',
+            author=unicode(self))
 
     def test_remove_raise_node_already_removed(self):
         self.test_add() # Performs first commit
@@ -224,7 +224,7 @@ class InMemoryChangesetTestMixin(object):
         self.assertRaises(NodeAlreadyRemovedError, self.imc.remove, node)
 
     def test_remove_raise_node_already_changed(self):
-        self.test_add() # Performs first commit
+        self.test_add()  # Performs first commit
 
         node = FileNode(self.nodes[0].path, content='Bending time')
         self.imc.change(node)
@@ -239,14 +239,14 @@ class InMemoryChangesetTestMixin(object):
             self.imc.removed)))
 
     def test_multiple_commits(self):
-        N = 3 # number of commits to perform
+        N = 3  # number of commits to perform
         last = None
         for x in xrange(N):
             fname = 'file%s' % str(x).rjust(5, '0')
             content = 'foobar\n' * x
             node = FileNode(fname, content=content)
             self.imc.add(node)
-            commit = self.imc.commit("Commit no. %s" % (x + 1), author='vcs')
+            commit = self.imc.commit(u"Commit no. %s" % (x + 1), author=u'vcs')
             self.assertTrue(last != commit)
             last = commit
 
@@ -262,11 +262,10 @@ class InMemoryChangesetTestMixin(object):
         node = FileNode('foobar.txt', content='Foobared!')
         self.imc.add(node)
         date = datetime.datetime(1985, 1, 30, 1, 45)
-        commit = self.imc.commit("Committed at time when I was born ;-)",
-            author='lb', date=date)
+        commit = self.imc.commit(u"Committed at time when I was born ;-)",
+            author=u'lb', date=date)
 
         self.assertEqual(commit.date, date)
-
 
 
 class BackendBaseTestCase(unittest.TestCase):
@@ -286,7 +285,6 @@ class BackendBaseTestCase(unittest.TestCase):
             ],
         },
     ]
-
 
     def get_backend(self):
         return vcs.get_backend(self.backend_alias)
@@ -321,7 +319,8 @@ class BackendBaseTestCase(unittest.TestCase):
                 self.imc.change(FileNode(node.path, content=node.content))
             for node in commit.get('removed', []):
                 self.imc.remove(FileNode(node.path))
-            self.imc.commit(message=commit['message'], author=commit['author'],
+            self.imc.commit(message=unicode(commit['message']),
+                            author=unicode(commit['author']),
                 date=commit['date'])
 
         self.tip = self.repo.get_changeset()
