@@ -84,7 +84,6 @@ def safe_str(unicode_, to_encoding='utf8'):
     try:
         import chardet
         encoding = chardet.detect(unicode_)['encoding']
-        print encoding
         if encoding is None:
             raise UnicodeEncodeError()
 
