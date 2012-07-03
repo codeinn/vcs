@@ -54,7 +54,7 @@ def setup_package():
             'alias': 'hg',
             'test_repo_path': TEST_HG_REPO,
             'remote_repo': HG_REMOTE_REPO,
-            'clone_cmd': 'hg clone',
+            'clone_cmd': 'hg clone --insecure',
         },
         'git': {
             'alias': 'git',
