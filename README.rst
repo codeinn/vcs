@@ -2,6 +2,9 @@
 VCS
 ===
 
+.. image:: https://secure.travis-ci.org/codeinn/vcs.png?branch=master
+  :target: http://travis-ci.org/codeinn/vcs
+
 various version control system management abstraction layer for python.
 
 ------------
