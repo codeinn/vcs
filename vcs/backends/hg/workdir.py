@@ -1,7 +1,7 @@
 from vcs.backends.base import BaseWorkdir
 from vcs.exceptions import BranchDoesNotExistError
 
-from ...utils.hgcompat import hg_merge
+from vcs.utils.hgcompat import hg_merge
 
 
 class MercurialWorkdir(BaseWorkdir):
