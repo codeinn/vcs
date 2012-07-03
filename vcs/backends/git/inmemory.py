@@ -5,12 +5,13 @@ from dulwich import objects
 from dulwich.repo import Repo
 from vcs.backends.base import BaseInMemoryChangeset
 from vcs.exceptions import RepositoryError
+from vcs.utils import safe_str
 
 
 class GitInMemoryChangeset(BaseInMemoryChangeset):
 
     def commit(self, message, author, parents=None, branch=None, date=None,
-            **kwargs):
+               **kwargs):
         """
         Performs in-memory commit (doesn't check workdir in any way) and
         returns newly created ``Changeset``. Updates repository's
@@ -82,7 +83,8 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
                     curtree = newtree
                 parent[reversed_dirnames[-1]] = DIRMOD, curtree.id
             else:
-                parent.add(node.mode, node_path, blob.id)
+                parent.add(name=node_path, mode=node.mode, hexsha=blob.id)
+
             new_trees.append(parent)
             # Update ancestors
             for parent, tree, path in reversed([(a[1], b[1], b[0]) for a, b in
@@ -120,9 +122,9 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         commit = objects.Commit()
         commit.tree = commit_tree.id
         commit.parents = [p._commit.id for p in self.parents if p]
-        commit.author = commit.committer = author
+        commit.author = commit.committer = safe_str(author)
         commit.encoding = ENCODING
-        commit.message = message + ' '
+        commit.message = safe_str(message)
 
         # Compute date
         if date is None:
@@ -147,6 +149,8 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         # Update vcs repository object & recreate dulwich repo
         self.repository.revisions.append(commit.id)
         self.repository._repo = Repo(self.repository.path)
+        # invalidate parsed refs after commit
+        self.repository._parsed_refs = self.repository._get_parsed_refs()
         tip = self.repository.get_changeset()
         self.reset()
         return tip

@@ -10,7 +10,8 @@ from vcs.exceptions import VCSError
 from vcs.exceptions import ChangesetDoesNotExistError
 from vcs.exceptions import ImproperArchiveTypeError
 from vcs.backends.base import BaseChangeset
-from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, RemovedFileNode
+from vcs.nodes import FileNode, DirNode, NodeKind, RootNode, \
+    RemovedFileNode, SubModuleNode
 from vcs.utils import safe_unicode
 from vcs.utils import date_fromtimestamp
 from vcs.utils.lazy import LazyProperty
@@ -24,38 +25,39 @@ class GitChangeset(BaseChangeset):
     def __init__(self, repository, revision):
         self._stat_modes = {}
         self.repository = repository
+
+        try:
+            commit = self.repository._repo.get_object(revision)
+            if isinstance(commit, objects.Tag):
+                revision = commit.object[1]
+                commit = self.repository._repo.get_object(commit.object[1])
+        except KeyError:
+            raise RepositoryError("Cannot get object with id %s" % revision)
         self.raw_id = revision
+        self.id = self.raw_id
+        self.short_id = self.raw_id[:12]
+        self._commit = commit
+
+        self._tree_id = commit.tree
+        self._commiter_property = 'committer'
+        self._date_property = 'commit_time'
+        self._date_tz_property = 'commit_timezone'
         self.revision = repository.revisions.index(revision)
 
-        self.short_id = self.raw_id[:12]
-        self.id = self.raw_id
-        try:
-            commit = self.repository._repo.get_object(self.raw_id)
-        except KeyError:
-            raise RepositoryError("Cannot get object with id %s" % self.raw_id)
-        self._commit = commit
-        self._tree_id = commit.tree
-
-        try:
-            self.message = safe_unicode(commit.message[:-1])
-            # Always strip last eol
-        except UnicodeDecodeError:
-            self.message = commit.message[:-1].decode(commit.encoding
-                or 'utf-8')
+        self.message = safe_unicode(commit.message)
         #self.branch = None
         self.tags = []
-        #tree = self.repository.get_object(self._tree_id)
         self.nodes = {}
         self._paths = {}
 
     @LazyProperty
     def author(self):
-        return safe_unicode(self._commit.committer)
+        return safe_unicode(getattr(self._commit, self._commiter_property))
 
     @LazyProperty
     def date(self):
-        return date_fromtimestamp(self._commit.commit_time,
-                                  self._commit.commit_timezone)
+        return date_fromtimestamp(getattr(self._commit, self._date_property),
+                                  getattr(self._commit, self._date_tz_property))
 
     @LazyProperty
     def status(self):
@@ -66,21 +68,12 @@ class GitChangeset(BaseChangeset):
 
     @LazyProperty
     def branch(self):
-        # TODO: Cache as we walk (id <-> branch name mapping)
-        refs = self.repository._repo.get_refs()
-        heads = [(key[len('refs/heads/'):], val) for key, val in refs.items()
-            if key.startswith('refs/heads/')]
 
-        for name, id in heads:
-            walker = self.repository._repo.object_store.get_graph_walker([id])
-            while True:
-                id = walker.next()
-                if not id:
-                    break
-                if id == self.id:
-                    return safe_unicode(name)
-        raise ChangesetError("This should not happen... Have you manually "
-            "change id of the changeset?")
+        heads = self.repository._heads(reverse=False)
+
+        ref = heads.get(self.raw_id)
+        if ref:
+            return safe_unicode(ref)
 
     def _fix_path(self, path):
         """
@@ -92,35 +85,35 @@ class GitChangeset(BaseChangeset):
         return path
 
     def _get_id_for_path(self, path):
+
         # FIXME: Please, spare a couple of minutes and make those codes cleaner;
         if not path in self._paths:
             path = path.strip('/')
             # set root tree
-            tree = self.repository._repo[self._commit.tree]
+            tree = self.repository._repo[self._tree_id]
             if path == '':
                 self._paths[''] = tree.id
                 return tree.id
             splitted = path.split('/')
             dirs, name = splitted[:-1], splitted[-1]
             curdir = ''
+
+            # initially extract things from root dir
+            for item, stat, id in tree.iteritems():
+                if curdir:
+                    name = '/'.join((curdir, item))
+                else:
+                    name = item
+                self._paths[name] = id
+                self._stat_modes[name] = stat
+
             for dir in dirs:
                 if curdir:
                     curdir = '/'.join((curdir, dir))
                 else:
                     curdir = dir
-                #if curdir in self._paths:
-                    ## This path have been already traversed
-                    ## Update tree and continue
-                    #tree = self.repository._repo[self._paths[curdir]]
-                    #continue
                 dir_id = None
                 for item, stat, id in tree.iteritems():
-                    if curdir:
-                        item_path = '/'.join((curdir, item))
-                    else:
-                        item_path = item
-                    self._paths[item_path] = id
-                    self._stat_modes[item_path] = stat
                     if dir == item:
                         dir_id = id
                 if dir_id:
@@ -130,13 +123,15 @@ class GitChangeset(BaseChangeset):
                         raise ChangesetError('%s is not a directory' % curdir)
                 else:
                     raise ChangesetError('%s have not been found' % curdir)
-            for item, stat, id in tree.iteritems():
-                if curdir:
-                    name = '/'.join((curdir, item))
-                else:
-                    name = item
-                self._paths[name] = id
-                self._stat_modes[name] = stat
+
+                # cache all items from the given traversed tree
+                for item, stat, id in tree.iteritems():
+                    if curdir:
+                        name = '/'.join((curdir, item))
+                    else:
+                        name = item
+                    self._paths[name] = id
+                    self._stat_modes[name] = stat
             if not path in self._paths:
                 raise NodeDoesNotExistError("There is no file nor directory "
                     "at the given path %r at revision %r"
@@ -144,8 +139,7 @@ class GitChangeset(BaseChangeset):
         return self._paths[path]
 
     def _get_kind(self, path):
-        id = self._get_id_for_path(path)
-        obj = self.repository._repo[id]
+        obj = self.repository._repo[self._get_id_for_path(path)]
         if isinstance(obj, objects.Blob):
             return NodeKind.FILE
         elif isinstance(obj, objects.Tree):
@@ -160,7 +154,7 @@ class GitChangeset(BaseChangeset):
         Returns list of parents changesets.
         """
         return [self.repository.get_changeset(parent)
-            for parent in self._commit.parents]
+                for parent in self._commit.parents]
 
     def next(self, branch=None):
 
@@ -206,6 +200,13 @@ class GitChangeset(BaseChangeset):
 
         return _prev(self, branch)
 
+    def diff(self, ignore_whitespace=True, context=3):
+        rev1 = self.parents[0] if self.parents else self.repository.EMPTY_CHANGESET
+        rev2 = self
+        return ''.join(self.repository.get_diff(rev1, rev2,
+                                    ignore_whitespace=ignore_whitespace,
+                                    context=context))
+
     def get_file_mode(self, path):
         """
         Returns stat mode of the file at the given ``path``.
@@ -246,11 +247,11 @@ class GitChangeset(BaseChangeset):
         which is generally not good. Should be replaced with algorithm
         iterating commits.
         """
-        cmd = 'log --pretty="format: %%H" --name-status -p %s -- "%s"' % (
+        cmd = 'log --pretty="format: %%H" -s -p %s -- "%s"' % (
                   self.id, path
                )
         so, se = self.repository.run_git_command(cmd)
-        ids = re.findall(r'\w{40}', so)
+        ids = re.findall(r'[0-9a-fA-F]{40}', so)
         return [self.repository.get_changeset(id) for id in ids]
 
     def get_file_annotate(self, path):
@@ -266,10 +267,11 @@ class GitChangeset(BaseChangeset):
         # --root ==> doesn't put '^' character for bounderies
         # -r sha ==> blames for the given revision
         so, se = self.repository.run_git_command(cmd)
+
         annotate = []
         for i, blame_line in enumerate(so.split('\n')[:-1]):
             ln_no = i + 1
-            id, line = re.split(r' \(.+?\) ', blame_line, 1)
+            id, line = re.split(r' ', blame_line, 1)
             annotate.append((ln_no, self.repository.get_changeset(id), line))
         return annotate
 
@@ -336,7 +338,13 @@ class GitChangeset(BaseChangeset):
         tree = self.repository._repo[id]
         dirnodes = []
         filenodes = []
+        als = self.repository.alias
         for name, stat, id in tree.iteritems():
+            if objects.S_ISGITLINK(stat):
+                dirnodes.append(SubModuleNode(name, url=None, changeset=id,
+                                              alias=als))
+                continue
+
             obj = self.repository._repo.get_object(id)
             if path != '':
                 obj_path = '/'.join((path, name))
@@ -364,24 +372,31 @@ class GitChangeset(BaseChangeset):
         path = self._fix_path(path)
         if not path in self.nodes:
             try:
-                id = self._get_id_for_path(path)
+                id_ = self._get_id_for_path(path)
             except ChangesetError:
                 raise NodeDoesNotExistError("Cannot find one of parents' "
                     "directories for a given path: %s" % path)
-            obj = self.repository._repo.get_object(id)
-            if isinstance(obj, objects.Tree):
-                if path == '':
-                    node = RootNode(changeset=self)
-                else:
-                    node = DirNode(path, changeset=self)
-                node._tree = obj
-            elif isinstance(obj, objects.Blob):
-                node = FileNode(path, changeset=self)
-                node._blob = obj
+
+            _GL = lambda m: m and objects.S_ISGITLINK(m)
+            if _GL(self._stat_modes.get(path)):
+                node = SubModuleNode(path, url=None, changeset=id_,
+                                     alias=self.repository.alias)
             else:
-                raise NodeDoesNotExistError("There is no file nor directory "
-                    "at the given path %r at revision %r"
-                    % (path, self.short_id))
+                obj = self.repository._repo.get_object(id_)
+
+                if isinstance(obj, objects.Tree):
+                    if path == '':
+                        node = RootNode(changeset=self)
+                    else:
+                        node = DirNode(path, changeset=self)
+                    node._tree = obj
+                elif isinstance(obj, objects.Blob):
+                    node = FileNode(path, changeset=self)
+                    node._blob = obj
+                else:
+                    raise NodeDoesNotExistError("There is no file nor directory "
+                        "at the given path %r at revision %r"
+                        % (path, self.short_id))
             # cache node
             self.nodes[path] = node
         return self.nodes[path]
@@ -398,7 +413,7 @@ class GitChangeset(BaseChangeset):
     def _diff_name_status(self):
         output = []
         for parent in self.parents:
-            cmd = 'diff --name-status %s %s' % (parent.raw_id, self.raw_id)
+            cmd = 'diff --name-status %s %s --encoding=utf8' % (parent.raw_id, self.raw_id)
             so, se = self.repository.run_git_command(cmd)
             output.append(so.strip())
         return '\n'.join(output)
@@ -414,13 +429,15 @@ class GitChangeset(BaseChangeset):
         for line in self._diff_name_status.splitlines():
             if not line:
                 continue
+
             if line.startswith(char):
-                splitted = line.split(char,1)
+                splitted = line.split(char, 1)
                 if not len(splitted) == 2:
                     raise VCSError("Couldn't parse diff result:\n%s\n\n and "
                         "particularly that line: %s" % (self._diff_name_status,
                         line))
-                paths.add(splitted[1].strip())
+                _path = splitted[1].strip()
+                paths.add(_path)
         return sorted(paths)
 
     @LazyProperty

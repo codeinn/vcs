@@ -57,6 +57,7 @@ class GitRepository(BaseRepository):
                 'config'),
             abspath(get_user_home(), '.gitconfig'),
         ]
+        self.bare = self._repo.bare
 
     @LazyProperty
     def revisions(self):
@@ -78,16 +79,26 @@ class GitRepository(BaseRepository):
 
         :param cmd: git command to be executed
         """
-        #cmd = '(cd %s && git %s)' % (self.path, cmd)
+
+        _copts = ['-c', 'core.quotepath=false', ]
+        _str_cmd = False
         if isinstance(cmd, basestring):
-            cmd = 'git %s' % cmd
-        else:
-            cmd = ['git'] + cmd
+            cmd = [cmd]
+            _str_cmd = True
+
+        gitenv = os.environ
+        gitenv['GIT_CONFIG_NOGLOBAL'] = '1'
+
+        cmd = ['git'] + _copts + cmd
+        if _str_cmd:
+            cmd = ' '.join(cmd)
         try:
             opts = dict(
                 shell=isinstance(cmd, basestring),
                 stdout=PIPE,
-                stderr=PIPE)
+                stderr=PIPE,
+                env=gitenv,
+            )
             if os.path.isdir(self.path):
                 opts['cwd'] = self.path
             p = Popen(cmd, **opts)
@@ -138,15 +149,19 @@ class GitRepository(BaseRepository):
             raise RepositoryError(err)
 
     def _get_all_revisions(self):
-        cmd = 'rev-list --all --date-order'
+        cmd = 'rev-list --all --reverse --date-order'
         try:
             so, se = self.run_git_command(cmd)
         except RepositoryError:
             # Can be raised for empty repositories
             return []
-        revisions = so.splitlines()
-        revisions.reverse()
-        return revisions
+        return so.splitlines()
+
+    def _get_all_revisions2(self):
+        #alternate implementation using dulwich
+        includes = [x[1][0] for x in self._parsed_refs.iteritems()
+                    if x[1][1] != 'T']
+        return [c.commit.id for c in self._repo.get_walker(include=includes)]
 
     def _get_revision(self, revision):
         """
@@ -172,7 +187,17 @@ class GitRepository(BaseRepository):
                     "for this repository %s" % (revision, self))
 
         elif is_bstr(revision):
-            if not pattern.match(revision) or revision not in self.revisions:
+            # get by branch/tag name
+            _ref_revision = self._parsed_refs.get(revision)
+            _tags_shas = self.tags.values()
+            if _ref_revision:  # and _ref_revision[1] in ['H', 'RH', 'T']:
+                return _ref_revision[0]
+
+            # maybe it's a tag ? we don't have them in self.revisions
+            elif revision in _tags_shas:
+                return _tags_shas[_tags_shas.index(revision)]
+
+            elif not pattern.match(revision) or revision not in self.revisions:
                 raise ChangesetDoesNotExistError("Revision %r does not exist "
                     "for this repository %s" % (revision, self))
 
@@ -212,9 +237,10 @@ class GitRepository(BaseRepository):
         try:
             return time.mktime(self.get_changeset().date.timetuple())
         except RepositoryError:
+            idx_loc = '' if self.bare else '.git'
             # fallback to filesystem
-            in_path = os.path.join(self.path, '.git', "index")
-            he_path = os.path.join(self.path, '.git', "HEAD")
+            in_path = os.path.join(self.path, idx_loc, "index")
+            he_path = os.path.join(self.path, idx_loc, "HEAD")
             if os.path.exists(in_path):
                 return os.stat(in_path).st_mtime
             else:
@@ -222,8 +248,9 @@ class GitRepository(BaseRepository):
 
     @LazyProperty
     def description(self):
+        idx_loc = '' if self.bare else '.git'
         undefined_description = u'unknown'
-        description_path = os.path.join(self.path, '.git', 'description')
+        description_path = os.path.join(self.path, idx_loc, 'description')
         if os.path.isfile(description_path):
             return safe_unicode(open(description_path).read())
         else:
@@ -238,25 +265,23 @@ class GitRepository(BaseRepository):
     def branches(self):
         if not self.revisions:
             return {}
-        refs = self._repo.refs.as_dict()
         sortkey = lambda ctx: ctx[0]
-        _branches = [('/'.join(ref.split('/')[2:]), head)
-            for ref, head in refs.items()
-            if ref.startswith('refs/heads/') or
-            ref.startswith('refs/remotes/') and not ref.endswith('/HEAD')]
+        _branches = [(x[0], x[1][0])
+                     for x in self._parsed_refs.iteritems() if x[1][1] == 'H']
         return OrderedDict(sorted(_branches, key=sortkey, reverse=False))
-
-    def _get_tags(self):
-        if not self.revisions:
-            return {}
-        sortkey = lambda ctx: ctx[0]
-        _tags = [('/'.join(ref.split('/')[2:]), head) for ref, head in
-            self._repo.get_refs().items() if ref.startswith('refs/tags/')]
-        return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
 
     @LazyProperty
     def tags(self):
         return self._get_tags()
+
+    def _get_tags(self):
+        if not self.revisions:
+            return {}
+
+        sortkey = lambda ctx: ctx[0]
+        _tags = [(x[0], x[1][0])
+                 for x in self._parsed_refs.iteritems() if x[1][1] == 'T']
+        return OrderedDict(sorted(_tags, key=sortkey, reverse=True))
 
     def tag(self, name, user, revision=None, message=None, date=None,
             **kwargs):
@@ -278,6 +303,7 @@ class GitRepository(BaseRepository):
             changeset.raw_id)
         self._repo.refs["refs/tags/%s" % name] = changeset._commit.id
 
+        self._parsed_refs = self._get_parsed_refs()
         self.tags = self._get_tags()
         return changeset
 
@@ -297,9 +323,41 @@ class GitRepository(BaseRepository):
         tagpath = posixpath.join(self._repo.refs.path, 'refs', 'tags', name)
         try:
             os.remove(tagpath)
+            self._parsed_refs = self._get_parsed_refs()
             self.tags = self._get_tags()
         except OSError, e:
             raise RepositoryError(e.strerror)
+
+    @LazyProperty
+    def _parsed_refs(self):
+        return self._get_parsed_refs()
+
+    def _get_parsed_refs(self):
+        refs = self._repo.get_refs()
+        keys = [('refs/heads/', 'H'),
+                ('refs/remotes/origin/', 'RH'),
+                ('refs/tags/', 'T')]
+        _refs = {}
+        for ref, sha in refs.iteritems():
+            for k, type_ in keys:
+                if ref.startswith(k):
+                    _key = ref[len(k):]
+                    _refs[_key] = [sha, type_]
+                    break
+        return _refs
+
+    def _heads(self, reverse=False):
+        refs = self._repo.get_refs()
+        heads = {}
+
+        for key, val in refs.items():
+            for ref_key in ['refs/heads/', 'refs/remotes/origin/']:
+                if key.startswith(ref_key):
+                    n = key[len(ref_key):]
+                    if n not in ['HEAD']:
+                        heads[n] = val
+
+        return heads if reverse else dict((y, x) for x, y in heads.iteritems())
 
     def get_changeset(self, revision=None):
         """
@@ -385,7 +443,7 @@ class GitRepository(BaseRepository):
             yield self.get_changeset(rev)
 
     def get_diff(self, rev1, rev2, path=None, ignore_whitespace=False,
-            context=3):
+                 context=3):
         """
         Returns (git like) *diff*, as plain text. Shows changes introduced by
         ``rev2`` since ``rev1``.
@@ -402,6 +460,12 @@ class GitRepository(BaseRepository):
         flags = ['-U%s' % context]
         if ignore_whitespace:
             flags.append('-w')
+
+        if hasattr(rev1, 'raw_id'):
+            rev1 = getattr(rev1, 'raw_id')
+
+        if hasattr(rev2, 'raw_id'):
+            rev2 = getattr(rev2, 'raw_id')
 
         if rev1 == self.EMPTY_CHANGESET:
             rev2 = self.get_changeset(rev2).raw_id
@@ -450,6 +514,29 @@ class GitRepository(BaseRepository):
         elif not update_after_clone:
             cmd.append('--no-checkout')
         cmd += ['--', '"%s"' % url, '"%s"' % self.path]
+        cmd = ' '.join(cmd)
+        # If error occurs run_git_command raises RepositoryError already
+        self.run_git_command(cmd)
+
+    def pull(self, url):
+        """
+        Tries to pull changes from external location.
+        """
+        url = self._get_url(url)
+        cmd = ['pull']
+        cmd.append("--ff-only")
+        cmd.append(url)
+        cmd = ' '.join(cmd)
+        # If error occurs run_git_command raises RepositoryError already
+        self.run_git_command(cmd)
+
+    def fetch(self, url):
+        """
+        Tries to pull changes from external location.
+        """
+        url = self._get_url(url)
+        cmd = ['fetch']
+        cmd.append(url)
         cmd = ' '.join(cmd)
         # If error occurs run_git_command raises RepositoryError already
         self.run_git_command(cmd)
