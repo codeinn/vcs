@@ -14,4 +14,5 @@ notifications:
     email:
         - lukaszbalcerzak@gmail.com
         - marcinkuz@gmail.com
+    irc: "irc.freenode.org#vcs"
 
