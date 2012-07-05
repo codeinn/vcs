@@ -10,3 +10,8 @@ install:
 
 script: python vcs/tests/__main__.py
 
+notifications:
+    email:
+        - lukaszbalcerzak@gmail.com
+        - marcinkuz@gmail.com
+
