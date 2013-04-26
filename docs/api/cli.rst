@@ -52,4 +52,3 @@ vcs.cli.SingleChangesetCommand
 
 .. autoclass:: vcs.cli.SingleChangesetCommand
    :members:
-

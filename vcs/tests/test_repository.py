@@ -1,8 +1,8 @@
 from __future__ import with_statement
 import datetime
-from base import BackendTestMixin
-from conf import SCM_TESTS
-from conf import TEST_USER_CONFIG_FILE
+from vcs.tests.base import BackendTestMixin
+from vcs.tests.conf import SCM_TESTS
+from vcs.tests.conf import TEST_USER_CONFIG_FILE
 from vcs.nodes import FileNode
 from vcs.utils.compat import unittest
 from vcs.exceptions import ChangesetDoesNotExistError
@@ -31,6 +31,19 @@ class RepositoryBaseTest(BackendTestMixin):
         self.assertEqual(self.repo.get_user_email(TEST_USER_CONFIG_FILE),
             'foo.bar@example.com')
 
+    def test_repo_equality(self):
+        self.assertTrue(self.repo == self.repo)
+
+    def test_repo_equality_broken_object(self):
+        import copy
+        _repo = copy.copy(self.repo)
+        delattr(_repo, 'path')
+        self.assertTrue(self.repo != _repo)
+
+    def test_repo_equality_other_object(self):
+        class dummy(object):
+            path = self.repo.path
+        self.assertTrue(self.repo != dummy())
 
 
 class RepositoryGetDiffTest(BackendTestMixin):
@@ -74,6 +87,7 @@ class RepositoryGetDiffTest(BackendTestMixin):
         with self.assertRaises(ChangesetDoesNotExistError):
             self.repo.get_diff('a' * 40, 'b' * 40)
 
+
 class GitRepositoryGetDiffTest(RepositoryGetDiffTest, unittest.TestCase):
     backend_alias = 'git'
 
@@ -81,7 +95,7 @@ class GitRepositoryGetDiffTest(RepositoryGetDiffTest, unittest.TestCase):
         initial_rev = self.repo.revisions[0]
         self.assertEqual(self.repo.get_diff(self.repo.EMPTY_CHANGESET, initial_rev), '''diff --git a/foobar b/foobar
 new file mode 100644
-index 0000000..f6ea049
+index 0000000000000000000000000000000000000000..f6ea0495187600e7b2288c8ac19c5886383a4632
 --- /dev/null
 +++ b/foobar
 @@ -0,0 +1 @@
@@ -89,7 +103,7 @@ index 0000000..f6ea049
 \ No newline at end of file
 diff --git a/foobar2 b/foobar2
 new file mode 100644
-index 0000000..e8c9d6b
+index 0000000000000000000000000000000000000000..e8c9d6b98e3dce993a464935e1a53f50b56a3783
 --- /dev/null
 +++ b/foobar2
 @@ -0,0 +1 @@
@@ -100,7 +114,7 @@ index 0000000..e8c9d6b
     def test_second_changeset_diff(self):
         revs = self.repo.revisions
         self.assertEqual(self.repo.get_diff(revs[0], revs[1]), '''diff --git a/foobar b/foobar
-index f6ea049..389865b 100644
+index f6ea0495187600e7b2288c8ac19c5886383a4632..389865bb681b358c9b102d79abd8d5f941e96551 100644
 --- a/foobar
 +++ b/foobar
 @@ -1 +1 @@
@@ -110,7 +124,7 @@ index f6ea049..389865b 100644
 \ No newline at end of file
 diff --git a/foobar3 b/foobar3
 new file mode 100644
-index 0000000..c11c37d
+index 0000000000000000000000000000000000000000..c11c37d41d33fb47741cff93fa5f9d798c1535b0
 --- /dev/null
 +++ b/foobar3
 @@ -0,0 +1 @@
@@ -122,14 +136,14 @@ index 0000000..c11c37d
         revs = self.repo.revisions
         self.assertEqual(self.repo.get_diff(revs[1], revs[2]), '''diff --git a/foobar b/foobar
 deleted file mode 100644
-index 389865b..0000000
+index 389865bb681b358c9b102d79abd8d5f941e96551..0000000000000000000000000000000000000000
 --- a/foobar
 +++ /dev/null
 @@ -1 +0,0 @@
 -FOOBAR
 \ No newline at end of file
 diff --git a/foobar3 b/foobar3
-index c11c37d..f932447 100644
+index c11c37d41d33fb47741cff93fa5f9d798c1535b0..f9324477362684ff692aaf5b9a81e01b9e9a671c 100644
 --- a/foobar3
 +++ b/foobar3
 @@ -1 +1,3 @@

@@ -3,14 +3,13 @@ Module providing backend independent mixin class. It requires that
 InMemoryChangeset class is working properly at backend class.
 """
 import os
-import vcs
 import time
 import shutil
 import datetime
+from vcs.tests.conf import SCM_TESTS, get_new_dir
+
+import vcs
 from vcs.utils.compat import unittest
-
-from conf import SCM_TESTS, get_new_dir
-
 from vcs.nodes import FileNode
 
 

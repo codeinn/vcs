@@ -1,7 +1,7 @@
 from __future__ import with_statement
 
-from base import BackendTestMixin
-from conf import SCM_TESTS
+from vcs.tests.base import BackendTestMixin
+from vcs.tests.conf import SCM_TESTS
 from vcs.exceptions import TagAlreadyExistError
 from vcs.exceptions import TagDoesNotExistError
 from vcs.utils.compat import unittest

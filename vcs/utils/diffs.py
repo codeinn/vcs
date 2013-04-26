@@ -5,14 +5,13 @@
 import re
 import difflib
 import logging
+import itertools
 
 from difflib import unified_diff
-from itertools import tee, imap
-
-from mercurial.match import match
 
 from vcs.exceptions import VCSError
 from vcs.nodes import FileNode, NodeError
+from vcs.utils import safe_unicode
 
 
 def get_udiff(filenode_old, filenode_new, show_whitespace=True):
@@ -149,7 +148,7 @@ class DiffProcessor(object):
                 self.adds += 1
             elif l.startswith('-') and not l.startswith('---'):
                 self.removes += 1
-            return l.decode('utf8', 'replace')
+            return safe_unicode(l)
 
         output = list(diffiterator)
         size = len(output)

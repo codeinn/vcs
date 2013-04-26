@@ -17,10 +17,10 @@ div.clearer {
 /* -- header ---------------------------------------------------------------- */
 
 #header #title {
-    background:#29334F url(title_background.png) repeat-x scroll 0 0;
-    border-bottom:1px solid #B6B6B6;
-    height:25px;
-    overflow:hidden;
+    background: #29334F url(title_background.png) repeat-x scroll 0 0;
+    border-bottom: 1px solid #B6B6B6;
+    height: 25px;
+    overflow: hidden;
 }
 #headerButtons {
     position: absolute;
@@ -39,15 +39,15 @@ div.clearer {
 }
 
 #headerButtons li {
-    background-repeat:no-repeat;
-    display:inline;
-    margin-top:0;
-    padding:0;
+    background-repeat: no-repeat;
+    display: inline;
+    margin-top: 0;
+    padding: 0;
 }
 
 .headerButton {
     display: inline;
-    height:20px;
+    height: 20px;
 }
 
 .headerButton a {
@@ -56,28 +56,28 @@ div.clearer {
     height: 20px;
     padding: 4px 15px;
     border-left: 1px solid #ACACAC;
-    font-family:'Lucida Grande',Geneva,Helvetica,Arial,sans-serif;
+    font-family: 'Lucida Grande',Geneva,Helvetica,Arial,sans-serif;
     color: black;
 }
 .headerButton a:hover {
     color: white;
     background-color: #787878;
-    
+
 }
 
 li#toc_button {
-    text-align:left;
+    text-align: left;
 }
 
 li#toc_button .headerButton a {
-    width:198px;
+    width: 198px;
     padding-top: 4px;
-    font-family:'Lucida Grande',Geneva,Helvetica,Arial,sans-serif;
+    font-family: 'Lucida Grande',Geneva,Helvetica,Arial,sans-serif;
     color: black;
     float: left;
-    padding-left:15px;
-    border-right:1px solid #ACACAC;
-    background:transparent url(triangle_open.png) no-repeat scroll 4px 6px;
+    padding-left: 15px;
+    border-right: 1px solid #ACACAC;
+    background: transparent url(triangle_open.png) no-repeat scroll 4px 6px;
 }
 
 li#toc_button .headerButton a:hover {
@@ -92,18 +92,18 @@ right:0;
 
 #breadcrumbs {
     color: black;
-    background-image:url(breadcrumb_background.png);
-    border-top:1px solid #2B334F;
-    bottom:0;
-    font-size:10px;
-    height:15px;
-    left:0;
-    overflow:hidden;
-    padding:3px 10px 0;
-    position:absolute;
-    right:0;
-    white-space:nowrap;
-    z-index:901;
+    background-image: url(breadcrumb_background.png);
+    border-top: 1px solid #2B334F;
+    bottom: 0;
+    font-size: 10px;
+    height: 15px;
+    left: 0;
+    overflow: hidden;
+    padding: 3px 10px 0;
+    position: absolute;
+    right: 0;
+    white-space: nowrap;
+    z-index: 901;
 }
 #breadcrumbs a {
     color: black;
@@ -121,14 +121,14 @@ right:0;
     top: 84px;
     bottom: 19px;
     left: 0px;
-    width: 229px; 
+    width: 229px;
     background-color: #E4EBF7;
     border-right: 1px solid #ACACAC;
     border-top: 1px solid #2B334F;
     overflow-x: hidden;
     overflow-y: auto;
     padding: 0px 0px 0px 0px;
-    font-size:11px;
+    font-size: 11px;
 }
 
 div.sphinxsidebarwrapper {
@@ -273,16 +273,16 @@ img.toggler {
 
 /* -- general body styles --------------------------------------------------- */
 .document {
-    border-top:1px solid #2B334F;
-    overflow:auto;
-    padding-left:2em;
-    padding-right:2em;
-    position:absolute;
-    z-index:1;
-    top:84px;
-    bottom:19px;
-    right:0;
-    left:230px;
+    border-top: 1px solid #2B334F;
+    overflow: auto;
+    padding-left: 2em;
+    padding-right: 2em;
+    position: absolute;
+    z-index: 1;
+    top: 84px;
+    bottom: 19px;
+    right: 0;
+    left: 230px;
 }
 
 a.headerlink {
@@ -359,10 +359,10 @@ p.topic-title {
 }
 .warning {
     background-color: #F58989;
-    border:1px solid #900000;
-    margin:30px;
+    border: 1px solid #900000;
+    margin: 30px;
 }
-.admonition p { 
+.admonition p {
     font: 12px 'Lucida Grande', Geneva, Helvetica, Arial, sans-serif;
     margin-top: 7px;
     margin-bottom: 0px;
@@ -392,10 +392,10 @@ div.body p.centered {
 table.docutils {
     border-collapse: collapse;
     border: 1px solid #919699;
-    font-size:12px;
-    padding:8px;
-    text-align:left;
-    vertical-align:top;
+    font-size: 12px;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
 }
 
 table.docutils td, table.docutils th {
@@ -409,7 +409,7 @@ table.docutils td, table.docutils th {
 table.docutils th {
     font-weight: bold;
 }
-/* This alternates colors in up to six table rows (light blue for odd, white for even)*/      
+/* This alternates colors in up to six table rows (light blue for odd, white for even)*/
 .docutils tr {
         background: #F0F5F9;
 }
@@ -479,7 +479,7 @@ dl.glossary dt {
 }
 
 dl.glossary dd {
-	font-size:12px;
+    font-size: 12px;
 }
 .field-list ul {
     vertical-align: top;
@@ -514,7 +514,7 @@ dl.glossary dd {
     border: 3px solid red;
 }
 
-.footnote:target  {
+.footnote:target {
     background-color: #ffa
 }
 
@@ -522,11 +522,11 @@ dl.glossary dd {
 
 pre {
     overflow: auto;
-    background-color:#F1F5F9;
-    border:1px solid #C9D1D7;
-    border-spacing:0;
-    font-family:"Bitstream Vera Sans Mono",Monaco,"Lucida Console",Courier,Consolas,monospace;
-    font-size:11px;
+    background-color: #F1F5F9;
+    border: 1px solid #C9D1D7;
+    border-spacing: 0;
+    font-family: "Bitstream Vera Sans Mono",Monaco,"Lucida Console",Courier,Consolas,monospace;
+    font-size: 11px;
     padding: 10px;
 }
 
@@ -546,7 +546,7 @@ table.highlighttable td {
 }
 
 tt {
-	font-family:"Bitstream Vera Sans Mono",Monaco,"Lucida Console",Courier,Consolas,monospace;
+    font-family: "Bitstream Vera Sans Mono",Monaco,"Lucida Console",Courier,Consolas,monospace;
 
 }
 
@@ -602,7 +602,7 @@ span.eqno {
 }
 
 body {
-    font-family:'Lucida Grande',Geneva,Helvetica,Arial,sans-serif;
+    font-family: 'Lucida Grande',Geneva,Helvetica,Arial,sans-serif;
 }
 
 dl.class dt {
@@ -615,7 +615,7 @@ em.property {
 }
 
 dl.class dd p {
-	margin-top: 6px;
+    margin-top: 6px;
 }
 
 dl.class dd dl.exception dt {
@@ -628,7 +628,7 @@ dl.class dd dl.method dt {
    padding: 3px;
    background-color: #e9e9e9;
    border-top: none;
-   
+
 }
 
 dl.function dt {
@@ -644,7 +644,7 @@ margin:0 0 0 30px;
 padding:0 0 12px 6px;
 }
 #docstitle {
-    height: 36px; 
+    height: 36px;
     background-image: url(header_sm_mid.png);
     left: 0;
     top: 0;
@@ -652,10 +652,10 @@ padding:0 0 12px 6px;
     width: 100%;
 }
 #docstitle p {
-    padding:7px 0 0 45px;
+    padding: 7px 0 0 45px;
     margin: 0;
     color: white;
-    text-shadow:0 1px 0 #787878;
+    text-shadow: 0 1px 0 #787878;
     background: transparent url(documentation.png) no-repeat scroll 10px 3px;
     height: 36px;
     font-size: 15px;

@@ -15,11 +15,10 @@ import mimetypes
 
 from pygments import lexers
 
+from vcs.backends.base import EmptyChangeset
+from vcs.exceptions import NodeError, RemovedFileNodeError
 from vcs.utils.lazy import LazyProperty
 from vcs.utils import safe_unicode
-from vcs.exceptions import NodeError
-from vcs.exceptions import RemovedFileNodeError
-from vcs.backends.base import EmptyChangeset
 
 
 class NodeKind:
@@ -276,16 +275,20 @@ class FileNode(Node):
             mode = self._mode
         return mode
 
+    def _get_content(self):
+        if self.changeset:
+            content = self.changeset.get_file_content(self.path)
+        else:
+            content = self._content
+        return content
+
     @property
     def content(self):
         """
         Returns lazily content of the FileNode. If possible, would try to
         decode content from UTF-8.
         """
-        if self.changeset:
-            content = self.changeset.get_file_content(self.path)
-        else:
-            content = self._content
+        content = self._get_content()
 
         if bool(content and '\0' in content):
             return content
@@ -357,10 +360,11 @@ class FileNode(Node):
         Returns pygment's lexer class. Would try to guess lexer taking file's
         content, name and mimetype.
         """
+
         try:
-            lexer = lexers.guess_lexer_for_filename(self.name, self.content)
+            lexer = lexers.guess_lexer_for_filename(self.name, self.content, stripnl=False)
         except lexers.ClassNotFound:
-            lexer = lexers.TextLexer()
+            lexer = lexers.TextLexer(stripnl=False)
         # returns first alias
         return lexer
 
@@ -406,7 +410,7 @@ class FileNode(Node):
         """
         Returns True if file has binary content.
         """
-        _bin = '\0' in self.content
+        _bin = '\0' in self._get_content()
         return _bin
 
     @LazyProperty

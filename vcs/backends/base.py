@@ -9,17 +9,19 @@
     :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
 """
 
+import datetime
+import itertools
 
-from itertools import chain
 from vcs.utils import author_name, author_email
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.helpers import get_dict_for_attrs
 from vcs.conf import settings
 
-from vcs.exceptions import ChangesetError, EmptyRepositoryError, \
-    NodeAlreadyAddedError, NodeAlreadyChangedError, NodeAlreadyExistsError, \
-    NodeAlreadyRemovedError, NodeDoesNotExistError, NodeNotChangedError, \
-    RepositoryError
+from vcs.exceptions import (
+    ChangesetError, EmptyRepositoryError, NodeAlreadyAddedError,
+    NodeAlreadyChangedError, NodeAlreadyExistsError, NodeAlreadyRemovedError,
+    NodeDoesNotExistError, NodeNotChangedError, RepositoryError
+)
 
 
 class BaseRepository(object):
@@ -79,6 +81,13 @@ class BaseRepository(object):
 
     def __len__(self):
         return self.count()
+
+    def __eq__(self, other):
+        same_instance = isinstance(other, self.__class__)
+        return same_instance and getattr(other, 'path', None) == self.path
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     @LazyProperty
     def alias(self):
@@ -386,6 +395,13 @@ class BaseChangeset(object):
         raise NotImplementedError
 
     @LazyProperty
+    def children(self):
+        """
+        Returns list of children changesets.
+        """
+        raise NotImplementedError
+
+    @LazyProperty
     def id(self):
         """
         Returns string identifying this changeset.
@@ -414,6 +430,30 @@ class BaseChangeset(object):
 
         """
         raise NotImplementedError
+
+    @LazyProperty
+    def committer(self):
+        """
+        Returns Committer for given commit
+        """
+
+        raise NotImplementedError
+
+    @LazyProperty
+    def committer_name(self):
+        """
+        Returns Author name for given commit
+        """
+
+        return author_name(self.committer)
+
+    @LazyProperty
+    def committer_email(self):
+        """
+        Returns Author email address for given commit
+        """
+
+        return author_email(self.committer)
 
     @LazyProperty
     def author(self):
@@ -803,7 +843,7 @@ class BaseInMemoryChangeset(object):
         Returns generator of paths from nodes marked as added, changed or
         removed.
         """
-        for node in chain(self.added, self.changed, self.removed):
+        for node in itertools.chain(self.added, self.changed, self.removed):
             yield node.path
 
     def get_paths(self):
@@ -918,12 +958,12 @@ class EmptyChangeset(BaseChangeset):
     """
 
     def __init__(self, cs='0' * 40, repo=None, requested_revision=None,
-                 alias=None):
+                 alias=None, revision=-1, message='', author='', date=None):
         self._empty_cs = cs
-        self.revision = -1
-        self.message = ''
-        self.author = ''
-        self.date = ''
+        self.revision = revision
+        self.message = message
+        self.author = author
+        self.date = date or datetime.datetime.fromtimestamp(0)
         self.repository = repo
         self.requested_revision = requested_revision
         self.alias = alias
@@ -954,3 +994,27 @@ class EmptyChangeset(BaseChangeset):
 
     def get_file_size(self, path):
         return 0
+
+
+class CollectionGenerator(object):
+
+    def __init__(self, repo, revs):
+        self.repo = repo
+        self.revs = revs
+
+    def __len__(self):
+        return len(self.revs)
+
+    def __iter__(self):
+        for rev in self.revs:
+            yield self.repo.get_changeset(rev)
+
+    def __getslice__(self, i, j):
+        """
+        Returns a iterator of sliced repository
+        """
+        sliced_revs = self.revs[i:j]
+        return CollectionGenerator(self.repo, sliced_revs)
+
+    def __repr__(self):
+        return 'CollectionGenerator<%s>' % (len(self))

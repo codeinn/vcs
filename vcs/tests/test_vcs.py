@@ -1,11 +1,13 @@
 from __future__ import with_statement
 
+import os
+import shutil
+
 from vcs import VCSError, get_repo, get_backend
 from vcs.backends.hg import MercurialRepository
 from vcs.utils.compat import unittest
-from conf import TEST_HG_REPO, TEST_GIT_REPO, TEST_TMP_PATH
-import os
-import shutil
+from vcs.tests.conf import TEST_HG_REPO, TEST_GIT_REPO, TEST_TMP_PATH
+
 
 
 class VCSTest(unittest.TestCase):

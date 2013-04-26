@@ -50,4 +50,3 @@ Lazy attributes utils
 
 .. automodule:: vcs.utils.lazy
    :members:
-

@@ -18,7 +18,7 @@ from vcs.utils import author_email, author_name
 from vcs.utils.paths import get_user_home
 from vcs.exceptions import VCSError
 
-from conf import TEST_HG_REPO, TEST_GIT_REPO, TEST_TMP_PATH
+from vcs.tests.conf import TEST_HG_REPO, TEST_GIT_REPO, TEST_TMP_PATH
 
 
 class PathsTest(unittest.TestCase):
@@ -259,7 +259,7 @@ class TestGetUserHome(unittest.TestCase):
 
     @mock.patch.object(os, 'environ', {})
     def test_defaults_to_none(self):
-        self.assertEqual(get_user_home(), None)
+        self.assertEqual(get_user_home(), '')
 
     @mock.patch.object(os, 'environ', {'HOME': '/home/foobar'})
     def test_unix_like(self):

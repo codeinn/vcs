@@ -1,9 +1,10 @@
-from vcs.exceptions import VCSError
-from vcs.nodes import FileNode
+import StringIO
+
 from pygments.formatters import HtmlFormatter
 from pygments import highlight
 
-import StringIO
+from vcs.exceptions import VCSError
+from vcs.nodes import FileNode
 
 
 def annotate_highlight(filenode, annotate_from_changeset_func=None,

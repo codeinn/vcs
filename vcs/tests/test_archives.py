@@ -6,11 +6,12 @@ import zipfile
 import datetime
 import tempfile
 import StringIO
-from base import BackendTestMixin
-from conf import SCM_TESTS
+from vcs.tests.base import BackendTestMixin
+from vcs.tests.conf import SCM_TESTS
 from vcs.exceptions import VCSError
 from vcs.nodes import FileNode
 from vcs.utils.compat import unittest
+
 
 class ArchivesTestCaseMixin(BackendTestMixin):
 

@@ -16,6 +16,27 @@ def makedate():
     return time.mktime(lt), tz
 
 
+def aslist(obj, sep=None, strip=True):
+    """
+    Returns given string separated by sep as list
+
+    :param obj:
+    :param sep:
+    :param strip:
+    """
+    if isinstance(obj, (basestring)):
+        lst = obj.split(sep)
+        if strip:
+            lst = [v.strip() for v in lst]
+        return lst
+    elif isinstance(obj, (list, tuple)):
+        return obj
+    elif obj is None:
+        return []
+    else:
+        return [obj]
+
+
 def date_fromtimestamp(unixts, tzoffset=0):
     """
     Makes a local datetime object out of unix timestamp
@@ -27,7 +48,24 @@ def date_fromtimestamp(unixts, tzoffset=0):
     return datetime.datetime.fromtimestamp(float(unixts))
 
 
-def safe_unicode(str_, from_encoding='utf8'):
+def safe_int(val, default=None):
+    """
+    Returns int() of val if val is not convertable to int use default
+    instead
+
+    :param val:
+    :param default:
+    """
+
+    try:
+        val = int(val)
+    except (ValueError, TypeError):
+        val = default
+
+    return val
+
+
+def safe_unicode(str_, from_encoding=None):
     """
     safe unicode function. Does few trick to turn str_ into unicode
 
@@ -41,15 +79,23 @@ def safe_unicode(str_, from_encoding='utf8'):
     if isinstance(str_, unicode):
         return str_
 
+    if not from_encoding:
+        from vcs.conf import settings
+        from_encoding = settings.DEFAULT_ENCODINGS
+
+    if not isinstance(from_encoding, (list, tuple)):
+        from_encoding = [from_encoding]
+
     try:
         return unicode(str_)
     except UnicodeDecodeError:
         pass
 
-    try:
-        return unicode(str_, from_encoding)
-    except UnicodeDecodeError:
-        pass
+    for enc in from_encoding:
+        try:
+            return unicode(str_, enc)
+        except UnicodeDecodeError:
+            pass
 
     try:
         import chardet
@@ -58,10 +104,10 @@ def safe_unicode(str_, from_encoding='utf8'):
             raise Exception()
         return str_.decode(encoding)
     except (ImportError, UnicodeDecodeError, Exception):
-        return unicode(str_, from_encoding, 'replace')
+        return unicode(str_, from_encoding[0], 'replace')
 
 
-def safe_str(unicode_, to_encoding='utf8'):
+def safe_str(unicode_, to_encoding=None):
     """
     safe str function. Does few trick to turn unicode_ into string
 
@@ -73,13 +119,25 @@ def safe_str(unicode_, to_encoding='utf8'):
     :returns: str object
     """
 
+    # if it's not basestr cast to str
+    if not isinstance(unicode_, basestring):
+        return str(unicode_)
+
     if isinstance(unicode_, str):
         return unicode_
 
-    try:
-        return unicode_.encode(to_encoding)
-    except UnicodeEncodeError:
-        pass
+    if not to_encoding:
+        from vcs.conf import settings
+        to_encoding = settings.DEFAULT_ENCODINGS
+
+    if not isinstance(to_encoding, (list, tuple)):
+        to_encoding = [to_encoding]
+
+    for enc in to_encoding:
+        try:
+            return unicode_.encode(enc)
+        except UnicodeEncodeError:
+            pass
 
     try:
         import chardet
@@ -89,7 +147,7 @@ def safe_str(unicode_, to_encoding='utf8'):
 
         return unicode_.encode(encoding)
     except (ImportError, UnicodeEncodeError):
-        return unicode_.encode(to_encoding, 'replace')
+        return unicode_.encode(to_encoding[0], 'replace')
 
     return safe_str
 

@@ -80,7 +80,7 @@ Let's ask repo about the content...
    >>> <GitChangeset at 0:c1214f7e79e0>
    >>> <GitChangeset at 1:38b5fe81f109>
    >>> ...
-   
+
 Walking
 -------
 
@@ -120,7 +120,7 @@ Now let's ask for nodes at revision faebbb751cc36c137127c50f57bcdb5f1c540013
    """
        vcs.backends
        ~~~~~~~~~~~~
-   
+
 
 Getting meta data
 -----------------
@@ -131,7 +131,7 @@ Tags and branches
 ~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
-   
+
    >>> print repo.branches
    OrderedDict([('master', 'fe568b4081755c12abf6ba673ba777fc02a415f3')])
    >>> for tag, raw_id in repo.tags.items():
@@ -290,4 +290,3 @@ and we create a html file using `difflib`_.
 Now open file at ``/tmp/out.html`` in your favorite browser.
 
 .. _difflib: http://docs.python.org/library/difflib.html
-

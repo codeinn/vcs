@@ -1,8 +1,8 @@
 from __future__ import with_statement
 
 import datetime
-from base import BackendTestMixin
-from conf import SCM_TESTS
+from vcs.tests.base import BackendTestMixin
+from vcs.tests.conf import SCM_TESTS
 from vcs.nodes import FileNode
 from vcs.utils.compat import unittest
 

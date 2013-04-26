@@ -4,7 +4,7 @@ Welcome to vcs's documentation!
 ===============================
 
 ``vcs`` is abstraction layer over various version control systems. It is
-designed as feature-rich Python_ library with clear :ref:`API`. 
+designed as feature-rich Python_ library with clear :ref:`API`.
 
 vcs uses `Semantic Versioning <http://semver.org/>`_
 
@@ -46,4 +46,3 @@ Other topics
 .. _mercurial: http://mercurial.selenic.com/
 .. _subversion: http://subversion.tigris.org/
 .. _git: http://git-scm.com/
-

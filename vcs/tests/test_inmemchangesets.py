@@ -3,10 +3,11 @@ Tests so called "in memory changesets" commit API of vcs.
 """
 from __future__ import with_statement
 
-import vcs
 import time
 import datetime
-from conf import SCM_TESTS, get_new_dir
+
+import vcs
+from vcs.tests.conf import SCM_TESTS, get_new_dir
 from vcs.exceptions import EmptyRepositoryError
 from vcs.exceptions import NodeAlreadyAddedError
 from vcs.exceptions import NodeAlreadyExistsError
@@ -44,6 +45,7 @@ class InMemoryChangesetTestMixin(object):
             FileNode('foobar2', content='Foo & bar, doubled!'),
             FileNode('foo bar with spaces', content=''),
             FileNode('foo/bar/baz', content='Inside'),
+            FileNode('foo/bar/file.bin', content='\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00;\x00\x03\x00\xfe\xff\t\x00\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x1a\x00\x00\x00\x00\x00\x00\x00\x00\x10\x00\x00\x18\x00\x00\x00\x01\x00\x00\x00\xfe\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'),
         ]
 
     def test_add(self):

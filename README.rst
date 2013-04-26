@@ -42,4 +42,3 @@ You may also build documentation for yourself - go into ``docs/`` and run::
 .. _Sphinx: http://sphinx.pocoo.org/
 .. _mercurial: http://mercurial.selenic.com/
 .. _git: http://git-scm.com/
-

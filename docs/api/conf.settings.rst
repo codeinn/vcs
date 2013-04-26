@@ -48,4 +48,3 @@ specified by user. By default it would be ``$HOME/.vimrc``.
 
 This value may be modified by setting system environment ``VCSRC_PATH``
 (accessible at ``os.environ['VCSRC_PATH']``).
-

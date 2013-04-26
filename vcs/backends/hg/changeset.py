@@ -1,14 +1,16 @@
 import os
 import posixpath
 
-from vcs.backends.base import BaseChangeset
 from vcs.conf import settings
-from vcs.exceptions import  ChangesetDoesNotExistError, \
-    ChangesetError, ImproperArchiveTypeError, NodeDoesNotExistError, VCSError
-from vcs.nodes import AddedFileNodesGenerator, \
-    ChangedFileNodesGenerator, DirNode, FileNode, NodeKind, \
-    RemovedFileNodesGenerator, RootNode, SubModuleNode
-
+from vcs.backends.base import BaseChangeset
+from vcs.exceptions import (
+    ChangesetDoesNotExistError, ChangesetError, ImproperArchiveTypeError,
+    NodeDoesNotExistError, VCSError
+)
+from vcs.nodes import (
+    AddedFileNodesGenerator, ChangedFileNodesGenerator, DirNode, FileNode,
+    NodeKind, RemovedFileNodesGenerator, RootNode, SubModuleNode
+)
 from vcs.utils import safe_str, safe_unicode, date_fromtimestamp
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.paths import get_dirs_for_path
@@ -44,12 +46,20 @@ class MercurialChangeset(BaseChangeset):
         return safe_unicode(self._ctx.description())
 
     @LazyProperty
+    def committer(self):
+        return safe_unicode(self.author)
+
+    @LazyProperty
     def author(self):
         return safe_unicode(self._ctx.user())
 
     @LazyProperty
     def date(self):
         return date_fromtimestamp(*self._ctx.date())
+
+    @LazyProperty
+    def _timestamp(self):
+        return self._ctx.date()[0]
 
     @LazyProperty
     def status(self):
@@ -90,6 +100,14 @@ class MercurialChangeset(BaseChangeset):
         """
         return [self.repository.get_changeset(parent.rev())
                 for parent in self._ctx.parents() if parent.rev() >= 0]
+
+    @LazyProperty
+    def children(self):
+        """
+        Returns list of children changesets.
+        """
+        return [self.repository.get_changeset(child.rev())
+                for child in self._ctx.children() if child.rev() >= 0]
 
     def next(self, branch=None):
 
@@ -158,14 +176,14 @@ class MercurialChangeset(BaseChangeset):
         elif path in self._dir_paths:
             return NodeKind.DIR
         else:
-            raise ChangesetError("Node does not exist at the given path %r"
+            raise ChangesetError("Node does not exist at the given path '%s'"
                 % (path))
 
     def _get_filectx(self, path):
         path = self._fix_path(path)
         if self._get_kind(path) != NodeKind.FILE:
-            raise ChangesetError("File does not exist for revision %r at "
-                " %r" % (self.revision, path))
+            raise ChangesetError("File does not exist for revision %s at "
+                " '%s'" % (self.raw_id, path))
         return self._ctx.filectx(path)
 
     def _extract_submodules(self):
@@ -203,33 +221,35 @@ class MercurialChangeset(BaseChangeset):
         """
         Returns last commit of the file at the given ``path``.
         """
-        node = self.get_node(path)
-        return node.history[0]
+        return self.get_file_history(path, limit=1)[0]
 
-    def get_file_history(self, path):
+    def get_file_history(self, path, limit=None):
         """
         Returns history of file as reversed list of ``Changeset`` objects for
         which file at given ``path`` has been modified.
         """
         fctx = self._get_filectx(path)
-        nodes = [fctx.filectx(x).node() for x in fctx.filelog()]
-        changesets = [self.repository.get_changeset(hex(node))
-            for node in reversed(nodes)]
-        return changesets
+        hist = []
+        cnt = 0
+        for cs in reversed([x for x in fctx.filelog()]):
+            cnt += 1
+            hist.append(hex(fctx.filectx(cs).node()))
+            if limit and cnt == limit:
+                break
+
+        return [self.repository.get_changeset(node) for node in hist]
 
     def get_file_annotate(self, path):
         """
-        Returns a list of three element tuples with lineno,changeset and line
+        Returns a generator of four element tuples with
+            lineno, sha, changeset lazy loader and line
         """
+
         fctx = self._get_filectx(path)
-        annotate = []
         for i, annotate_data in enumerate(fctx.annotate()):
             ln_no = i + 1
-            annotate.append((ln_no, self.repository\
-                             .get_changeset(hex(annotate_data[0].node())),
-                             annotate_data[1],))
-
-        return annotate
+            sha = hex(annotate_data[0].node())
+            yield (ln_no, sha, lambda: self.repository.get_changeset(sha), annotate_data[1],)
 
     def fill_archive(self, stream=None, kind='tgz', prefix=None,
                      subrepos=False):
@@ -282,8 +302,8 @@ class MercurialChangeset(BaseChangeset):
         """
 
         if self._get_kind(path) != NodeKind.DIR:
-            raise ChangesetError("Directory does not exist for revision %r at "
-                " %r" % (self.revision, path))
+            raise ChangesetError("Directory does not exist for revision %s at "
+                " '%s'" % (self.revision, path))
         path = self._fix_path(path)
 
         filenodes = [FileNode(f, changeset=self) for f in self._file_paths
@@ -326,7 +346,7 @@ class MercurialChangeset(BaseChangeset):
                     node = DirNode(path, changeset=self)
             else:
                 raise NodeDoesNotExistError("There is no file nor directory "
-                    "at the given path: %r at revision %r"
+                    "at the given path: '%s' at revision %s"
                     % (path, self.short_id))
             # cache node
             self.nodes[path] = node

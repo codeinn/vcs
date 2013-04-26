@@ -20,11 +20,11 @@ function at ``tests/__init__.py``.
 
 """
 from vcs.utils.compat import unittest
-from conf import *
-from utils import VCSTestError, SCMFetcher
+from vcs.tests.conf import *
+from vcs.tests.utils import VCSTestError, SCMFetcher
 
 # Import Test Cases
-from base import *
+from vcs.tests.base import *
 from test_branches import *
 from test_changesets import *
 from test_cli import *

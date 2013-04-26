@@ -21,4 +21,3 @@ Base Backend
 
 .. automodule:: vcs.backends.base
    :members:
-

@@ -7,4 +7,3 @@ Usage
    :maxdepth: 2
 
    vcsrc
-

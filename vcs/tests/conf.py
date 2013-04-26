@@ -6,7 +6,7 @@ import time
 import hashlib
 import tempfile
 import datetime
-
+import shutil
 from utils import get_normalized_path
 from os.path import join as jn
 
@@ -41,6 +41,7 @@ TEST_HG_REPO_PULL = os.environ.get('VCS_TEST_HG_REPO_PULL',
 TEST_DIR = os.environ.get('VCS_TEST_ROOT', tempfile.gettempdir())
 TEST_REPO_PREFIX = 'vcs-test'
 
+
 def get_new_dir(title):
     """
     Returns always new directory path.
@@ -56,5 +57,6 @@ def get_new_dir(title):
 
 PACKAGE_DIR = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..'))
-
-TEST_USER_CONFIG_FILE = jn(THIS, 'aconfig')
+_dest = jn(TEST_TMP_PATH, 'aconfig')
+shutil.copy(jn(THIS, 'aconfig'), _dest)
+TEST_USER_CONFIG_FILE = _dest

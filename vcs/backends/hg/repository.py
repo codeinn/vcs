@@ -1,25 +1,43 @@
+# -*- coding: utf-8 -*-
+"""
+    vcs.backends.hg.repository
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    Mercurial repository implementation.
+
+    :created_on: Apr 8, 2010
+    :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
+"""
+
 import os
 import time
-import datetime
 import urllib
 import urllib2
+import datetime
 
-from vcs.backends.base import BaseRepository
-from .workdir import MercurialWorkdir
-from .changeset import MercurialChangeset
-from .inmemory import MercurialInMemoryChangeset
 
-from vcs.exceptions import BranchDoesNotExistError, \
-    ChangesetDoesNotExistError, EmptyRepositoryError, RepositoryError, \
-    VCSError, TagAlreadyExistError, TagDoesNotExistError
-from vcs.utils import author_email, author_name, date_fromtimestamp, \
-    makedate, safe_unicode
+from vcs.backends.base import BaseRepository, CollectionGenerator
+from vcs.conf import settings
+
+from vcs.exceptions import (
+    BranchDoesNotExistError, ChangesetDoesNotExistError, EmptyRepositoryError,
+    RepositoryError, VCSError, TagAlreadyExistError, TagDoesNotExistError
+)
+from vcs.utils import (
+    author_email, author_name, date_fromtimestamp, makedate, safe_unicode
+)
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
 from vcs.utils.paths import abspath
+from vcs.utils.hgcompat import (
+    ui, nullid, match, patch, diffopts, clone, get_contact, pull,
+    localrepository, RepoLookupError, Abort, RepoError, hex, scmutil, hg_url,
+    httpbasicauthhandler, httpdigestauthhandler
+)
 
-from vcs.utils.hgcompat import ui, nullid, match, patch, diffopts, clone, \
-    get_contact, pull, localrepository, RepoLookupError, Abort, RepoError, hex
+from .changeset import MercurialChangeset
+from .inmemory import MercurialInMemoryChangeset
+from .workdir import MercurialWorkdir
 
 
 class MercurialRepository(BaseRepository):
@@ -78,6 +96,13 @@ class MercurialRepository(BaseRepository):
     @LazyProperty
     def branches(self):
         return self._get_branches()
+
+    @LazyProperty
+    def allbranches(self):
+        """
+        List all branches, including closed branches.
+        """
+        return self._get_branches(closed=True)
 
     def _get_branches(self, closed=False):
         """
@@ -242,14 +267,18 @@ class MercurialRepository(BaseRepository):
         if rev1 != self.EMPTY_CHANGESET:
             self.get_changeset(rev1)
         self.get_changeset(rev2)
+        if path:
+            file_filter = match(self.path, '', [path])
+        else:
+            file_filter = None
 
-        file_filter = match(self.path, '', [path])
         return ''.join(patch.diff(self._repo, rev1, rev2, match=file_filter,
                           opts=diffopts(git=True,
                                         ignorews=ignore_whitespace,
                                         context=context)))
 
-    def _check_url(self, url):
+    @classmethod
+    def _check_url(cls, url):
         """
         Function will check given url and try to verify if it's a valid
         link. Sometimes it may happened that mercurial will issue basic
@@ -260,18 +289,15 @@ class MercurialRepository(BaseRepository):
         is valid or True if it's a local path
         """
 
-        from mercurial.util import url as Url
-
-        # those authnadlers are patched for python 2.6.5 bug an
-        # infinit looping when given invalid resources
-        from mercurial.url import httpbasicauthhandler, httpdigestauthhandler
-
         # check first if it's not an local url
         if os.path.isdir(url) or url.startswith('file:'):
             return True
 
+        if('+' in url[:url.find('://')]):
+            url = url[url.find('+') + 1:]
+
         handlers = []
-        test_uri, authinfo = Url(url).authinfo()
+        test_uri, authinfo = hg_url(url).authinfo()
 
         if authinfo:
             #create a password manager
@@ -296,7 +322,7 @@ class MercurialRepository(BaseRepository):
             return resp.code == 200
         except Exception, e:
             # means it cannot be cloned
-            raise urllib2.URLError(e)
+            raise urllib2.URLError("[%s] %s" % (url, e))
 
     def _get_repo(self, create, src_url=None, update_after_clone=False):
         """
@@ -308,6 +334,7 @@ class MercurialRepository(BaseRepository):
         location at given clone_point. Additionally it'll make update to
         working copy accordingly to ``update_after_clone`` flag
         """
+
         try:
             if src_url:
                 url = str(self._get_url(src_url))
@@ -315,12 +342,13 @@ class MercurialRepository(BaseRepository):
                 if not update_after_clone:
                     opts.update({'noupdate': True})
                 try:
-                    self._check_url(url)
+                    MercurialRepository._check_url(url)
                     clone(self.baseui, url, self.path, **opts)
 #                except urllib2.URLError:
 #                    raise Abort("Got HTTP 404 error")
                 except Exception:
                     raise
+
                 # Don't try to create if we've already cloned repo
                 create = False
             return localrepository(self.baseui, self.path, create=create)
@@ -388,9 +416,9 @@ class MercurialRepository(BaseRepository):
         try:
             revision = hex(self._repo.lookup(revision))
         except (IndexError, ValueError, RepoLookupError, TypeError):
-            raise ChangesetDoesNotExistError("Revision %r does not "
-                                    "exist for this repository %s" \
-                                    % (revision, self))
+            raise ChangesetDoesNotExistError("Revision %s does not "
+                                    "exist for this repository"
+                                    % (revision))
         return revision
 
     def _get_archives(self, archive_name='tip'):
@@ -412,6 +440,12 @@ class MercurialRepository(BaseRepository):
         if url != 'default' and not '://' in url:
             url = "file:" + urllib.pathname2url(url)
         return url
+
+    def get_hook_location(self):
+        """
+        returns absolute path to location where hooks are stored
+        """
+        return os.path.join(self.path, '.hg', '.hgrc')
 
     def get_changeset(self, revision=None):
         """
@@ -442,28 +476,31 @@ class MercurialRepository(BaseRepository):
         end_pos = self.revisions.index(end_raw_id) if end else None
 
         if None not in [start, end] and start_pos > end_pos:
-            raise RepositoryError("start revision '%s' cannot be "
+            raise RepositoryError("Start revision '%s' cannot be "
                                   "after end revision '%s'" % (start, end))
 
-        if branch_name and branch_name not in self.branches.keys():
-            raise BranchDoesNotExistError('Such branch %s does not exists for'
+        if branch_name and branch_name not in self.allbranches.keys():
+            raise BranchDoesNotExistError('Branch %s not found in'
                                   ' this repository' % branch_name)
         if end_pos is not None:
             end_pos += 1
+        #filter branches
+        filter_ = []
+        if branch_name:
+            filter_.append('branch("%s")' % (branch_name))
 
-        slice_ = reversed(self.revisions[start_pos:end_pos]) if reverse else \
-            self.revisions[start_pos:end_pos]
+        if start_date:
+            filter_.append('date(">%s")' % start_date)
+        if end_date:
+            filter_.append('date("<%s")' % end_date)
+        if filter_:
+            revisions = scmutil.revrange(self._repo, filter_)
+        else:
+            revisions = self.revisions
+        revs = reversed(revisions[start_pos:end_pos]) if reverse else \
+                revisions[start_pos:end_pos]
 
-        for id_ in slice_:
-            cs = self.get_changeset(id_)
-            if branch_name and cs.branch != branch_name:
-                continue
-            if start_date and cs.date < start_date:
-                continue
-            if end_date and cs.date > end_date:
-                continue
-
-            yield cs
+        return CollectionGenerator(self, revs)
 
     def pull(self, url):
         """
@@ -483,7 +520,7 @@ class MercurialRepository(BaseRepository):
         """
         return MercurialWorkdir(self)
 
-    def get_config_value(self, section, name, config_file=None):
+    def get_config_value(self, section, name=None, config_file=None):
         """
         Returns configuration value for a given [``section``] and ``name``.
 

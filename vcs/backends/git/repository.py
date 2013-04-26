@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-    vcs.backends.git
-    ~~~~~~~~~~~~~~~~
+    vcs.backends.git.repository
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Git backend implementation.
+    Git repository implementation.
 
     :created_on: Apr 8, 2010
     :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
@@ -12,27 +12,36 @@
 import os
 import re
 import time
+import urllib
+import urllib2
+import logging
 import posixpath
+import string
+
+from dulwich.objects import Tag
 from dulwich.repo import Repo, NotGitRepository
-#from dulwich.config import ConfigFile
-from string import Template
-from subprocess import Popen, PIPE
-from vcs.backends.base import BaseRepository
-from vcs.exceptions import BranchDoesNotExistError
-from vcs.exceptions import ChangesetDoesNotExistError
-from vcs.exceptions import EmptyRepositoryError
-from vcs.exceptions import RepositoryError
-from vcs.exceptions import TagAlreadyExistError
-from vcs.exceptions import TagDoesNotExistError
+
+from vcs import subprocessio
+from vcs.backends.base import BaseRepository, CollectionGenerator
+from vcs.conf import settings
+
+from vcs.exceptions import (
+    BranchDoesNotExistError, ChangesetDoesNotExistError, EmptyRepositoryError,
+    RepositoryError, TagAlreadyExistError, TagDoesNotExistError
+)
 from vcs.utils import safe_unicode, makedate, date_fromtimestamp
 from vcs.utils.lazy import LazyProperty
 from vcs.utils.ordered_dict import OrderedDict
-from vcs.utils.paths import abspath
-from vcs.utils.paths import get_user_home
-from .workdir import GitWorkdir
+from vcs.utils.paths import abspath, get_user_home
+
+from vcs.utils.hgcompat import (
+    hg_url, httpbasicauthhandler, httpdigestauthhandler
+)
+
 from .changeset import GitChangeset
-from .inmemory import GitInMemoryChangeset
 from .config import ConfigFile
+from .inmemory import GitInMemoryChangeset
+from .workdir import GitWorkdir
 
 
 class GitRepository(BaseRepository):
@@ -46,18 +55,25 @@ class GitRepository(BaseRepository):
                  update_after_clone=False, bare=False):
 
         self.path = abspath(repo_path)
-        self._repo = self._get_repo(create, src_url, update_after_clone, bare)
-        try:
-            self.head = self._repo.head()
-        except KeyError:
-            self.head = None
+        repo = self._get_repo(create, src_url, update_after_clone, bare)
+        self.bare = repo.bare
 
         self._config_files = [
-            bare and abspath(self.path, 'config') or abspath(self.path, '.git',
-                'config'),
+            bare and abspath(self.path, 'config')
+                     or abspath(self.path, '.git', 'config'),
             abspath(get_user_home(), '.gitconfig'),
         ]
-        self.bare = self._repo.bare
+
+    @property
+    def _repo(self):
+        return Repo(self.path)
+
+    @property
+    def head(self):
+        try:
+            return self._repo.head()
+        except KeyError:
+            return None
 
     @LazyProperty
     def revisions(self):
@@ -67,52 +83,68 @@ class GitRepository(BaseRepository):
         """
         return self._get_all_revisions()
 
-    def run_git_command(self, cmd):
+    @classmethod
+    def _run_git_command(cls, cmd, **opts):
         """
         Runs given ``cmd`` as git command and returns tuple
-        (returncode, stdout, stderr).
-
-        .. note::
-           This method exists only until log/blame functionality is implemented
-           at Dulwich (see https://bugs.launchpad.net/bugs/645142). Parsing
-           os command's output is road to hell...
+        (stdout, stderr).
 
         :param cmd: git command to be executed
+        :param opts: env options to pass into Subprocess command
         """
 
-        _copts = ['-c', 'core.quotepath=false', ]
+        if '_bare' in opts:
+            _copts = []
+            del opts['_bare']
+        else:
+            _copts = ['-c', 'core.quotepath=false', ]
+        safe_call = False
+        if '_safe' in opts:
+            #no exc on failure
+            del opts['_safe']
+            safe_call = True
+
         _str_cmd = False
         if isinstance(cmd, basestring):
             cmd = [cmd]
             _str_cmd = True
 
         gitenv = os.environ
+        # need to clean fix GIT_DIR !
+        if 'GIT_DIR' in gitenv:
+            del gitenv['GIT_DIR']
         gitenv['GIT_CONFIG_NOGLOBAL'] = '1'
 
-        cmd = ['git'] + _copts + cmd
+        _git_path = settings.GIT_EXECUTABLE_PATH
+        cmd = [_git_path] + _copts + cmd
         if _str_cmd:
             cmd = ' '.join(cmd)
         try:
-            opts = dict(
-                shell=isinstance(cmd, basestring),
-                stdout=PIPE,
-                stderr=PIPE,
+            _opts = dict(
                 env=gitenv,
+                shell=False,
             )
-            if os.path.isdir(self.path):
-                opts['cwd'] = self.path
-            p = Popen(cmd, **opts)
-        except OSError, err:
-            raise RepositoryError("Couldn't run git command (%s).\n"
-                "Original error was:%s" % (cmd, err))
-        so, se = p.communicate()
-        if not se.startswith("fatal: bad default revision 'HEAD'") and \
-            p.returncode != 0:
-            raise RepositoryError("Couldn't run git command (%s).\n"
-                "stderr:\n%s" % (cmd, se))
-        return so, se
+            _opts.update(opts)
+            p = subprocessio.SubprocessIOChunker(cmd, **_opts)
+        except (EnvironmentError, OSError), err:
+            tb_err = ("Couldn't run git command (%s).\n"
+                      "Original error was:%s\n" % (cmd, err))
+            log.error(tb_err)
+            if safe_call:
+                return '', err
+            else:
+                raise RepositoryError(tb_err)
 
-    def _check_url(self, url):
+        return ''.join(p.output), ''.join(p.error)
+
+    def run_git_command(self, cmd):
+        opts = {}
+        if os.path.isdir(self.path):
+            opts['cwd'] = self.path
+        return self._run_git_command(cmd, **opts)
+
+    @classmethod
+    def _check_url(cls, url):
         """
         Functon will check given url and try to verify if it's a valid
         link. Sometimes it may happened that mercurial will issue basic
@@ -122,11 +154,42 @@ class GitRepository(BaseRepository):
         On failures it'll raise urllib2.HTTPError
         """
 
-        #TODO: implement this
-        pass
+        # check first if it's not an local url
+        if os.path.isdir(url) or url.startswith('file:'):
+            return True
+
+        if('+' in url[:url.find('://')]):
+            url = url[url.find('+') + 1:]
+
+        handlers = []
+        test_uri, authinfo = hg_url(url).authinfo()
+        if not test_uri.endswith('info/refs'):
+            test_uri = test_uri.rstrip('/') + '/info/refs'
+        if authinfo:
+            #create a password manager
+            passmgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+            passmgr.add_password(*authinfo)
+
+            handlers.extend((httpbasicauthhandler(passmgr),
+                             httpdigestauthhandler(passmgr)))
+
+        o = urllib2.build_opener(*handlers)
+        o.addheaders = [('User-Agent', 'git/1.7.8.0')]  # fake some git
+
+        q = {"service": 'git-upload-pack'}
+        qs = '?%s' % urllib.urlencode(q)
+        cu = "%s%s" % (test_uri, qs)
+        req = urllib2.Request(cu, None, {})
+
+        try:
+            resp = o.open(req)
+            return resp.code == 200
+        except Exception, e:
+            # means it cannot be cloned
+            raise urllib2.URLError("[%s] %s" % (url, e))
 
     def _get_repo(self, create, src_url=None, update_after_clone=False,
-            bare=False):
+                  bare=False):
         if create and os.path.exists(self.path):
             raise RepositoryError("Location already exist")
         if src_url and not create:
@@ -134,7 +197,7 @@ class GitRepository(BaseRepository):
                                   "given (clone operation creates repository)")
         try:
             if create and src_url:
-                self._check_url(src_url)
+                GitRepository._check_url(src_url)
                 self.clone(src_url, update_after_clone, bare)
                 return Repo(self.path)
             elif create:
@@ -144,12 +207,21 @@ class GitRepository(BaseRepository):
                 else:
                     return Repo.init(self.path)
             else:
-                return Repo(self.path)
+                return self._repo
         except (NotGitRepository, OSError), err:
             raise RepositoryError(err)
 
     def _get_all_revisions(self):
-        cmd = 'rev-list --all --reverse --date-order'
+        # we must check if this repo is not empty, since later command
+        # fails if it is. And it's cheaper to ask than throw the subprocess
+        # errors
+        try:
+            self._repo.head()
+        except KeyError:
+            return []
+
+        rev_filter = _git_path = settings.GIT_REV_FILTER
+        cmd = 'rev-list %s --reverse --date-order' % (rev_filter)
         try:
             so, se = self.run_git_command(cmd)
         except RepositoryError:
@@ -182,9 +254,9 @@ class GitRepository(BaseRepository):
             or isinstance(revision, int) or is_null(revision)):
             try:
                 revision = self.revisions[int(revision)]
-            except:
-                raise ChangesetDoesNotExistError("Revision %r does not exist "
-                    "for this repository %s" % (revision, self))
+            except Exception:
+                raise ChangesetDoesNotExistError("Revision %s does not exist "
+                    "for this repository" % (revision))
 
         elif is_bstr(revision):
             # get by branch/tag name
@@ -198,12 +270,12 @@ class GitRepository(BaseRepository):
                 return _tags_shas[_tags_shas.index(revision)]
 
             elif not pattern.match(revision) or revision not in self.revisions:
-                raise ChangesetDoesNotExistError("Revision %r does not exist "
-                    "for this repository %s" % (revision, self))
+                raise ChangesetDoesNotExistError("Revision %s does not exist "
+                    "for this repository" % (revision))
 
         # Ensure we return full id
         if not pattern.match(str(revision)):
-            raise ChangesetDoesNotExistError("Given revision %r not recognized"
+            raise ChangesetDoesNotExistError("Given revision %s not recognized"
                 % revision)
         return revision
 
@@ -221,6 +293,15 @@ class GitRepository(BaseRepository):
         if url != 'default' and not '://' in url:
             url = ':///'.join(('file', url))
         return url
+
+    def get_hook_location(self):
+        """
+        returns absolute path to location where hooks are stored
+        """
+        loc = os.path.join(self.path, 'hooks')
+        if not self.bare:
+            loc = os.path.join(self.path, '.git', 'hooks')
+        return loc
 
     @LazyProperty
     def name(self):
@@ -333,7 +414,9 @@ class GitRepository(BaseRepository):
         return self._get_parsed_refs()
 
     def _get_parsed_refs(self):
-        refs = self._repo.get_refs()
+        # cache the property
+        _repo = self._repo
+        refs = _repo.get_refs()
         keys = [('refs/heads/', 'H'),
                 ('refs/remotes/origin/', 'RH'),
                 ('refs/tags/', 'T')]
@@ -342,6 +425,10 @@ class GitRepository(BaseRepository):
             for k, type_ in keys:
                 if ref.startswith(k):
                     _key = ref[len(k):]
+                    if type_ == 'T':
+                        obj = _repo.get_object(sha)
+                        if isinstance(obj, Tag):
+                            sha = _repo.get_object(sha).object[1]
                     _refs[_key] = [sha, type_]
                     break
         return _refs
@@ -410,9 +497,10 @@ class GitRepository(BaseRepository):
             cmd_template += ' $branch_name'
             cmd_params['branch_name'] = branch_name
         else:
-            cmd_template += ' --all'
+            rev_filter = _git_path = settings.GIT_REV_FILTER
+            cmd_template += ' %s' % (rev_filter)
 
-        cmd = Template(cmd_template).safe_substitute(**cmd_params)
+        cmd = string.Template(cmd_template).safe_substitute(**cmd_params)
         revs = self.run_git_command(cmd)[0].splitlines()
         start_pos = 0
         end_pos = len(revs)
@@ -439,8 +527,7 @@ class GitRepository(BaseRepository):
         revs = revs[start_pos:end_pos]
         if reverse:
             revs = reversed(revs)
-        for rev in revs:
-            yield self.get_changeset(rev)
+        return CollectionGenerator(self, revs)
 
     def get_diff(self, rev1, rev2, path=None, ignore_whitespace=False,
                  context=3):
@@ -457,7 +544,7 @@ class GitRepository(BaseRepository):
         :param context: How many lines before/after changed lines should be
           shown. Defaults to ``3``.
         """
-        flags = ['-U%s' % context]
+        flags = ['-U%s' % context, '--full-index', '--binary', '-p', '-M', '--abbrev=40']
         if ignore_whitespace:
             flags.append('-w')
 
@@ -477,6 +564,7 @@ class GitRepository(BaseRepository):
 
         if path:
             cmd += ' -- "%s"' % path
+
         stdout, stderr = self.run_git_command(cmd)
         # If we used 'show' command, strip first few lines (until actual diff
         # starts)
@@ -535,10 +623,13 @@ class GitRepository(BaseRepository):
         Tries to pull changes from external location.
         """
         url = self._get_url(url)
-        cmd = ['fetch']
-        cmd.append(url)
-        cmd = ' '.join(cmd)
-        # If error occurs run_git_command raises RepositoryError already
+        so, se = self.run_git_command('ls-remote -h %s' % url)
+        refs = []
+        for line in (x for x in so.splitlines()):
+            sha, ref = line.split('\t')
+            refs.append(ref)
+        refs = ' '.join(('+%s:%s' % (r, r) for r in refs))
+        cmd = '''fetch %s -- %s''' % (url, refs)
         self.run_git_command(cmd)
 
     @LazyProperty

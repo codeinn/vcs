@@ -20,5 +20,3 @@ There are a couple of alternatives to vcs:
    If you know any other similar Python library, please let us know!
 
 .. _pida: http://pida.co.uk/
-
-

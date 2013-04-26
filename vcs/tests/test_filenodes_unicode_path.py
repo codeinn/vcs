@@ -5,8 +5,8 @@ from __future__ import with_statement
 import datetime
 from vcs.nodes import FileNode
 from vcs.utils.compat import unittest
-from test_inmemchangesets import BackendBaseTestCase
-from conf import SCM_TESTS
+from vcs.tests.test_inmemchangesets import BackendBaseTestCase
+from vcs.tests.conf import SCM_TESTS
 
 
 class FileNodeUnicodePathTestsMixin(object):

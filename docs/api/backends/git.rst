@@ -44,11 +44,11 @@ GitChangeset
 
       Returns list of added ``FileNode`` objects.
 
-   .. autoattribute:: changed 
+   .. autoattribute:: changed
 
       Returns list of changed ``FileNode`` objects.
 
-   .. autoattribute:: removed 
+   .. autoattribute:: removed
 
       Returns list of removed ``RemovedFileNode`` objects.
 
@@ -65,4 +65,3 @@ GitInMemoryChangeset
    :inherited-members:
    :undoc-members:
    :show-inheritance:
-      

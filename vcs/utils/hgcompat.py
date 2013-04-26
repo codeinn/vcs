@@ -13,3 +13,12 @@ from mercurial.mdiff import diffopts
 from mercurial.node import hex
 from mercurial.encoding import tolocal
 from mercurial import discovery
+from mercurial import localrepo
+from mercurial import scmutil
+from mercurial.discovery import findcommonoutgoing
+
+from mercurial.util import url as hg_url
+
+# those authnadlers are patched for python 2.6.5 bug an
+# infinit looping when given invalid resources
+from mercurial.url import httpbasicauthhandler, httpdigestauthhandler

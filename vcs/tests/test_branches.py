@@ -1,13 +1,12 @@
 from __future__ import with_statement
 
-import vcs
 import datetime
+import vcs
 from vcs.utils.compat import unittest
-
-from base import BackendTestMixin
-from conf import SCM_TESTS
-
 from vcs.nodes import FileNode
+
+from vcs.tests.base import BackendTestMixin
+from vcs.tests.conf import SCM_TESTS
 
 
 class BranchesTestCaseMixin(BackendTestMixin):

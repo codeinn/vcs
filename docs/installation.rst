@@ -63,4 +63,3 @@ Here is a full list of packages needed to run test suite:
 .. _git: http://git-scm.com
 .. _dulwich: http://pypi.python.org/pypi/dulwich
 .. _mercurial: http://mercurial.selenic.com/
-

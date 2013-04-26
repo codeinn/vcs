@@ -45,4 +45,3 @@ changesets specified options. User may see whole help with following command::
 
 .. note::
    Please refer to :ref:`api-cli` for more information about the basic commands.
-

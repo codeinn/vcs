@@ -34,4 +34,3 @@ RootNode
 
 .. autoclass:: vcs.nodes.RootNode
    :members:
-

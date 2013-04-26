@@ -47,7 +47,3 @@ intend to write new backend)!
 
 
 .. _TDD: http://en.wikipedia.org/wiki/Test-driven_development
-
-
-
-
