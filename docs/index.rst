@@ -35,6 +35,7 @@ Documentation
    contribute
    alternatives
    api/index
+   license
 
 Other topics
 ============
