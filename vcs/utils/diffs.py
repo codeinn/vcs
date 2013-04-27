@@ -5,7 +5,6 @@
 import re
 import difflib
 import logging
-import itertools
 
 from difflib import unified_diff
 
