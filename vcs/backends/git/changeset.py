@@ -470,8 +470,8 @@ class GitChangeset(BaseChangeset):
         """
         Get's a fast accessible file changes for given changeset
         """
-        a, m, d = self._changes_cache
-        return list(a.union(m).union(d))
+        added, modified, deleted = self._changes_cache
+        return list(added.union(modified).union(deleted))
 
     @LazyProperty
     def _diff_name_status(self):
@@ -514,11 +514,11 @@ class GitChangeset(BaseChangeset):
 
         :param status: one of: *added*, *modified* or *deleted*
         """
-        a, m, d = self._changes_cache
+        added, modified, deleted = self._changes_cache
         return sorted({
-            'added': list(a),
-            'modified': list(m),
-            'deleted': list(d)}[status]
+            'added': list(added),
+            'modified': list(modified),
+            'deleted': list(deleted)}[status]
         )
 
     @LazyProperty
