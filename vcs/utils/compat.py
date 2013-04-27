@@ -155,7 +155,7 @@ else:
 if sys.version_info >= (2, 6):
     from threading import Event, Thread
 else:
-    from threading import _Verbose, Condition, Lock, Thread, _time, \
+    from threading import _Verbose, Lock, Thread, _time, \
         _allocate_lock, RLock, _sleep
 
     def Condition(*args, **kwargs):
