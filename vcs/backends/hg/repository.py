@@ -497,8 +497,10 @@ class MercurialRepository(BaseRepository):
             revisions = scmutil.revrange(self._repo, filter_)
         else:
             revisions = self.revisions
-        revs = reversed(revisions[start_pos:end_pos]) if reverse else \
-                revisions[start_pos:end_pos]
+
+        revs = revisions[start_pos:end_pos]
+        if reverse:
+            revs = reversed(revs)
 
         return CollectionGenerator(self, revs)
 
