@@ -16,6 +16,7 @@ except IOError, err:
 install_requires = ['Pygments', 'mock']
 if sys.version_info < (2, 7):
     install_requires.append('unittest2')
+tests_require = install_requires + ['dulwich', 'mercurial']
 
 setup(
     name='vcs',
@@ -29,6 +30,7 @@ setup(
     packages=find_packages(),
     scripts=[],
     install_requires=install_requires,
+    tests_require=tests_require,
     test_suite='vcs.tests.collector',
     include_package_data=True,
     classifiers=[
