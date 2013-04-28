@@ -1,16 +1,20 @@
 from __future__ import with_statement
 
-import inspect
+import datetime
 import mock
 import sys
+import subprocess
 import vcs
 import vcs.cli
 from contextlib import nested
 from StringIO import StringIO
-from vcs.utils.compat import unittest
-from vcs.cli import make_option
 from vcs.cli import BaseCommand
 from vcs.cli import ExecutionManager
+from vcs.cli import make_option
+from vcs.nodes import FileNode
+from vcs.tests.base import BackendTestMixin
+from vcs.tests.conf import SCM_TESTS
+from vcs.utils.compat import unittest
 
 
 class DummyExecutionManager(ExecutionManager):
@@ -167,6 +171,47 @@ class TestBaseCommand(unittest.TestCase):
         kwargs = {'debug': True, 'traceback': True}
         command.handle.assert_called_once_with(*args, **kwargs)
 
+
+class RealCliMixin(BackendTestMixin):
+
+    @classmethod
+    def _get_commits(cls):
+        commits = [
+            {
+                'message': u'Initial commit',
+                'author': u'Joe Doe <joe.doe@example.com>',
+                'date': datetime.datetime(2010, 1, 1, 20),
+                'added': [FileNode('file1', content='Foobar')],
+            },
+            {
+                'message': u'Added a file',
+                'author': u'Joe Doe <joe.doe@example.com>',
+                'date': datetime.datetime(2010, 1, 1, 20),
+                'added': [FileNode('file2', content='Foobar')],
+            },
+        ]
+        return commits
+
+    def test_log_command(self):
+        cmd = 'vcs log --template "\$message"'
+        process = subprocess.Popen(cmd, cwd=self.repo.path, shell=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        so, se = process.communicate()
+        self.assertEqual(process.returncode, 0)
+        self.assertEqual(so.splitlines(), [
+            'Added a file',
+            'Initial commit',
+        ])
+
+
+# For each backend create test case class
+for alias in SCM_TESTS:
+    attrs = {
+        'backend_alias': alias,
+    }
+    cls_name = ''.join(('%s real cli' % alias).title().split())
+    bases = (RealCliMixin, unittest.TestCase)
+    globals()[cls_name] = type(cls_name, bases, attrs)
 
 
 if __name__ == '__main__':

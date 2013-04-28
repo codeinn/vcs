@@ -1,4 +1,4 @@
-from string import Template
+import string
 from vcs.nodes import FileNode
 from vcs.cli import ChangesetCommand
 from vcs.cli import make_option
@@ -6,7 +6,7 @@ from vcs.utils.diffs import get_udiff
 
 
 class LogCommand(ChangesetCommand):
-    TEMPLATE = Template(u'$raw_id | $date | $message')
+    TEMPLATE = u'$raw_id | $date | $message'
 
     option_list = ChangesetCommand.option_list + (
         make_option('-t', '--template', action='store', dest='template',
@@ -23,7 +23,7 @@ class LogCommand(ChangesetCommand):
         return repo.get_changeset(cid)
 
     def get_template(self, **options):
-            return options.get('template', self.TEMPLATE)
+            return string.Template(options.get('template', self.TEMPLATE))
 
     def handle_changeset(self, changeset, **options):
         template = self.get_template(**options)

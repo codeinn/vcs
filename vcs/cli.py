@@ -296,7 +296,7 @@ class RepositoryCommand(BaseCommand):
         if repo is None:
             curdir = abspath(os.curdir)
             try:
-                scm, path = get_scm(curdir, search_recursively=True)
+                scm, path = get_scm(curdir, search_up=True)
                 self.repo = vcs.get_repo(path, scm)
             except VCSError:
                 raise CommandError('Repository not found')
