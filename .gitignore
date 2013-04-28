@@ -2,6 +2,7 @@
 
 .coverage
 .hg
+.ropeproject
 
 build
 vcs.egg-info
