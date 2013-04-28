@@ -67,6 +67,7 @@ class BackendTestMixin(object):
         cls.repo_path = get_new_dir(str(time.time()))
         cls.repo = Backend(cls.repo_path, create=True)
         cls.imc = cls.repo.in_memory_changeset
+        cls.default_branch = cls.repo.DEFAULT_BRANCH_NAME
 
         for commit in cls._get_commits():
             for node in commit.get('added', []):
