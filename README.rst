@@ -21,11 +21,10 @@ vcs uses `Semantic Versioning <http://semver.org/>`_
 - Common *API* for SCM backends
 - Fetching repositories data lazily
 - Simple caching mechanism so we don't hit repo too often
-
-**Incoming**
-
 - Simple commit api
-- Smart and powerfull in memory Workdirs
+- Smart and powerfull in memory changesets
+- Working directory support
+
 
 -------------
 Documentation
