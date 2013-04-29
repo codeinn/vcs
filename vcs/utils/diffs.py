@@ -5,9 +5,10 @@
 import re
 import difflib
 import logging
+import itertools
 
 from difflib import unified_diff
-from itertools import imap
+
 from vcs.exceptions import VCSError
 from vcs.nodes import FileNode, NodeError
 from vcs.utils import safe_unicode
@@ -94,10 +95,11 @@ class DiffProcessor(object):
 
         elif self.__format == 'gitdiff':
             udiff_copy = self.copy_iterator()
-            self.lines = imap(self.escaper, self._parse_gitdiff(udiff_copy))
+            self.lines = itertools.imap(self.escaper,
+                                        self._parse_gitdiff(udiff_copy))
         else:
             udiff_copy = self.copy_iterator()
-            self.lines = imap(self.escaper, udiff_copy)
+            self.lines = itertools.imap(self.escaper, udiff_copy)
 
         # Select a differ.
         if differ == 'difflib':
@@ -114,7 +116,7 @@ class DiffProcessor(object):
         an original as it's needed for repeating operations on
         this instance of DiffProcessor
         """
-        self.__udiff, iterator_copy = tee(self.__udiff)
+        self.__udiff, iterator_copy = itertools.tee(self.__udiff)
         return iterator_copy
 
     def _extract_rev(self, line1, line2):
