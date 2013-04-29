@@ -7,7 +7,7 @@ import difflib
 import logging
 
 from difflib import unified_diff
-
+from itertools import imap
 from vcs.exceptions import VCSError
 from vcs.nodes import FileNode, NodeError
 from vcs.utils import safe_unicode
@@ -62,7 +62,7 @@ def get_gitdiff(filenode_old, filenode_new, ignore_whitespace=True):
     new_raw_id = getattr(filenode_new.changeset, 'raw_id', '0' * 40)
 
     repo = filenode_new.changeset.repository
-    vcs_gitdiff = repo._get_diff(old_raw_id, new_raw_id, filenode_new.path,
+    vcs_gitdiff = repo.get_diff(old_raw_id, new_raw_id, filenode_new.path,
                                  ignore_whitespace)
 
     return vcs_gitdiff

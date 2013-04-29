@@ -2,7 +2,7 @@ import string
 from vcs.nodes import FileNode
 from vcs.cli import ChangesetCommand
 from vcs.cli import make_option
-from vcs.utils.diffs import get_udiff
+from vcs.utils.diffs import get_gitdiff
 
 
 class LogCommand(ChangesetCommand):
@@ -34,7 +34,7 @@ class LogCommand(ChangesetCommand):
         if options.get('show_patches'):
 
             def show_diff(old_node, new_node):
-                diff = get_udiff(old_node, new_node)
+                diff = get_gitdiff(old_node, new_node)
                 self.stdout.write(u''.join(diff))
 
             for node in changeset.added:
