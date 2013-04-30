@@ -43,6 +43,8 @@ from .config import ConfigFile
 from .inmemory import GitInMemoryChangeset
 from .workdir import GitWorkdir
 
+SHA_PATTERN = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
+
 
 class GitRepository(BaseRepository):
     """
@@ -242,7 +244,7 @@ class GitRepository(BaseRepository):
         For git backend we always return integer here. This way we ensure
         that changset's revision attribute would become integer.
         """
-        pattern = re.compile(r'^[[0-9a-fA-F]{12}|[0-9a-fA-F]{40}]$')
+        
         is_bstr = lambda o: isinstance(o, (str, unicode))
         is_null = lambda o: len(o) == revision.count('0')
 
@@ -271,12 +273,12 @@ class GitRepository(BaseRepository):
             elif revision in _tags_shas:
                 return _tags_shas[_tags_shas.index(revision)]
 
-            elif not pattern.match(revision) or revision not in self.revisions:
+            elif not SHA_PATTERN.match(revision) or revision not in self.revisions:
                 raise ChangesetDoesNotExistError("Revision %s does not exist "
                     "for this repository" % (revision))
 
         # Ensure we return full id
-        if not pattern.match(str(revision)):
+        if not SHA_PATTERN.match(str(revision)):
             raise ChangesetDoesNotExistError("Given revision %s not recognized"
                 % revision)
         return revision
