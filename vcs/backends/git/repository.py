@@ -58,11 +58,13 @@ class GitRepository(BaseRepository):
         repo = self._get_repo(create, src_url, update_after_clone, bare)
         self.bare = repo.bare
 
-        self._config_files = [
-            bare and abspath(self.path, 'config')
-                     or abspath(self.path, '.git', 'config'),
-            abspath(get_user_home(), '.gitconfig'),
-        ]
+    @property
+    def _config_files(self):
+        return [
+            self.bare and abspath(self.path, 'config')
+                      or abspath(self.path, '.git', 'config'),
+             abspath(get_user_home(), '.gitconfig'),
+         ]
 
     @property
     def _repo(self):
