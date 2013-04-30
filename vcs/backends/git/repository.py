@@ -244,17 +244,19 @@ class GitRepository(BaseRepository):
         For git backend we always return integer here. This way we ensure
         that changset's revision attribute would become integer.
         """
-        
-        is_bstr = lambda o: isinstance(o, (str, unicode))
+
         is_null = lambda o: len(o) == revision.count('0')
 
-        if len(self.revisions) == 0:
+        try:
+            self.revisions[0]
+        except (KeyError, IndexError):
             raise EmptyRepositoryError("There are no changesets yet")
 
         if revision in (None, '', 'tip', 'HEAD', 'head', -1):
-            revision = self.revisions[-1]
+            return self.revisions[-1]
 
-        if ((is_bstr(revision) and revision.isdigit() and len(revision) < 12)
+        is_bstr = isinstance(revision, (str, unicode))
+        if ((is_bstr and revision.isdigit() and len(revision) < 12)
             or isinstance(revision, int) or is_null(revision)):
             try:
                 revision = self.revisions[int(revision)]
@@ -262,15 +264,15 @@ class GitRepository(BaseRepository):
                 raise ChangesetDoesNotExistError("Revision %s does not exist "
                     "for this repository" % (revision))
 
-        elif is_bstr(revision):
+        elif is_bstr:
             # get by branch/tag name
             _ref_revision = self._parsed_refs.get(revision)
-            _tags_shas = self.tags.values()
             if _ref_revision:  # and _ref_revision[1] in ['H', 'RH', 'T']:
                 return _ref_revision[0]
 
+            _tags_shas = self.tags.values()
             # maybe it's a tag ? we don't have them in self.revisions
-            elif revision in _tags_shas:
+            if revision in _tags_shas:
                 return _tags_shas[_tags_shas.index(revision)]
 
             elif not SHA_PATTERN.match(revision) or revision not in self.revisions:
