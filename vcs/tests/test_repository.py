@@ -1,5 +1,6 @@
 from __future__ import with_statement
 import datetime
+from mock import Mock
 from vcs.tests.base import BackendTestMixin
 from vcs.tests.conf import SCM_TESTS
 from vcs.tests.conf import TEST_USER_CONFIG_FILE
@@ -44,6 +45,19 @@ class RepositoryBaseTest(BackendTestMixin):
         class dummy(object):
             path = self.repo.path
         self.assertTrue(self.repo != dummy())
+
+    def test_repo_invalidate_revisions(self):
+        revisions = self.repo.revisions[:] # copy
+        self.repo.revisions = []
+        self.repo.invalidate_revisions()
+        self.assertEqual(self.repo.revisions, revisions)
+
+    def test_repo_invalidate_revisions_itself_does_not_access_revisions(self):
+        self.repo._get_all_revisions = Mock()
+        self.repo.invalidate_revisions()
+        self.assertFalse(self.repo._get_all_revisions.called)
+        self.repo.revisions
+        self.assertTrue(self.repo._get_all_revisions.called)
 
 
 class RepositoryGetDiffTest(BackendTestMixin):

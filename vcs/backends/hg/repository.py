@@ -81,14 +81,6 @@ class MercurialRepository(BaseRepository):
         return len(self.revisions) == 0
 
     @LazyProperty
-    def revisions(self):
-        """
-        Returns list of revisions' ids, in ascending order.  Being lazy
-        attribute allows external tools to inject shas from cache.
-        """
-        return self._get_all_revisions()
-
-    @LazyProperty
     def name(self):
         return os.path.basename(self.path)
 
@@ -235,6 +227,9 @@ class MercurialRepository(BaseRepository):
         _bookmarks = [(safe_unicode(n), hex(h),) for n, h in
                  self._repo._bookmarks.items()]
         return OrderedDict(sorted(_bookmarks, key=sortkey, reverse=True))
+
+    def invalidate_revisions(self):
+        pass
 
     def _get_all_revisions(self):
 

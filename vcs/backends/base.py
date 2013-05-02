@@ -79,6 +79,23 @@ class BaseRepository(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def _get_all_revisions(self):
+        raise NotImplementedError
+
+    @LazyProperty
+    def revisions(self):
+        """
+        Returns list of revisions' ids, in ascending order.  Being lazy
+        attribute allows external tools to inject shas from cache.
+        """
+        return self._get_all_revisions()
+
+    def invalidate_revisions(self):
+        """
+        Marks ``revisions`` attribute to be re-fetched next time it's accessed.
+        """
+        raise NotImplementedError
+
     @LazyProperty
     def alias(self):
         for k, v in settings.BACKENDS.items():

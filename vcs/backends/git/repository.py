@@ -68,14 +68,6 @@ class GitRepository(BaseRepository):
         except KeyError:
             return None
 
-    @LazyProperty
-    def revisions(self):
-        """
-        Returns list of revisions' ids, in ascending order.  Being lazy
-        attribute allows external tools to inject shas from cache.
-        """
-        return self._get_all_revisions()
-
     @classmethod
     def _run_git_command(cls, cmd, **opts):
         """
@@ -202,6 +194,9 @@ class GitRepository(BaseRepository):
                 return self._repo
         except (NotGitRepository, OSError), err:
             raise RepositoryError(err)
+
+    def invalidate_revisions(self):
+        pass
 
     def _get_all_revisions(self):
         # we must check if this repo is not empty, since later command
