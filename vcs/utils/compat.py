@@ -155,8 +155,8 @@ else:
 if sys.version_info >= (2, 6):
     from threading import Event, Thread
 else:
-    from threading import _Verbose, Lock, Thread, _time, \
-        _allocate_lock, RLock, _sleep
+    from threading import (Thread, _Verbose, Lock, _time, # pyflakes:ignore
+        _allocate_lock, RLock, _sleep)
 
     def Condition(*args, **kwargs):
         return _Condition(*args, **kwargs)

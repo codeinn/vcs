@@ -1,14 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-    vcs.nodes
-    ~~~~~~~~~
-
-    Module holding everything related to vcs nodes.
-
-    :created_on: Apr 8, 2010
-    :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
-"""
-import os
 import stat
 import posixpath
 import mimetypes

@@ -58,7 +58,7 @@ class SummaryCommand(ChangesetCommand):
         output = ['']
         output.extend([
             '%s: %s' % (label.rjust(max_label_size+3), value)
-            for label, value in stats
+            for label, value in stats # pyflakes:ignore
         ])
         output.append('')
         output.append('')

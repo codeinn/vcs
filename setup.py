@@ -1,6 +1,7 @@
 import os
 import sys
 from setuptools import setup, find_packages
+from extras import RunFlakesCommand
 
 vcs = __import__('vcs')
 readme_file = os.path.abspath(os.path.join(os.path.dirname(__file__),
@@ -17,6 +18,7 @@ install_requires = ['Pygments', 'mock']
 if sys.version_info < (2, 7):
     install_requires.append('unittest2')
 tests_require = install_requires + ['dulwich', 'mercurial']
+
 
 setup(
     name='vcs',
@@ -45,4 +47,5 @@ setup(
             'vcs = vcs:main',
         ],
     },
+    cmdclass={'flakes': RunFlakesCommand},
 )

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # original copyright: 2007-2008 by Armin Ronacher
 # licensed under the BSD license.
-
 import re
 import difflib
 import logging
