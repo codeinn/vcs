@@ -203,21 +203,30 @@ class ChangesetsTestCaseMixin(BackendTestMixin):
         self.assertEqual(changesets[-1].raw_id, second_id)
 
     def test_get_changesets_respects_start_date(self):
-        start_date = datetime.datetime(2010, 2, 1)
+        start_date = datetime.datetime(2010, 1, 2)
         for cs in self.repo.get_changesets(start_date=start_date):
             self.assertGreaterEqual(cs.date, start_date)
 
     def test_get_changesets_respects_end_date(self):
+        end_date = datetime.datetime(2010, 1, 2)
+        for cs in self.repo.get_changesets(end_date=end_date):
+            self.assertLessEqual(cs.date, end_date)
+
+    def test_get_changesets_respects_start_date_and_end_date(self):
         start_date = datetime.datetime(2010, 1, 1)
-        end_date = datetime.datetime(2010, 2, 1)
+        end_date = datetime.datetime(2010, 1, 3)
         for cs in self.repo.get_changesets(start_date=start_date,
                                            end_date=end_date):
             self.assertGreaterEqual(cs.date, start_date)
             self.assertLessEqual(cs.date, end_date)
 
-    def test_get_changesets_respects_start_date_and_end_date(self):
-        end_date = datetime.datetime(2010, 2, 1)
-        for cs in self.repo.get_changesets(end_date=end_date):
+    def test_get_changesets_respects_start_date_and_end_date_and_branch_name(self):
+        start_date = datetime.datetime(2010, 1, 1)
+        end_date = datetime.datetime(2010, 1, 3)
+        for cs in self.repo.get_changesets(start_date=start_date,
+                                           end_date=end_date,
+                                           branch_name=self.repo.DEFAULT_BRANCH_NAME):
+            self.assertGreaterEqual(cs.date, start_date)
             self.assertLessEqual(cs.date, end_date)
 
     def test_get_changesets_respects_reverse(self):
