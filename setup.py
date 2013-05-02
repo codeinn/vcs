@@ -38,10 +38,11 @@ class run_flakes(Command):
         warns = 0
         # Define top-level directories
         dirs = ['vcs']
+        ignore = ['__init__.py', 'hgcompat.py']
         for dir in dirs:
             for root, _, files in os.walk(dir):
                 for file in files:
-                    if file != '__init__.py' and file.endswith('.py') :
+                    if file not in ignore and file.endswith('.py') :
                         warns += flakes.checkPath(os.path.join(root, file))
         if warns > 0:
             sys.stderr.write("ERROR: Finished with total %d warnings.\n" % warns)

@@ -2,7 +2,6 @@ import time
 import datetime
 import posixpath
 from dulwich import objects
-from dulwich.repo import Repo
 from vcs.backends.base import BaseInMemoryChangeset
 from vcs.exceptions import RepositoryError
 from vcs.utils import safe_str

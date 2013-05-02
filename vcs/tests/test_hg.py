@@ -4,8 +4,7 @@ import os
 from vcs.backends.hg import MercurialRepository, MercurialChangeset
 from vcs.exceptions import RepositoryError, VCSError, NodeDoesNotExistError
 from vcs.nodes import NodeKind, NodeState
-from vcs.tests.conf import PACKAGE_DIR, TEST_HG_REPO, TEST_HG_REPO_CLONE, \
-    TEST_HG_REPO_PULL
+from vcs.tests.conf import TEST_HG_REPO, TEST_HG_REPO_CLONE, TEST_HG_REPO_PULL
 from vcs.utils.compat import unittest
 
 
