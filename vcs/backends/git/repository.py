@@ -43,8 +43,8 @@ class GitRepository(BaseRepository):
     scm = 'git'
 
     def __init__(self, repo_path, create=False, src_url=None,
-                 update_after_clone=False, bare=False):
-
+        update_after_clone=False, bare=False, use_revisions_cache=False):
+        self.use_revisions_cache = use_revisions_cache
         self.path = abspath(repo_path)
         repo = self._get_repo(create, src_url, update_after_clone, bare)
         self.bare = repo.bare
@@ -194,9 +194,6 @@ class GitRepository(BaseRepository):
                 return self._repo
         except (NotGitRepository, OSError), err:
             raise RepositoryError(err)
-
-    def invalidate_revisions(self):
-        pass
 
     def _get_all_revisions(self):
         # we must check if this repo is not empty, since later command

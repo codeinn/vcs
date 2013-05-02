@@ -1,16 +1,17 @@
 from __future__ import with_statement
+import gzip
 import datetime
 from mock import Mock
 from vcs.tests.base import BackendTestMixin
 from vcs.tests.conf import SCM_TESTS
-from vcs.tests.conf import TEST_USER_CONFIG_FILE
+from vcs.tests.conf import TEST_USER_CONFIG_FILE_SRC
 from vcs.nodes import FileNode
 from vcs.utils.compat import unittest
 from vcs.exceptions import ChangesetDoesNotExistError
 
 
 class RepositoryBaseTest(BackendTestMixin):
-    recreate_repo_per_test = False
+    recreate_repo_per_test = True
 
     @classmethod
     def _get_commits(cls):
@@ -18,18 +19,18 @@ class RepositoryBaseTest(BackendTestMixin):
 
     def test_get_config_value(self):
         self.assertEqual(self.repo.get_config_value('universal', 'foo',
-            TEST_USER_CONFIG_FILE), 'bar')
+            TEST_USER_CONFIG_FILE_SRC), 'bar')
 
     def test_get_config_value_defaults_to_None(self):
         self.assertEqual(self.repo.get_config_value('universal', 'nonexist',
-            TEST_USER_CONFIG_FILE), None)
+            TEST_USER_CONFIG_FILE_SRC), None)
 
     def test_get_user_name(self):
-        self.assertEqual(self.repo.get_user_name(TEST_USER_CONFIG_FILE),
+        self.assertEqual(self.repo.get_user_name(TEST_USER_CONFIG_FILE_SRC),
             'Foo Bar')
 
     def test_get_user_email(self):
-        self.assertEqual(self.repo.get_user_email(TEST_USER_CONFIG_FILE),
+        self.assertEqual(self.repo.get_user_email(TEST_USER_CONFIG_FILE_SRC),
             'foo.bar@example.com')
 
     def test_repo_equality(self):
@@ -48,7 +49,7 @@ class RepositoryBaseTest(BackendTestMixin):
 
     def test_repo_invalidate_revisions(self):
         revisions = self.repo.revisions[:] # copy
-        self.repo.revisions = None
+        self.repo.revisions = 'this should be recreated anyway'
         self.repo.invalidate_revisions()
         self.assertEqual(self.repo.revisions, revisions)
 
@@ -58,6 +59,13 @@ class RepositoryBaseTest(BackendTestMixin):
         self.assertFalse(self.repo._get_all_revisions.called)
         self.repo.revisions
         self.assertTrue(self.repo._get_all_revisions.called)
+
+    def test_repo_respects_use_revisions_cache(self):
+        self.repo.use_revisions_cache = True
+        self.repo.invalidate_revisions()
+        self.repo.revisions
+        cached = gzip.open(self.repo.get_revisions_cache_path()).read().splitlines()
+        self.assertEqual(self.repo.revisions, cached)
 
 
 class RepositoryGetDiffTest(BackendTestMixin):
