@@ -48,7 +48,7 @@ class RepositoryBaseTest(BackendTestMixin):
 
     def test_repo_invalidate_revisions(self):
         revisions = self.repo.revisions[:] # copy
-        self.repo.revisions = []
+        self.repo.revisions = None
         self.repo.invalidate_revisions()
         self.assertEqual(self.repo.revisions, revisions)
 
