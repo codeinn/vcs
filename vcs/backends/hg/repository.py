@@ -17,7 +17,6 @@ import datetime
 
 
 from vcs.backends.base import BaseRepository, CollectionGenerator
-from vcs.conf import settings
 
 from vcs.exceptions import (
     BranchDoesNotExistError, ChangesetDoesNotExistError, EmptyRepositoryError,

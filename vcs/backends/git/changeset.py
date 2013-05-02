@@ -10,7 +10,7 @@ from vcs.exceptions import (
     ChangesetDoesNotExistError, ImproperArchiveTypeError
 )
 from vcs.nodes import (
-    FileNode, DirNode, NodeKind, RootNode, RemovedFileNode, SubModuleNode,
+    FileNode, DirNode, NodeKind, RootNode, SubModuleNode,
     ChangedFileNodesGenerator, AddedFileNodesGenerator, RemovedFileNodesGenerator
 )
 from vcs.utils import (
@@ -187,10 +187,9 @@ class GitChangeset(BaseChangeset):
         """
         Returns list of children changesets.
         """
-        rev_filter = _git_path = settings.GIT_REV_FILTER
-        so, se = self.repository.run_git_command(
-            "rev-list %s --children | grep '^%s'" % (rev_filter, self.raw_id)
-        )
+        rev_filter = settings.GIT_REV_FILTER
+        cmd = "rev-list %s --children | grep '^%s'" % (rev_filter, self.raw_id)
+        so, se = self.repository.run_git_command(cmd)
 
         children = []
         for l in so.splitlines():

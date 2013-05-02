@@ -1,13 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-    vcs.utils.archivers
-    ~~~~~~~~~~~~~~~~~~~
-
-    set of archiver functions for creating archives from repository content
-
-    :created_on: Jan 21, 2011
-    :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
-"""
 
 
 class BaseArchiver(object):

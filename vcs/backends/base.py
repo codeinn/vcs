@@ -1,14 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-    vcs.backends.base
-    ~~~~~~~~~~~~~~~~~
-
-    Base for all available scm backends
-
-    :created_on: Apr 8, 2010
-    :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
-"""
-
 import datetime
 import itertools
 
@@ -123,7 +113,7 @@ class BaseRepository(object):
                     for f in files:
                         size += tip.get_file_size(f.path)
 
-        except RepositoryError, e:
+        except RepositoryError:
             pass
         return size
 

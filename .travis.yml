@@ -9,6 +9,7 @@ install:
   - pip install . --use-mirrors
 
 script: python vcs/tests/__main__.py
+after_script: python setup.py flakes
 
 notifications:
     email:
