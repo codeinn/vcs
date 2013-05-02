@@ -1,14 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-    vcs.backends.git.repository
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    Git repository implementation.
-
-    :created_on: Apr 8, 2010
-    :copyright: (c) 2010-2011 by Marcin Kuzminski, Lukasz Balcerzak.
-"""
-
 import os
 import re
 import time
