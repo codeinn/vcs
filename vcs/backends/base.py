@@ -106,7 +106,7 @@ class BaseRepository(object):
                 cache_path = self.get_revisions_cache_path()
                 if not os.path.isfile(cache_path):
                     self.cache_revisions()
-                self._revisions = gzip.open(cache_path).read().splitlines()
+                self._revisions = self.get_cached_revisions()
             else:
                 self._revisions = self._get_all_revisions()
         return self._revisions
@@ -125,6 +125,9 @@ class BaseRepository(object):
             with gzip.open(self.get_revisions_cache_path(), 'w') as fout:
                 for revision in revisions:
                     fout.write('%s\n' % revision)
+
+    def get_cached_revisions(self):
+        return gzip.open(self.get_revisions_cache_path()).read().splitlines()
 
     def get_revisions_lock(self):
         """

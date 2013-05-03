@@ -150,10 +150,10 @@ class GitInMemoryChangeset(BaseInMemoryChangeset):
         ref = 'refs/heads/%s' % branch
         repo.refs[ref] = commit.id
 
-        # Update vcs repository object & recreate dulwich repo
-        self.repository.revisions.append(commit.id)
         # invalidate parsed refs after commit
         self.repository._parsed_refs = self.repository._get_parsed_refs()
+        # Update vcs repository object & recreate dulwich repo
+        self.repository.invalidate_revisions()
         tip = self.repository.get_changeset()
         self.reset()
         return tip

@@ -1,4 +1,5 @@
 from __future__ import with_statement
+import os
 import gzip
 import datetime
 from mock import Mock
@@ -49,6 +50,8 @@ class RepositoryBaseTest(BackendTestMixin):
 
     def test_repo_invalidate_revisions(self):
         revisions = self.repo.revisions[:] # copy
+        # at least in one test make sure revisions list is not empty
+        self.assertTrue(len(revisions) > 0)
         self.repo.revisions = 'this should be recreated anyway'
         self.repo.invalidate_revisions()
         self.assertEqual(self.repo.revisions, revisions)
@@ -57,15 +60,41 @@ class RepositoryBaseTest(BackendTestMixin):
         self.repo._get_all_revisions = Mock()
         self.repo.invalidate_revisions()
         self.assertFalse(self.repo._get_all_revisions.called)
-        self.repo.revisions
+        self.repo.revisions # access attribute
         self.assertTrue(self.repo._get_all_revisions.called)
 
     def test_repo_respects_use_revisions_cache(self):
+        revisions = self.repo.revisions[:] # copy
         self.repo.use_revisions_cache = True
         self.repo.invalidate_revisions()
-        self.repo.revisions
+        self.repo.revisions # access attribute
         cached = gzip.open(self.repo.get_revisions_cache_path()).read().splitlines()
-        self.assertEqual(self.repo.revisions, cached)
+        self.assertEqual(revisions, cached)
+
+    def test_get_cached_revisions(self):
+        self.repo.cache_revisions()
+        cache_path = self.repo.get_revisions_cache_path()
+        with gzip.open(cache_path, 'w') as fout:
+            fout.write('foo\nbar')
+        self.assertEqual(self.repo.get_cached_revisions(), ['foo', 'bar'])
+
+    def test_cache_revisions(self):
+        revisions = self.repo.revisions[:] # copy
+        self.repo.cache_revisions()
+        cache_path = self.repo.get_revisions_cache_path()
+        cached_revisions = gzip.open(cache_path).read().splitlines()
+        self.assertEqual(revisions, cached_revisions)
+
+    def test_repo_invalidate_recreates_cache(self):
+        self.repo.use_revisions_cache = True
+        self.repo.invalidate_revisions()
+        self.repo.revisions # access attribute
+        revisions = self.repo.revisions[:] # copy
+        os.remove(self.repo.get_revisions_cache_path())
+        self.repo.invalidate_revisions()
+        self.repo.revisions # access attribute
+        cached = gzip.open(self.repo.get_revisions_cache_path()).read().splitlines()
+        self.assertEqual(revisions, cached)
 
 
 class RepositoryGetDiffTest(BackendTestMixin):
