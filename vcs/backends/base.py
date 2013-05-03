@@ -96,8 +96,7 @@ class BaseRepository(object):
         """
         self._revisions = None
 
-    @property
-    def revisions(self):
+    def _revisions_get(self):
         """
         Returns list of revisions' ids, in ascending order.  Being lazy
         attribute allows external tools to inject shas from cache.
@@ -112,9 +111,10 @@ class BaseRepository(object):
                 self._revisions = self._get_all_revisions()
         return self._revisions
 
-    @revisions.setter
-    def revisions(self, revs):
+    def _revisions_set(self, revs):
         self._revisions = revs
+
+    revisions = property(_revisions_get, _revisions_set)
 
     def get_revisions_cache_path(self):
         cache_filename = '.vcs.%s.revisions.cache' % self.scm
