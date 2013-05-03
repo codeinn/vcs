@@ -74,8 +74,12 @@ class RepositoryBaseTest(BackendTestMixin):
     def test_get_cached_revisions(self):
         self.repo.cache_revisions()
         cache_path = self.repo.get_revisions_cache_path()
-        with gzip.open(cache_path, 'w') as fout:
+        try:
+            fout = gzip.open(cache_path, 'w')
             fout.write('foo\nbar')
+        finally:
+            fout.close()
+
         self.assertEqual(self.repo.get_cached_revisions(), ['foo', 'bar'])
 
     def test_cache_revisions(self):
