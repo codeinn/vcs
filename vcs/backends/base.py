@@ -123,9 +123,12 @@ class BaseRepository(object):
     def cache_revisions(self):
         with self.get_revisions_lock():
             revisions = self._get_all_revisions()
-            with gzip.open(self.get_revisions_cache_path(), 'w') as fout:
+            try:
+                fout = gzip.open(self.get_revisions_cache_path(), 'w')
                 for revision in revisions:
                     fout.write('%s\n' % revision)
+            finally:
+                fout.close()
 
     def get_cached_revisions(self):
         return gzip.open(self.get_revisions_cache_path()).read().splitlines()
