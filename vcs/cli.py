@@ -406,7 +406,7 @@ class ChangesetCommand(RepositoryCommand):
           Default is ``None``.
         """
         branch_name = None
-        if not options['all']:
+        if not options.get('all', None):
             branch_name = options.get('branch') or repo.workdir.get_branch()
         if options.get('start_date'):
             options['start_date'] = parse_datetime(options['start_date'])
