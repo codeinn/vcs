@@ -4,7 +4,7 @@ import errno
 from vcs.backends.base import BaseInMemoryChangeset
 from vcs.exceptions import RepositoryError
 
-from vcs.utils.hgcompat import memfilectx, memctx, hex, tolocal
+from vcs.utils.hgcompat import memfilectx, memctx, tolocal
 
 
 class MercurialInMemoryChangeset(BaseInMemoryChangeset):
@@ -98,16 +98,17 @@ class MercurialInMemoryChangeset(BaseInMemoryChangeset):
         commit_ctx._date = date
 
         # TODO: Catch exceptions!
-        n = self.repository._repo.commitctx(commit_ctx)
+        self.repository._repo.commitctx(commit_ctx)
         # Returns mercurial node
         self._commit_ctx = commit_ctx  # For reference
         # Update vcs repository object & recreate mercurial _repo
         # new_ctx = self.repository._repo[node]
         # new_tip = self.repository.get_changeset(new_ctx.hex())
-        new_id = hex(n)
-        self.repository.revisions.append(new_id)
         self._repo = self.repository._get_repo(create=False)
+        self.repository.invalidate_revisions()
         self.repository.branches = self.repository._get_branches()
         tip = self.repository.get_changeset()
         self.reset()
         return tip
+
+# invalidate

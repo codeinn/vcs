@@ -47,7 +47,7 @@ class MercurialRepository(BaseRepository):
     scm = 'hg'
 
     def __init__(self, repo_path, create=False, baseui=None, src_url=None,
-                 update_after_clone=False):
+            update_after_clone=False, use_revisions_cache=False):
         """
         Raises RepositoryError if repository could not be find at the given
         ``repo_path``.
@@ -59,6 +59,8 @@ class MercurialRepository(BaseRepository):
         :param src_url=None: would try to clone repository from given location
         :param update_after_clone=False: sets update of working copy after
           making a clone
+        :param use_revisions_cache: if set to True, would try to use cached
+          revisions list (and saves it if cache does not exist).
         """
 
         if not isinstance(repo_path, str):
@@ -66,6 +68,7 @@ class MercurialRepository(BaseRepository):
                            'be instance of <str> got %s instead' %
                            type(repo_path))
 
+        self.use_revisions_cache = use_revisions_cache
         self.path = abspath(repo_path)
         self.baseui = baseui or ui.ui()
         # We've set path and ui, now we can set _repo itself
@@ -79,14 +82,6 @@ class MercurialRepository(BaseRepository):
         # TODO: Following raises errors when using InMemoryChangeset...
         # return len(self._repo.changelog) == 0
         return len(self.revisions) == 0
-
-    @LazyProperty
-    def revisions(self):
-        """
-        Returns list of revisions' ids, in ascending order.  Being lazy
-        attribute allows external tools to inject shas from cache.
-        """
-        return self._get_all_revisions()
 
     @LazyProperty
     def name(self):
@@ -547,7 +542,7 @@ class MercurialRepository(BaseRepository):
         :param config_file: A path to file which should be used to retrieve
           configuration from (might also be a list of file paths)
         """
-        username = self.get_config_value('ui', 'username')
+        username = self.get_config_value('ui', 'username', config_file)
         if username:
             return author_name(username)
         return None
@@ -559,7 +554,7 @@ class MercurialRepository(BaseRepository):
         :param config_file: A path to file which should be used to retrieve
           configuration from (might also be a list of file paths)
         """
-        username = self.get_config_value('ui', 'username')
+        username = self.get_config_value('ui', 'username', config_file)
         if username:
             return author_email(username)
         return None

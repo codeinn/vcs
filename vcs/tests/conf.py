@@ -58,5 +58,6 @@ def get_new_dir(title):
 PACKAGE_DIR = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..'))
 _dest = jn(TEST_TMP_PATH, 'aconfig')
-shutil.copy(jn(THIS, 'aconfig'), _dest)
+TEST_USER_CONFIG_FILE_SRC = jn(THIS, 'aconfig')
+shutil.copy(TEST_USER_CONFIG_FILE_SRC, _dest)
 TEST_USER_CONFIG_FILE = _dest

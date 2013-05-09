@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
+from __future__ import with_statement
+import os
+import gzip
 import datetime
+import lockfile
 import itertools
 
 from vcs.utils import author_name, author_email
@@ -45,10 +49,12 @@ class BaseRepository(object):
             tags as list of changesets
     """
     scm = None
+    use_revisions_cache = False
     DEFAULT_BRANCH_NAME = None
     EMPTY_CHANGESET = '0' * 40
 
-    def __init__(self, repo_path, create=False, **kwargs):
+    def __init__(self, repo_path, create=False, src_url=None,
+            use_revisions_cache=False):
         """
         Initializes repository. Raises RepositoryError if repository could
         not be find at the given ``repo_path`` or directory at ``repo_path``
@@ -60,6 +66,8 @@ class BaseRepository(object):
           would be cloned; requires ``create`` parameter to be set to True -
           raises RepositoryError if src_url is set and create evaluates to
           False
+        :param use_revisions_cache: if set to True, would try to use cached
+          revisions list (and saves it if cache does not exist).
         """
         raise NotImplementedError
 
@@ -78,6 +86,60 @@ class BaseRepository(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def _get_all_revisions(self):
+        raise NotImplementedError
+
+    def invalidate_revisions(self):
+        """
+        Marks ``revisions`` attribute to be re-fetched next time it's accessed.
+        """
+        self._revisions = None
+
+    def _revisions_get(self):
+        """
+        Returns list of revisions' ids, in ascending order.  Being lazy
+        attribute allows external tools to inject shas from cache.
+        """
+        if getattr(self, '_revisions', None) is None:
+            if self.use_revisions_cache:
+                cache_path = self.get_revisions_cache_path()
+                if not os.path.isfile(cache_path):
+                    self.cache_revisions()
+                self._revisions = self.get_cached_revisions()
+            else:
+                self._revisions = self._get_all_revisions()
+        return self._revisions
+
+    def _revisions_set(self, revs):
+        self._revisions = revs
+
+    revisions = property(_revisions_get, _revisions_set)
+
+    def get_revisions_cache_path(self):
+        cache_filename = '.vcs.%s.revisions.cache' % self.scm
+        return os.path.join(self.path, cache_filename)
+
+    def cache_revisions(self):
+        with self.get_revisions_lock():
+            revisions = self._get_all_revisions()
+            try:
+                fout = gzip.open(self.get_revisions_cache_path(), 'w')
+                for revision in revisions:
+                    fout.write('%s\n' % revision)
+            finally:
+                fout.close()
+
+    def get_cached_revisions(self):
+        return gzip.open(self.get_revisions_cache_path()).read().splitlines()
+
+    def get_revisions_lock(self):
+        """
+        Returns ``lockfile.LockFile`` lock.
+        """
+        lock_filename = '.vcs.%s.revisions.lock' % self.scm
+        lockpath = os.path.join(self.path, lock_filename)
+        return lockfile.LockFile(lockpath)
 
     @LazyProperty
     def alias(self):

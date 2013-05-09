@@ -43,8 +43,8 @@ class GitRepository(BaseRepository):
     scm = 'git'
 
     def __init__(self, repo_path, create=False, src_url=None,
-                 update_after_clone=False, bare=False):
-
+        update_after_clone=False, bare=False, use_revisions_cache=False):
+        self.use_revisions_cache = use_revisions_cache
         self.path = abspath(repo_path)
         repo = self._get_repo(create, src_url, update_after_clone, bare)
         self.bare = repo.bare
@@ -67,14 +67,6 @@ class GitRepository(BaseRepository):
             return self._repo.head()
         except KeyError:
             return None
-
-    @LazyProperty
-    def revisions(self):
-        """
-        Returns list of revisions' ids, in ascending order.  Being lazy
-        attribute allows external tools to inject shas from cache.
-        """
-        return self._get_all_revisions()
 
     @classmethod
     def _run_git_command(cls, cmd, **opts):
