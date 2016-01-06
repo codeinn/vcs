@@ -1,6 +1,8 @@
 import os
 
 from vcs.backends.base import BaseRepository
+from .common import SubprocessP4
+import vcs.exceptions
 
 class P4Repository(BaseRepository):
     """
@@ -26,9 +28,8 @@ class P4Repository(BaseRepository):
     """
     scm = 'p4'
     DEFAULT_BRANCH_NAME = None
-    EMPTY_CHANGESET = '0' * 40
 
-    def __init__(self, repo_path, create=False, p4user=None, p4passwd=None, p4port=None, p4client=None):
+    def __init__(self, repo_path, create=False, user=None, passwd=None, port=None, p4client=None):
         """
         Initializes repository. Raises RepositoryError if repository could
         not be find at the given ``repo_path`` or directory at ``repo_path``
@@ -42,10 +43,18 @@ class P4Repository(BaseRepository):
         :param p4client=None same as p4port
         """
         self.path = repo_path
-        self.p4user = p4user or os.environ['P4USER']
-        self.p4passwd = p4passwd or os.environ['P4PASSWD']
-        self.p4port = p4port or os.environ['P4PORT']
-        self.p4client = p4client or os.environ['P4CLIENT']
+
+        try:
+            user = user or os.environ['P4USER']
+            passwd = passwd or os.environ['P4PASSWD']
+            port = port or os.environ['P4PORT']
+        except KeyError:
+            raise vcs.exceptions.RepositoryError('You have to specify user, password and port')
+
+        client = p4client or os.environ.get('P4CLIENT')  # this one isn't mandatory for read operations
+
+        self.repo_path = repo_path
+        self.repo = SubprocessP4(user, passwd, port, client)
 
     def is_valid(self):
         """
@@ -69,18 +78,23 @@ class P4Repository(BaseRepository):
     def get_changesets(self, start=None, end=None, start_date=None,
                        end_date=None, branch_name=None, reverse=False):
         """
-        Returns iterator of ``MercurialChangeset`` objects from start to end
+        Returns iterator of ``P4Changeset`` objects from start to end
         not inclusive This should behave just like a list, ie. end is not
         inclusive
 
-        :param start: None or str
-        :param end: None or str
+        :param start: None or int
+        :param end: None or int, should be bigger than start
         :param start_date:
         :param end_date:
         :param branch_name:
         :param reversed:
         """
-        raise NotImplementedError
+        PAGE_SIZE = 1000
+
+        result = self.repo.run(['changes', '-s', 'submitted', '-m', PAGE_SIZE, self.repo_path])
+
+        # TODO do the previous command in cycle with modified start and end till you satisfy the start and end.
+        # it is better to have multiple requests with 1k results, than one with millions of results
 
     def tag(self, name, user, revision=None, message=None, date=None, **opts):
         """

@@ -47,11 +47,6 @@ class P4Changeset(BaseChangeset):
             otherwise; trying to access this attribute while there is no
             changesets would raise ``EmptyRepositoryError``
     """
-    @LazyProperty
-    def last(self):
-        if self.repository is None:
-            raise ChangesetError("Cannot check if it's most recent revision")
-        return self.raw_id == self.repository.revisions[-1]
 
     @LazyProperty
     def parents(self):
