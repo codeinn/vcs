@@ -1,8 +1,12 @@
 import os
 
+import datetime
+
 from vcs.backends.base import BaseRepository
 from .common import SubprocessP4
+from .changeset import P4Changeset
 import vcs.exceptions
+from vcs.utils.lazy import LazyProperty
 
 class P4Repository(BaseRepository):
     """
@@ -82,19 +86,35 @@ class P4Repository(BaseRepository):
         not inclusive This should behave just like a list, ie. end is not
         inclusive
 
-        :param start: None or int
-        :param end: None or int, should be bigger than start
-        :param start_date:
-        :param end_date:
-        :param branch_name:
-        :param reversed:
+        :param start: None or int, TBD
+        :param end: None or int, should be bigger than start, TBD
+        :param start_date: instance of datetime or None
+        :param end_date: instance of datetime or None
+        :param branch_name: TBD
+        :param reversed: TBD
         """
-        PAGE_SIZE = 1000
+        # TODO
+        # do the previous command in cycle with modified start and end till you satisfy the start and end.
+        # it is better to have multiple requests with 1000 results than one with millions of results
 
-        result = self.repo.run(['changes', '-s', 'submitted', '-m', PAGE_SIZE, self.repo_path])
+        # http://stackoverflow.com/questions/17702785/python-generator-for-paged-api-resource
 
-        # TODO do the previous command in cycle with modified start and end till you satisfy the start and end.
-        # it is better to have multiple requests with 1k results, than one with millions of results
+        STR_FORMAT = '%Y/%m/%d %H:%M:%S'
+
+        if not start_date:
+            start_date = datetime.datetime.utcfromtimestamp(0)  # january 1970
+
+        if not end_date:
+            end_date = datetime.datetime.utcnow()
+
+        path_with_revspec = '{path}@{start_date},{end_date}'.format(path=self.repo_path,
+                                                                     start_date=start_date.strftime(STR_FORMAT),
+                                                                     end_date=end_date.strftime(STR_FORMAT))
+
+        result = self.repo.run(['changes', '-s', 'submitted', path_with_revspec])
+        result = [P4Changeset(cs) for cs in result]
+
+        return result
 
     def tag(self, name, user, revision=None, message=None, date=None, **opts):
         """

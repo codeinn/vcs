@@ -1,4 +1,7 @@
+import datetime
+
 from vcs.backends.base import BaseChangeset
+from vcs.utils.lazy import LazyProperty
 
 class P4Changeset(BaseChangeset):
     """
@@ -47,6 +50,12 @@ class P4Changeset(BaseChangeset):
             otherwise; trying to access this attribute while there is no
             changesets would raise ``EmptyRepositoryError``
     """
+    def __init__(self, changeset_dict):
+        self.revision = int(changeset_dict['change'])
+        self.short_id = self.revision
+        self.id = self.revision
+        self.time = datetime.datetime.utcfromtimestamp(int(changeset_dict['time']))
+        self.raw_data = changeset_dict
 
     @LazyProperty
     def parents(self):

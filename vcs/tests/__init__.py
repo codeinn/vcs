@@ -33,6 +33,7 @@ from test_filenodes_unicode_path import *
 from test_getitem import *
 from test_getslice import *
 from test_git import *
+from test_p4 import *
 from test_hg import *
 from test_inmemchangesets import *
 from test_nodes import *
