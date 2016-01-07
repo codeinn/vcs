@@ -41,10 +41,12 @@ class P4Repository(BaseRepository):
 
         :param repo_path: e.g. //depot/path/to/dir
         :param create=False: if set to True, would try to sync to your workspace
-        :param p4user=None: if set, used for authorization. If none, taken from env var
-        :param p4passwd=None: same as p4user
-        :param p4port=None same as p4user
-        :param p4client=None same as p4port
+        :param p4user=None: Username for authorization on p4 server. If None, taken from env var P4USER
+        :param p4passwd=None: Password for authorization on p4 server. If None, taken from env var P4PASSWD
+        :param p4port=None Protocol, host and port of the p4 server,
+         e.g. ssl:perforce.mycompany.com:1667 If None, taken from env var P4PORT
+        :param p4client=None name of workspace to use for sync/write operations.
+         If not specified, taken from env var P4CLIENT. Not used yet.
         """
         self.path = repo_path
 

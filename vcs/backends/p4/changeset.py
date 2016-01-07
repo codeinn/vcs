@@ -13,49 +13,63 @@ class P4Changeset(BaseChangeset):
             repository object within which changeset exists
 
         ``id``
-            may be ``raw_id`` or i.e. for mercurial's tip just ``tip``
+            Changelist number (int)
 
         ``raw_id``
-            raw changeset representation (i.e. full 40 length sha for git
-            backend)
+            same as id
 
         ``short_id``
-            shortened (if apply) version of ``raw_id``; it would be simple
-            shortcut for ``raw_id[:12]`` for git/mercurial backends or same
-            as ``raw_id`` for subversion
+            same as id
 
         ``revision``
-            revision number as integer
+            same as id
 
         ``files``
-            list of ``FileNode`` (``Node`` with NodeKind.FILE) objects
+            list of ``FileNode`` (``Node`` with NodeKind.FILE) objects, TBD
 
         ``dirs``
-            list of ``DirNode`` (``Node`` with NodeKind.DIR) objects
+            list of ``DirNode`` (``Node`` with NodeKind.DIR) objects, TBD
 
         ``nodes``
-            combined list of ``Node`` objects
+            combined list of ``Node`` objects, TBD
 
         ``author``
-            author of the changeset, as unicode
+            author of the changeset, as unicode, TBD
 
         ``message``
             message of the changeset, as unicode
 
         ``parents``
-            list of parent changesets
+            list of parent changesets, TBD
 
         ``last``
             ``True`` if this is last changeset in repository, ``False``
             otherwise; trying to access this attribute while there is no
-            changesets would raise ``EmptyRepositoryError``
+            changesets would raise ``EmptyRepositoryError``, TBD
+
+        Added properties:
+
+        ``time``
+            datetime object representing date and time of the submit
+
+        ``raw_data``
+            the raw dict returned by p4 lib or cmd
     """
     def __init__(self, changeset_dict):
+        """
+
+        :param changeset_dict: the raw dict returned by p4 cmd or lib
+        :return:
+        """
         self.revision = int(changeset_dict['change'])
         self.short_id = self.revision
         self.id = self.revision
-        self.time = datetime.datetime.utcfromtimestamp(int(changeset_dict['time']))
+
+        self.author = changeset_dict['user']
+        self.message = changeset_dict['desc']
+
         self.raw_data = changeset_dict
+        self.time = datetime.datetime.utcfromtimestamp(int(changeset_dict['time']))
 
     @LazyProperty
     def parents(self):
