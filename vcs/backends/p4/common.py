@@ -1,5 +1,7 @@
 import abc
+import distutils.spawn
 import logging
+import os
 import subprocess
 import marshal
 
@@ -41,11 +43,15 @@ class SubprocessP4(P4):
     ARRAY_KEY = re.compile(r'(\w+?)(\d+)$')
     INT = re.compile(r'\d+$')
 
+    def __init__(self, user, passwd, port, client):
+        super(SubprocessP4, self).__init__(user, passwd, port, client)
+        self.p4bin = distutils.spawn.find_executable('p4', path='/opt/perforce/bin:%s' % os.environ['PATH'])
+
     def run(self, args, input=None, env=None):
         logger.debug('Going to run p4 command %s', str(args))
         stdin_mode = subprocess.PIPE if input is not None else None
 
-        p = subprocess.Popen(['p4', '-G'] + map(str, args), stdin=stdin_mode, stdout=subprocess.PIPE,
+        p = subprocess.Popen([self.p4bin, '-G'] + map(str, args), stdin=stdin_mode, stdout=subprocess.PIPE,
                              env=env or self.env)
 
         if input is not None:

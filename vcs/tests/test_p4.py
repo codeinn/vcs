@@ -22,7 +22,7 @@ class P4RepositoryTest(unittest.TestCase):
 		CLs = self.repo.get_changesets(end_date=datetime.datetime(2014, 1, 1))
 
 		for cl in CLs:
-			logging.debug('%s, %s', cl, cl.time)
+			logging.debug('%s, %s', cl, cl.date)
 
 		self.assertEqual(len(CLs), 5)
 
@@ -31,7 +31,7 @@ class P4RepositoryTest(unittest.TestCase):
 									   end_date=datetime.datetime(2014, 1, 1))
 
 		for cl in CLs:
-			logging.debug('%s, %s', cl, cl.time)
+			logging.debug('%s, %s', cl, cl.date)
 
 		self.assertEqual(len(CLs), 2)
 
