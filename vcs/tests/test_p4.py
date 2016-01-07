@@ -13,12 +13,13 @@ class P4RepositoryTest(unittest.TestCase):
 	These tests work only in Michel's repository, they should be changed so they first create some commits on
 	a sandbox server and then query these commits.
 	"""
+
 	def setUp(self):
 		self.repo = P4Repository(TEST_P4_REPO)
 		logging.basicConfig(level=logging.DEBUG)
 
-	def test_get_changelists(self):
-		CLs = self.repo.get_changesets()
+	def test_get_changelists_end_date_only(self):
+		CLs = self.repo.get_changesets(end_date=datetime.datetime(2014, 1, 1))
 
 		for cl in CLs:
 			logging.debug('%s, %s', cl, cl.time)
@@ -26,7 +27,8 @@ class P4RepositoryTest(unittest.TestCase):
 		self.assertEqual(len(CLs), 5)
 
 	def test_get_changelists_range(self):
-		CLs = self.repo.get_changesets(start_date=datetime.datetime(2013,5,3,3))
+		CLs = self.repo.get_changesets(start_date=datetime.datetime(2013, 5, 3, 3),
+									   end_date=datetime.datetime(2014, 1, 1))
 
 		for cl in CLs:
 			logging.debug('%s, %s', cl, cl.time)
