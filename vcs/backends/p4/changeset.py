@@ -47,10 +47,10 @@ class P4Changeset(BaseChangeset):
             otherwise; trying to access this attribute while there is no
             changesets would raise ``EmptyRepositoryError``, TBD
 
-        Added properties:
-
-        ``time``
+        ``date``
             datetime object representing date and time of the submit
+
+        Added properties:
 
         ``raw_data``
             the raw dict returned by p4 lib or cmd
@@ -69,7 +69,7 @@ class P4Changeset(BaseChangeset):
         self.message = changeset_dict['desc']
 
         self.raw_data = changeset_dict
-        self.time = datetime.datetime.utcfromtimestamp(int(changeset_dict['time']))
+        self.date = datetime.datetime.utcfromtimestamp(int(changeset_dict['time']))
 
     @LazyProperty
     def parents(self):
