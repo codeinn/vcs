@@ -113,7 +113,7 @@ class P4Repository(BaseRepository):
                                                                      start_date=start_date.strftime(STR_FORMAT),
                                                                      end_date=end_date.strftime(STR_FORMAT))
 
-        result = self.repo.run(['changes', '-s', 'submitted', path_with_revspec])
+        result = self.repo.run(['changes', '-l', '-s', 'submitted', path_with_revspec])
         result = [P4Changeset(cs) for cs in result]
 
         return result
