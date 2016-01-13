@@ -1,7 +1,6 @@
 import os
 import sys
 from setuptools import setup, find_packages
-from extras import RunFlakesCommand
 
 vcs = __import__('vcs')
 readme_file = os.path.abspath(os.path.join(os.path.dirname(__file__),
@@ -15,9 +14,12 @@ except IOError, err:
     sys.exit(1)
 
 install_requires = ['Pygments']
+
 if sys.version_info < (2, 7):
     install_requires.append('unittest2')
-tests_require = install_requires + ['dulwich', 'mercurial', 'mock']
+
+tests_require = install_requires + ['dulwich==0.10.0', 'mercurial==2.6.2', 'mock']
+
 
 
 setup(
@@ -47,5 +49,4 @@ setup(
             'vcs = vcs:main',
         ],
     },
-    cmdclass={'flakes': RunFlakesCommand},
 )

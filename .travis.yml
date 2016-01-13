@@ -1,15 +1,14 @@
 language: python
 python:
- - 2.5
- - 2.6
  - 2.7
 
-install:
-  - pip install -q dulwich mercurial==2.5.2 mock pygments
-  - pip install . --use-mirrors
+env:
+  - TOX_ENV=py25
+  - TOX_ENV=py26
+  - TOX_ENV=py27
+  - TOX_ENV=flakes
 
-script: python vcs/tests/__main__.py
-after_script: python setup.py flakes
+script: tox -e $TOX_ENV
 
 notifications:
     email:
