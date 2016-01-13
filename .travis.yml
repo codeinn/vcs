@@ -8,6 +8,9 @@ env:
   - TOX_ENV=py27
   - TOX_ENV=flakes
 
+install:
+    pip install --home tox
+
 script: tox -e $TOX_ENV
 
 notifications:
