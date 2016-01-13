@@ -55,12 +55,13 @@ class P4Changeset(BaseChangeset):
         ``raw_data``
             the raw dict returned by p4 lib or cmd
     """
-    def __init__(self, changeset_dict):
+    def __init__(self, repository, changeset_dict):
         """
-
+        :param repository: repository object
         :param changeset_dict: the raw dict returned by p4 cmd or lib
         :return:
         """
+        self.repository = repository
         self.revision = int(changeset_dict['change'])
         self.short_id = self.revision
         self.id = self.revision
@@ -70,6 +71,7 @@ class P4Changeset(BaseChangeset):
 
         self.raw_data = changeset_dict
         self.date = datetime.datetime.utcfromtimestamp(int(changeset_dict['time']))
+        self._describe_result = None
 
     @LazyProperty
     def parents(self):
@@ -251,3 +253,13 @@ class P4Changeset(BaseChangeset):
         Returns list of removed ``FileNode`` objects.
         """
         raise NotImplementedError
+
+    def _describe(self):
+        if not self._describe_result:
+            self._describe_result = self.repository.repo.run(['describe', self.id])
+
+        return self._describe_result
+
+    def affected_files(self):
+        return self._describe()[0]['depotFile']
+

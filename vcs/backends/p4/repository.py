@@ -3,7 +3,7 @@ import os
 import datetime
 
 from vcs.backends.base import BaseRepository
-from .common import SubprocessP4
+from .common import get_p4_class
 from .changeset import P4Changeset
 import vcs.exceptions
 from vcs.utils.lazy import LazyProperty
@@ -60,7 +60,8 @@ class P4Repository(BaseRepository):
         client = p4client or os.environ.get('P4CLIENT')  # this one isn't mandatory for read operations
 
         self.repo_path = repo_path
-        self.repo = SubprocessP4(user, passwd, port, client)
+        p4class = get_p4_class()
+        self.repo = p4class(user, passwd, port, client)
 
     def is_valid(self):
         """
@@ -79,7 +80,15 @@ class P4Repository(BaseRepository):
 
         :raises ``EmptyRepositoryError``: if there are no revisions
         """
-        raise NotImplementedError
+        if revision:
+            changesets = self.get_changesets(start=revision, end=revision)
+
+            if not changesets:
+                raise vcs.exceptions.ChangesetDoesNotExistError('Changeset %d does not exit' % revision)
+
+            return changesets[0]
+        else:
+            raise NotImplementedError('please specify the changeset id')
 
     def get_changesets(self, start=None, end=None, start_date=None,
                        end_date=None, branch_name=None, reverse=False):
@@ -103,18 +112,32 @@ class P4Repository(BaseRepository):
 
         STR_FORMAT = '%Y/%m/%d %H:%M:%S'
 
-        if not start_date:
-            start_date = datetime.datetime.utcfromtimestamp(0)  # january 1970
+        if start and start_date:
+            raise vcs.exceptions.RepositoryError('both start and start_date specified')
 
-        if not end_date:
-            end_date = datetime.datetime.utcnow()
+        if start:
+            assert isinstance(start, int)
+            start = str(start)
+        elif start_date:
+            start = start_date.strftime(STR_FORMAT)
+        else:
+            start = 0
 
-        path_with_revspec = '{path}@{start_date},{end_date}'.format(path=self.repo_path,
-                                                                     start_date=start_date.strftime(STR_FORMAT),
-                                                                     end_date=end_date.strftime(STR_FORMAT))
+        if end and end_date:
+            raise vcs.exceptions.RepositoryError('both end and end_date specified')
+
+        if end:
+            assert isinstance(end, int)
+            end = str(end)
+        elif end_date:
+            end = end_date.strftime(STR_FORMAT)
+        else:
+            end = 'now'
+
+        path_with_revspec = '{path}@{start},{end}'.format(path=self.repo_path, start=start, end=end)
 
         result = self.repo.run(['changes', '-l', '-s', 'submitted', path_with_revspec])
-        result = [P4Changeset(cs) for cs in result]
+        result = [P4Changeset(self, cs) for cs in result]
 
         return result
 

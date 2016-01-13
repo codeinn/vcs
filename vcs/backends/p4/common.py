@@ -147,3 +147,6 @@ class SubprocessP4(P4):
                     a.append(None)  # n.b.: if zeroth entry is missing, p4 puts a None in
             h[key] = a
         return h
+
+def get_p4_class():
+    return SubprocessP4
