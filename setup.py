@@ -14,10 +14,10 @@ except IOError, err:
         "long_description (%s)\n" % readme_file)
     sys.exit(1)
 
-install_requires = ['Pygments', 'mock']
+install_requires = ['Pygments']
 if sys.version_info < (2, 7):
     install_requires.append('unittest2')
-tests_require = install_requires + ['dulwich', 'mercurial']
+tests_require = install_requires + ['dulwich', 'mercurial', 'mock']
 
 
 setup(
