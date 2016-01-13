@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from vcs.backends.base import BaseChangeset
 from vcs.utils.lazy import LazyProperty
@@ -258,8 +259,15 @@ class P4Changeset(BaseChangeset):
         if not self._describe_result:
             self._describe_result = self.repository.repo.run(['describe', self.id])
 
+        if not len(self._describe_result) == 1:
+            logging.warning('describe returned something unexpected: %s', self._describe_result)
+
         return self._describe_result
 
     def affected_files(self):
-        return self._describe()[0]['depotFile']
+        try:
+            return self._describe()[-1]['depotFile']
+        except:
+            logging.warning('No files in that changest %d', self.id)
+            return []
 

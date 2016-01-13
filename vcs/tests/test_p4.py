@@ -41,6 +41,11 @@ class P4RepositoryTest(unittest.TestCase):
 		self.assertEqual(len(files), 1)
 		self.assertEqual(files[0], '//depot/Tools/p4sandbox/file_to_be_added.txt')
 
+		# changeset after obliterated files
+		repo = P4Repository('//depot/...')
+		cs = repo.get_changeset(24754)
+		files = cs.affected_files()
+
 
 if __name__ == '__main__':
 	unittest.main()
