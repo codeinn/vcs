@@ -1,19 +1,22 @@
 language: python
 python:
- - 2.5
- - 2.6
  - 2.7
 
-install:
-  - pip install -q dulwich mercurial==2.5.2 mock pygments
-  - pip install . --use-mirrors
+env:
+  - TOX_ENV=py25
+  - TOX_ENV=py26
+  - TOX_ENV=py27
 
-script: python vcs/tests/__main__.py
-after_script: python setup.py flakes
+install:
+    pip install tox
+
+script: tox -e $TOX_ENV
+
+# flakes show some unused imports and start imports, so we don't want to have red build till they are fixed
+after_script: tox -e flakes
 
 notifications:
     email:
         - lukaszbalcerzak@gmail.com
         - marcinkuz@gmail.com
     irc: "irc.freenode.org#vcs"
-

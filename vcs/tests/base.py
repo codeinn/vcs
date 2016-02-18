@@ -2,6 +2,7 @@
 Module providing backend independent mixin class. It requires that
 InMemoryChangeset class is working properly at backend class.
 """
+import logging
 import os
 import time
 import shutil
@@ -62,6 +63,7 @@ class BackendTestMixin(object):
 
     @classmethod
     def setUpClass(cls):
+        logging.basicConfig(level=logging.INFO)
         Backend = cls.get_backend()
         cls.backend_class = Backend
         cls.repo_path = get_new_dir(str(time.time()))
