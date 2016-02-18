@@ -9,7 +9,7 @@ env:
   - TOX_ENV=flakes
 
 install:
-    pip install tox
+    pip install --user tox
 
 script: tox -e $TOX_ENV
 
