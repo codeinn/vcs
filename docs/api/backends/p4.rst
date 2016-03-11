@@ -1,0 +1,21 @@
+.. _api-backends-p4:
+
+vcs.backends.p4
+===============
+
+.. automodule:: vcs.backends.p4
+
+P4Repository
+-------------------
+
+.. autoclass:: vcs.backends.p4.P4Repository
+   :members:
+
+P4Changeset
+------------------
+
+.. autoclass:: vcs.backends.p4.P4Changeset
+   :members:
+   :inherited-members:
+   :undoc-members:
+   :show-inheritance:

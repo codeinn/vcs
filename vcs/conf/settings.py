@@ -27,6 +27,7 @@ GIT_REV_FILTER = '--all'
 BACKENDS = {
     'hg': 'vcs.backends.hg.MercurialRepository',
     'git': 'vcs.backends.git.GitRepository',
+    'p4':  'vcs.backends.p4.P4Repository'
 }
 
 ARCHIVE_SPECS = {
