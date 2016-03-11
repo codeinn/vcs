@@ -5,7 +5,13 @@ import datetime
 
 from vcs.backends.p4.repository import P4Repository
 
-TEST_P4_REPO = '//depot/Tools/p4sandbox/...'
+if True:  # for msamia's purposes
+	TEST_P4_REPO = '//depot/Tools/p4sandbox/...'
+else:
+	P4USER = 'vcs'
+	P4PORT = 'workshop.perforce.com:1666'
+	# see https://swarm.workshop.perforce.com/
+
 
 
 class P4RepositoryTest(unittest.TestCase):
