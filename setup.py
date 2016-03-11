@@ -13,7 +13,7 @@ except IOError, err:
         "long_description (%s)\n" % readme_file)
     sys.exit(1)
 
-install_requires = ['Pygments']
+install_requires = ['Pygments', 'pytz']
 
 if sys.version_info < (2, 7):
     install_requires.append('unittest2')

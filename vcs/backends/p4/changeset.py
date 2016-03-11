@@ -1,6 +1,8 @@
 import datetime
 import logging
 
+import pytz
+
 from vcs.backends.base import BaseChangeset
 from vcs.utils.lazy import LazyProperty
 
@@ -49,7 +51,7 @@ class P4Changeset(BaseChangeset):
             changesets would raise ``EmptyRepositoryError``, TBD
 
         ``date``
-            datetime object representing date and time of the submit
+            datetime object representing date and time of the submit. TZ aware.
 
         Added properties:
 
@@ -71,7 +73,8 @@ class P4Changeset(BaseChangeset):
         self.message = changeset_dict['desc']
 
         self.raw_data = changeset_dict
-        self.date = datetime.datetime.utcfromtimestamp(int(changeset_dict['time']))
+        self.date = datetime.datetime.utcfromtimestamp(int(changeset_dict['time']))  # it is really in utc
+        self.date.replace(tzinfo=pytz.UTC)
         self._describe_result = None
 
     @LazyProperty

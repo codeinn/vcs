@@ -24,7 +24,7 @@ class P4(object):
     def run(self, args, input=None):
         """
 
-        :param args:
+        :param args: list of arguments, e.g. ['foo', 'bar']
         :param input:
         :return:
         """
