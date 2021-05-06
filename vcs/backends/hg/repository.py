@@ -186,7 +186,7 @@ class MercurialRepository(BaseRepository):
         try:
             self._repo.tag(name, changeset._ctx.node(), message, local, user,
                 date)
-        except Abort, e:
+        except Abort as e:
             raise RepositoryError(e.message)
 
         # Reinitialize tags
@@ -217,7 +217,7 @@ class MercurialRepository(BaseRepository):
         try:
             self._repo.tag(name, nullid, message, local, user, date)
             self.tags = self._get_tags()
-        except Abort, e:
+        except Abort as e:
             raise RepositoryError(e.message)
 
     @LazyProperty
