@@ -42,7 +42,7 @@ class LockFile(object):
         try:
             fd = os.open(lock_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0)
             os.close(fd)
-        except OSError,e:
+        except OSError as e:
             raise IOError(str(e))
 
         self._owns_lock = True
