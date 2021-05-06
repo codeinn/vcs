@@ -8,7 +8,7 @@ readme_file = os.path.abspath(os.path.join(os.path.dirname(__file__),
 
 try:
     long_description = open(readme_file).read()
-except IOError, err:
+except IOError as err:
     sys.stderr.write("[ERROR] Cannot find file specified as "
         "long_description (%s)\n" % readme_file)
     sys.exit(1)
